@@ -4,6 +4,8 @@ pragma solidity ^0.8.6;
 import { ITreasury } from "./interfaces/ERC20.sol";
 
 contract TaxToken {
+
+    //
  
     // Table to map addresses
     // to their balance
@@ -148,7 +150,7 @@ contract TaxToken {
                     _taxType = receiverTaxType[msg.sender];
                 }
 
-                // Calculate taxAmt and sendAmt
+                // Calculate taxAmt and sendAmtS
                 uint _taxAmt = _amount * basisPointsTax[_taxType] / 100000;
                 uint _sendAmt = _amount * (100000 - basisPointsTax[_taxType]) / 100000;
 
