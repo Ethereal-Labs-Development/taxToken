@@ -14,6 +14,8 @@ contract TaxToken {
     // use the contract
     mapping(address => mapping(address => uint256)) allowed;
 
+    // TODO: Add-in a mapping above for blacklist.
+
     // Any transfer that involves a whitelisted address, will not incur a tax.
     mapping(address => bool) whitelist;
     mapping(address => uint) senderTaxType;
@@ -34,6 +36,10 @@ contract TaxToken {
     string private _name;
     string private _symbol;
     uint8 private _decimals;
+
+    // TODO: Add-in "Pausable Functionality"
+    // TODO: Read Pausable implementation on OpenZeppelin
+    // https://github.com/OpenZeppelin/openzeppelin-contracts/tree/master/contracts/token/ERC20/extensions
  
     modifier onlyOwner {
        //_; acts as a "continue after this" specifically for modifiers
@@ -91,12 +97,31 @@ contract TaxToken {
 
     function adjustBasisPointsTax(uint _taxType, uint _bpt) public onlyOwner {
         basisPointsTax[_taxType] = _bpt;
+        // TODO: constrict range, _bpt <= 10000
+        // TODO: update in Treasury the division (100000 => 10000)
     }
 
     function transferOwnership(address _owner) public onlyOwner {
         //_ for parameter input for functions, and non for variables
         owner = _owner;
     }
+
+
+    // TODO: Implement functions below.
+    
+    function permanentlyRemoveTaxes() public onlyOwner {
+        // TODO: Reduce taxType 0/1/2/ down to 0
+        // TODO: transferOwnership to address(0)
+    }
+
+    function modifyWhitelist() public onlyOwner {
+        // TODO: Some checks if they are currently on Blacklist.
+    }
+
+    function modifyBlacklist() public onlyOwner {
+        // TODO: Some checks if they are currently on Whitelist.
+    }
+
 
     function name() public view returns (string memory) {
         return _name;
@@ -126,7 +151,9 @@ contract TaxToken {
  
     // transfer function
     function transfer(address _to, uint256 _amount) public returns (bool success)
-    {
+    {   
+
+        // TODO: Check for blacklist msg.sender / _to.
 
         // Tax Type 0 => Xfer Tax (10%) => 10% (1wallets, marketing)
         // Tax Type 1 => Buy Tax (12%) => 6%/6% (2wallets, use/marketing))
@@ -144,8 +171,8 @@ contract TaxToken {
                     _taxType = senderTaxType[msg.sender];
                 }
 
-                if (receiverTaxType[msg.sender] != 0) {
-                    _taxType = receiverTaxType[msg.sender];
+                if (receiverTaxType[_to] != 0) {
+                    _taxType = receiverTaxType[_to];
                 }
 
                 // Calculate taxAmt and sendAmt
@@ -156,7 +183,6 @@ contract TaxToken {
                 emit LogUint('_sendAmt', _sendAmt);
                 emit LogUint('_taxType', _taxType);
                 emit LogUint('basisPointsTax[_taxType]', basisPointsTax[_taxType]);
-
 
                 // Pre-state logs.
                 emit LogUint('pre_balances[msg.sender]', balances[msg.sender]);
