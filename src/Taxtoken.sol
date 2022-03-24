@@ -5,61 +5,41 @@ import { ITreasury } from "./interfaces/ERC20.sol";
 
 contract TaxToken {
  
-    // Table to map addresses
-    // to their balance
-    mapping(address => uint256) balances;
- 
-    // Mapping owner address to
-    // those who are allowed to
-    // use the contract
-    mapping(address => mapping(address => uint256)) allowed;
+    // ---------
+    // State Variables
+    // ---------
 
-    // TODO: Add-in a mapping above for blacklist.
-
-    // Any transfer that involves a whitelisted address, will not incur a tax.
-    mapping(address => bool) whitelist;
-    mapping(address => uint) senderTaxType;
-    mapping(address => uint) receiverTaxType;
-
-    // Mapping between taxType and basisPoints (taxed).
-    mapping(uint => uint) basisPointsTax;
-
+    // ERC20 Basic
     uint256 _totalSupply;
+    uint8 private _decimals;
+    string private _name;
+    string private _symbol;
 
-    // owner address - adding public generates a getter for the regular callers
+    // ERC20 Pausable
+    bool private _paused;  // ERC20 Pausable state
+
+    // Extras
     address public owner;
     address public adminWallet;
     address public treasury;
     bool public treasurySet;
 
-    //Only accessable through getters we set, want to keep our enpoints consistent with everyone else
-    string private _name;
-    string private _symbol;
-    uint8 private _decimals;
+    // ERC20 Mappings
+    mapping(address => uint256) balances;                       // Track balances.
+    mapping(address => mapping(address => uint256)) allowed;    // Track allowances. TODO: Consider if rename to allowances().
 
-    // TODO: Add-in "Pausable Functionality"
-    // TODO: Read Pausable implementation on OpenZeppelin
-    // https://github.com/OpenZeppelin/openzeppelin-contracts/tree/master/contracts/token/ERC20/extensions
- 
-    modifier onlyOwner {
-       //_; acts as a "continue after this" specifically for modifiers
-       require(msg.sender == owner, "ERR: TaxToken.sol, onlyOwner()");
-       _;
-    }
+    // Extras Mappings
+    mapping(address => bool) whitelist;         // Any transfer that involves a whitelisted address, will not incur a tax.
+    mapping(address => uint) senderTaxType;     // Identifies tax type for msg.sender of transfer() call.
+    mapping(address => uint) receiverTaxType;   // Identifies tax type for _to of transfer() call.
+    mapping(uint => uint) basisPointsTax;       // Mapping between taxType and basisPoints (taxed).
 
-    // TEMPORARY (REMOVE LATER)
-    event LogUint(string s, uint u);
-    event LogAddy(string s, address a);
+    // TODO: Add-in blacklist.
+    
 
-    // Triggered whenever
-    // approve(address _spender, uint256 _value)
-    // is called.
-    event Approval(address indexed _owner, address indexed _spender, uint256 _value);
- 
-    // Event triggered when
-    // tokens are transferred.
-    event Transfer(address indexed _from, address indexed _to, uint256 _value);
-    event TransferTax(address indexed _from, address indexed _to, uint256 _value, uint256 _taxType);
+    // -----------
+    // Constructor
+    // -----------
 
     //Instead of hard coding, you can pass things like supply, sumbol, ect through the constructor
     //upon deployment to reduce LOC. *Limit of 12 inpus per function
@@ -70,13 +50,74 @@ contract TaxToken {
         uint8 decimalsInput,
         address adminWalletInput
     ) {
-        owner = msg.sender;
-        balances[msg.sender] = totalSupplyInput;   // Initial liquidity (allocated to Owner). 
+
+        _paused = false;                            // ERC20 Pausable global state variable, initial state is not paused ("unpaused").
         _totalSupply = totalSupplyInput;
         _name = nameInput;
         _symbol = symbolInput;
         _decimals = decimalsInput;
-        adminWallet = adminWalletInput;
+
+        owner = msg.sender;                         // The "owner" is the "admin" of this contract.
+        balances[msg.sender] = totalSupplyInput;    // Initial liquidity, allocated entirely to "owner". 
+        adminWallet = adminWalletInput;             // TODO: Identify what this variable is used for. Remove if unnecessary.
+    }
+ 
+    // ---------
+    // Modifiers
+    // ---------
+
+    /// @dev whenNotPaused() is used if the contract MUST be paused ("paused").
+    modifier whenNotPaused() {
+        require(!paused(), "ERR: Contract is currently paused.");
+        _;
+    }
+
+    /// @dev whenPaused() is used if the contract MUST NOT be paused ("unpaused").
+    modifier whenPaused() {
+        require(paused(), "ERR: Contract is not currently paused.");
+        _;
+    }
+    
+    /// @dev onlyOwner() is used if msg.sender MUST be owner.
+    modifier onlyOwner {
+       require(msg.sender == owner, "ERR: TaxToken.sol, onlyOwner()"); 
+       _;   //_; acts as a "continue after this" specifically for modifiers
+    }
+
+    // ------
+    // Events
+    // ------
+
+    event LogUint(string s, uint u);       /// @notice This is a logging function for HEVM testing.
+    event LogAddy(string s, address a);    /// @notice This is a logging function for HEVM testing.
+
+    event Paused(address account);      /// @dev Emitted when the pause is triggered by `account`.
+    event Unpaused(address account);    /// @dev Emitted when the pause is lifted by `account`.
+
+    /// @dev Emitted when approve() is called.
+    event Approval(address indexed _owner, address indexed _spender, uint256 _value);   
+ 
+    /// @dev Emitted upon transfer of tokens.
+    event Transfer(address indexed _from, address indexed _to, uint256 _value);
+    event TransferTax(address indexed _from, address indexed _to, uint256 _value, uint256 _taxType);
+
+    
+    /// @notice Pause the contract, blocks transfer() and transferFrom().
+    /// @dev Contract must be paused to call this, caller must be "owner".
+    function pause() public onlyOwner whenNotPaused {
+        _paused = true;
+        emit Paused(msg.sender);
+    }
+
+    /// @notice Unpause the contract.
+    function unpause() public onlyOwner whenPaused {
+        _paused = false;
+        emit Unpaused(msg.sender);
+    }
+
+    /// @return _paused Indicates whether the contract is paused (true) or not (false).
+    function paused() public view virtual returns (bool) {
+        return _paused;
     }
 
     function setTreasury(address _treasury) public onlyOwner {
@@ -122,7 +163,6 @@ contract TaxToken {
         // TODO: Some checks if they are currently on Whitelist.
     }
 
-
     function name() public view returns (string memory) {
         return _name;
     }
@@ -150,7 +190,7 @@ contract TaxToken {
     }
  
     // transfer function
-    function transfer(address _to, uint256 _amount) public returns (bool success)
+    function transfer(address _to, uint256 _amount) public whenNotPaused returns (bool success)
     {   
 
         // TODO: Check for blacklist msg.sender / _to.
@@ -227,7 +267,7 @@ contract TaxToken {
         }
     }
  
-    function transferFrom(address _from, address _to, uint256 _amount) public returns (bool success) {
+    function transferFrom(address _from, address _to, uint256 _amount) public whenNotPaused returns (bool success) {
         if (balances[_from] >= _amount && allowed[_from][msg.sender] >= _amount && _amount > 0 && balances[_to] + _amount > balances[_to]) {
             balances[_from] -= _amount;
             balances[_to] += _amount;
