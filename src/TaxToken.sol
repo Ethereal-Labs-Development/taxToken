@@ -221,6 +221,7 @@ contract TaxToken {
     }
  
     function transferFrom(address _from, address _to, uint256 _amount) public whenNotPaused returns (bool success) {
+        require(!isBlacklisted[msg.sender] && !isBlacklisted[_to], "ERROR: Sender or Receiver is blacklisted");
         if (balances[_from] >= _amount && allowed[_from][msg.sender] >= _amount && _amount > 0 && balances[_to] + _amount > balances[_to]) {
             balances[_from] -= _amount;
             balances[_to] += _amount;
@@ -301,7 +302,6 @@ contract TaxToken {
     }
 
     function modifyBlacklist(address _wallet, bool _blacklist) public onlyOwner {
-        // TODO: Some checks if they are currently on Whitelist.
         isBlacklisted[_wallet] = _blacklist;
     }
 
