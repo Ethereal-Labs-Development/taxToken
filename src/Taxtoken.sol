@@ -29,6 +29,7 @@ contract TaxToken {
     mapping(address => mapping(address => uint256)) allowed;    // Track allowances. TODO: Consider if rename to allowances().
 
     // Extras Mappings
+    mapping(address => bool) isBlacklisted;     // If an address is blacklisted, they cannot transact
     mapping(address => bool) whitelist;         // Any transfer that involves a whitelisted address, will not incur a tax.
     mapping(address => uint) senderTaxType;     // Identifies tax type for msg.sender of transfer() call.
     mapping(address => uint) receiverTaxType;   // Identifies tax type for _to of transfer() call.
@@ -145,6 +146,7 @@ contract TaxToken {
     function transfer(address _to, uint256 _amount) public whenNotPaused returns (bool success) {   
 
         // TODO: Check for blacklist msg.sender / _to.
+        require(!isBlacklisted[msg.sender] && !isBlacklisted[_to], "ERROR: Sender or Receiver is blacklisted");
 
         // Tax Type 0 => Xfer Tax (10%) => 10% (1wallets, marketing)
         // Tax Type 1 => Buy Tax (12%) => 6%/6% (2wallets, use/marketing))
@@ -298,8 +300,9 @@ contract TaxToken {
         // TODO: Some checks if they are currently on Blacklist.
     }
 
-    function modifyBlacklist() public onlyOwner {
+    function modifyBlacklist(address _wallet, bool _blacklist) public onlyOwner {
         // TODO: Some checks if they are currently on Whitelist.
+        isBlacklisted[_wallet] = _blacklist;
     }
 
 
