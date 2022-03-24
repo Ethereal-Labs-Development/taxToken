@@ -30,6 +30,7 @@ contract TaxToken {
     address public treasury;
     bool public treasurySet;
 
+<<<<<<< Updated upstream
     //Only accessable through getters we set, want to keep our enpoints consistent with everyone else
     string private _name;
     string private _symbol;
@@ -40,6 +41,21 @@ contract TaxToken {
        require(msg.sender == owner, "ERR: TaxToken.sol, onlyOwner()");
        _;
     }
+=======
+    // ERC20 Mappings
+    mapping(address => uint256) balances;                       // Track balances.
+    mapping(address => mapping(address => uint256)) allowed;    // Track allowances. TODO: Consider if rename to allowances().
+
+    // Extras Mappings
+    mapping(address => bool) isBlacklisted;     // If address is blacklisted, it will not be able to transact
+    mapping(address => bool) whitelist;         // Any transfer that involves a whitelisted address, will not incur a tax.
+    mapping(address => uint) senderTaxType;     // Identifies tax type for msg.sender of transfer() call.
+    mapping(address => uint) receiverTaxType;   // Identifies tax type for _to of transfer() call.
+    mapping(uint => uint) basisPointsTax;       // Mapping between taxType and basisPoints (taxed).
+
+    // TODO: Add-in blacklist.
+    
+>>>>>>> Stashed changes
 
     // TEMPORARY (REMOVE LATER)
     event LogUint(string s, uint u);
@@ -124,9 +140,16 @@ contract TaxToken {
         return true;
     }
  
+<<<<<<< Updated upstream
     // transfer function
     function transfer(address _to, uint256 _amount) public returns (bool success)
     {
+=======
+    function transfer(address _to, uint256 _amount) public whenNotPaused returns (bool success) {   
+
+        // TODO: Check for blacklist msg.sender / _to.
+        require(!isBlacklisted[msg.sender] || !isBlacklisted[_to], "ERROR: Receiver or Sender is blacklisted");
+>>>>>>> Stashed changes
 
         // Tax Type 0 => Xfer Tax (10%) => 10% (1wallets, marketing)
         // Tax Type 1 => Buy Tax (12%) => 6%/6% (2wallets, use/marketing))
@@ -217,4 +240,53 @@ contract TaxToken {
         return allowed[_owner][_spender];
     }
     
+<<<<<<< Updated upstream
+=======
+    // ~ TaxType & Fee Management ~
+
+    function updateSenderTaxType(address _sender, uint _taxType) public onlyOwner {
+        require(_taxType < 3);
+        senderTaxType[_sender] = _taxType;
+    }
+
+    function updateReceiverTaxType(address _receiver, uint _taxType) public onlyOwner {
+        require(_taxType < 3);
+        receiverTaxType[_receiver] = _taxType;
+    }
+
+    function adjustBasisPointsTax(uint _taxType, uint _bpt) public onlyOwner {
+        basisPointsTax[_taxType] = _bpt;
+        // TODO: constrict range, _bpt <= 10000
+        // TODO: update in Treasury the division (100000 => 10000)
+    }
+
+    function permanentlyRemoveTaxes() public onlyOwner {
+        // TODO: Reduce taxType 0/1/2/ down to 0
+        // TODO: transferOwnership to address(0)
+    }
+
+
+    // ~ Admin ~
+
+    function transferOwnership(address _owner) public onlyOwner {
+        owner = _owner;
+    }
+
+    function setTreasury(address _treasury) public onlyOwner {
+        require(!treasurySet);
+        treasury = _treasury;
+        treasurySet = true;
+    }
+
+    function modifyWhitelist() public onlyOwner {
+        // TODO: Some checks if they are currently on Blacklist.
+    }
+
+    function modifyBlacklist(address _wallet, bool _blacklist) public onlyOwner {
+        // TODO: Some checks if they are currently on Whitelist.
+        isBlacklisted[_wallet] = _blacklist;
+    }
+
+
+>>>>>>> Stashed changes
 }
