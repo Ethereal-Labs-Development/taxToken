@@ -92,4 +92,20 @@ contract TaxTokenTest is Utility {
 
     }
 
+    // ~ Blacklist Testing ~
+
+    // This tests blacklisting of the receiver
+    function testFail_blacklist_receiver() public {
+        taxToken.transfer(address(32), 1 ether);
+        taxToken.modifyBlacklist(address(32), true);
+        taxToken.transfer(address(32), 1 ether);
+    }
+
+    // This tests blacklisting of the sender
+    function testFail_blacklist_sender() public {
+        taxToken.transfer(address(32), 1 ether);
+        taxToken.modifyBlacklist(address(this), true);
+        taxToken.transfer(address(32), 1 ether);
+    }
+
 }

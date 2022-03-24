@@ -29,7 +29,8 @@ contract TaxToken {
     mapping(address => mapping(address => uint256)) allowed;    // Track allowances. TODO: Consider if rename to allowances().
 
     // Extras Mappings
-    mapping(address => bool) whitelist;         // Any transfer that involves a whitelisted address, will not incur a tax.
+    mapping(address => bool) public isBlacklisted;     // If an address is blacklisted, they cannot transact
+    mapping(address => bool) public whitelist;         // Any transfer that involves a whitelisted address, will not incur a tax.
     mapping(address => uint) senderTaxType;     // Identifies tax type for msg.sender of transfer() call.
     mapping(address => uint) receiverTaxType;   // Identifies tax type for _to of transfer() call.
     mapping(uint => uint) basisPointsTax;       // Mapping between taxType and basisPoints (taxed).
@@ -144,7 +145,7 @@ contract TaxToken {
  
     function transfer(address _to, uint256 _amount) public whenNotPaused returns (bool success) {   
 
-        // TODO: Check for blacklist msg.sender / _to.
+        require(!isBlacklisted[msg.sender] && !isBlacklisted[_to], "ERROR: Sender or Receiver is blacklisted");
 
         // Tax Type 0 => Xfer Tax (10%) => 10% (1wallets, marketing)
         // Tax Type 1 => Buy Tax (12%) => 6%/6% (2wallets, use/marketing))
@@ -219,6 +220,7 @@ contract TaxToken {
     }
  
     function transferFrom(address _from, address _to, uint256 _amount) public whenNotPaused returns (bool success) {
+        require(!isBlacklisted[msg.sender] && !isBlacklisted[_to], "ERROR: Sender or Receiver is blacklisted");
         if (balances[_from] >= _amount && allowed[_from][msg.sender] >= _amount && _amount > 0 && balances[_to] + _amount > balances[_to]) {
             balances[_from] -= _amount;
             balances[_to] += _amount;
@@ -295,11 +297,11 @@ contract TaxToken {
     }
 
     function modifyWhitelist() public onlyOwner {
-        // TODO: Some checks if they are currently on Blacklist.
+
     }
 
-    function modifyBlacklist() public onlyOwner {
-        // TODO: Some checks if they are currently on Whitelist.
+    function modifyBlacklist(address _wallet, bool _blacklist) public onlyOwner {
+        isBlacklisted[_wallet] = _blacklist;
     }
 
 
