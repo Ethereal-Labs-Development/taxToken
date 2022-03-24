@@ -3,38 +3,32 @@ pragma solidity ^0.8.6;
 
 import "../lib/ds-test/src/test.sol";
 import "./Utility.sol";
-
-// Import sol file
 import "./TaxToken.sol";
 import "./Treasury.sol";
 
-// Import interface.
 import { IERC20 } from "./interfaces/ERC20.sol";
 
 contract TaxTokenTest is Utility {
 
-    // State variable for contract.
     TaxToken taxToken;
     Treasury treasury;
 
-    // Deploy token, specify input params.
-    // setUp() runs before every tests conduct.
+    // setUp() runs before every single test-case.
+    // Each test case uses a new/initial state each time based on actions here.
     function setUp() public {
+
+        // taxToken constructor
         taxToken = new TaxToken(
-            1000 ether,
-            'Darpa',
-            'DRPK',
-            18,
-            address(this)
+            1000 ether,                 // Initial liquidity
+            'Darpa',                    // Name of token.
+            'DRPK',                     // Symbol of token.
+            18,                         // Precision of decimals.
+            address(this)               // The "owner" / "admin" of the contract.
         );
-
-        treasury = new Treasury(
-            address(this), address(taxToken)
-        );
-
-        taxToken.setTreasury(address(treasury));
 
         // TODO: Instantiate the tax basis rates for Type 0, 1, and 2.
+        treasury = new Treasury(address(this), address(taxToken));
+        taxToken.setTreasury(address(treasury));
         taxToken.adjustBasisPointsTax(0, 10000); // 10.00 %
     }
 
@@ -43,6 +37,7 @@ contract TaxTokenTest is Utility {
         taxToken.transfer(address(0), 1 ether);
     }
 
+    // Test initial state of state variables.
     function test_simple_stateVariables() public {
         assertEq(1000 ether, taxToken.totalSupply());
         assertEq('Darpa', taxToken.name());
@@ -52,6 +47,7 @@ contract TaxTokenTest is Utility {
         assertEq(taxToken.treasury(), address(treasury));
     }
 
+    // Test onlyOwner() modifier, confirm one function fails when caller is not msg.sender.
     function testFail_simple_owner_modifer() public {
         assertEq(address(this), taxToken.owner());
         taxToken.transferOwnership(
@@ -62,6 +58,7 @@ contract TaxTokenTest is Utility {
         );
     }
 
+    // Test transferOwnership().
     function test_simple_ownership_change() public {
         assertEq(address(this), taxToken.owner());
         taxToken.transferOwnership(
@@ -73,7 +70,26 @@ contract TaxTokenTest is Utility {
         );
     }
 
-    // 10% Tax on Transactions
-    // Transfer between any two wallets.
-    // Buy, sell from liquidity pool.
+
+    // ~ ERC20 Pausable Tests ~
+
+    // This tests is it's not possible to call transfer() when the contract is "paused".
+    function testFail_pause_transfer() public {
+        taxToken.pause();
+        taxToken.transfer(address(42), 1 ether);
+    }
+    
+    // This tests if contract is "paused" or "unpaused" after admin calls the pause() or unpause() functions.
+    function test_pause_unpause() public {
+
+        assert(!taxToken.paused());     // Initial state of contract is "not paused"
+
+        taxToken.pause();
+        assert(taxToken.paused());
+
+        taxToken.unpause();
+        assert(!taxToken.paused());
+
+    }
+
 }
