@@ -37,6 +37,7 @@ contract TaxToken {
     // TODO: Add-in blacklist.
     
 
+
     // -----------
     // Constructor
     // -----------
@@ -61,6 +62,8 @@ contract TaxToken {
         balances[msg.sender] = totalSupplyInput;    // Initial liquidity, allocated entirely to "owner". 
         adminWallet = adminWalletInput;             // TODO: Identify what this variable is used for. Remove if unnecessary.
     }
+
+
  
     // ---------
     // Modifiers
@@ -84,85 +87,33 @@ contract TaxToken {
        _;   //_; acts as a "continue after this" specifically for modifiers
     }
 
+
+
     // ------
     // Events
     // ------
 
-    event LogUint(string s, uint u);       /// @notice This is a logging function for HEVM testing.
-    event LogAddy(string s, address a);    /// @notice This is a logging function for HEVM testing.
-
-    event Paused(address account);      /// @dev Emitted when the pause is triggered by `account`.
-    event Unpaused(address account);    /// @dev Emitted when the pause is lifted by `account`.
+    event LogUint(string s, uint u);        /// @notice This is a logging function for HEVM testing.
+    event LogAddy(string s, address a);     /// @notice This is a logging function for HEVM testing.
+    event Paused(address account);          /// @dev Emitted when the pause is triggered by `account`.
+    event Unpaused(address account);        /// @dev Emitted when the pause is lifted by `account`.
 
     /// @dev Emitted when approve() is called.
     event Approval(address indexed _owner, address indexed _spender, uint256 _value);   
  
-    /// @dev Emitted upon transfer of tokens.
+    /// @dev Emitted during transfer() or transferFrom().
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
     event TransferTax(address indexed _from, address indexed _to, uint256 _value, uint256 _taxType);
 
+
+
+    // ---------
+    // Functions
+    // ---------
+
+
+    // ~ ERC20 View ~
     
-    /// @notice Pause the contract, blocks transfer() and transferFrom().
-    /// @dev Contract must be paused to call this, caller must be "owner".
-    function pause() public onlyOwner whenNotPaused {
-        _paused = true;
-        emit Paused(msg.sender);
-    }
-
-    /// @notice Unpause the contract.
-    function unpause() public onlyOwner whenPaused {
-        _paused = false;
-        emit Unpaused(msg.sender);
-    }
-
-    /// @return _paused Indicates whether the contract is paused (true) or not (false).
-    function paused() public view virtual returns (bool) {
-        return _paused;
-    }
-
-    function setTreasury(address _treasury) public onlyOwner {
-        require(!treasurySet);
-        treasury = _treasury;
-        treasurySet = true;
-    }
-
-    function updateSenderTaxType(address _sender, uint _taxType) public onlyOwner {
-        require(_taxType < 3);
-        senderTaxType[_sender] = _taxType;
-    }
-
-    function updateReceiverTaxType(address _receiver, uint _taxType) public onlyOwner {
-        require(_taxType < 3);
-        receiverTaxType[_receiver] = _taxType;
-    }
-
-    function adjustBasisPointsTax(uint _taxType, uint _bpt) public onlyOwner {
-        basisPointsTax[_taxType] = _bpt;
-        // TODO: constrict range, _bpt <= 10000
-        // TODO: update in Treasury the division (100000 => 10000)
-    }
-
-    function transferOwnership(address _owner) public onlyOwner {
-        //_ for parameter input for functions, and non for variables
-        owner = _owner;
-    }
-
-
-    // TODO: Implement functions below.
-    
-    function permanentlyRemoveTaxes() public onlyOwner {
-        // TODO: Reduce taxType 0/1/2/ down to 0
-        // TODO: transferOwnership to address(0)
-    }
-
-    function modifyWhitelist() public onlyOwner {
-        // TODO: Some checks if they are currently on Blacklist.
-    }
-
-    function modifyBlacklist() public onlyOwner {
-        // TODO: Some checks if they are currently on Whitelist.
-    }
-
     function name() public view returns (string memory) {
         return _name;
     }
@@ -183,15 +134,15 @@ contract TaxToken {
         return balances[_owner];
     }
  
+    // ~ ERC20 transfer(), transferFrom(), approve() ~
+
     function approve(address _spender, uint256 _amount) public returns (bool success) {
         allowed[msg.sender][_spender] = _amount;
         emit Approval(msg.sender, _spender, _amount);
         return true;
     }
  
-    // transfer function
-    function transfer(address _to, uint256 _amount) public whenNotPaused returns (bool success)
-    {   
+    function transfer(address _to, uint256 _amount) public whenNotPaused returns (bool success) {   
 
         // TODO: Check for blacklist msg.sender / _to.
 
@@ -278,9 +229,78 @@ contract TaxToken {
             return false;
         }
     }
- 
+    
+    // TODO: Consider if this is even needed, or if newer standard is appropriate?
     function allowance(address _owner, address _spender) public view returns (uint256 remaining) {
         return allowed[_owner][_spender];
     }
+
+
+    // ~ ERC20 Pausable ~
+
+    /// @notice Pause the contract, blocks transfer() and transferFrom().
+    /// @dev Contract MUST NOT be paused to call this, caller must be "owner".
+    function pause() public onlyOwner whenNotPaused {
+        _paused = true;
+        emit Paused(msg.sender);
+    }
+
+    /// @notice Unpause the contract.
+    /// @dev Contract MUST be puased to call this, caller must be "owner".
+    function unpause() public onlyOwner whenPaused {
+        _paused = false;
+        emit Unpaused(msg.sender);
+    }
+
+    /// @return _paused Indicates whether the contract is paused (true) or not (false).
+    function paused() public view virtual returns (bool) {
+        return _paused;
+    }
+
     
+    // ~ TaxType & Fee Management ~
+
+    function updateSenderTaxType(address _sender, uint _taxType) public onlyOwner {
+        require(_taxType < 3);
+        senderTaxType[_sender] = _taxType;
+    }
+
+    function updateReceiverTaxType(address _receiver, uint _taxType) public onlyOwner {
+        require(_taxType < 3);
+        receiverTaxType[_receiver] = _taxType;
+    }
+
+    function adjustBasisPointsTax(uint _taxType, uint _bpt) public onlyOwner {
+        basisPointsTax[_taxType] = _bpt;
+        // TODO: constrict range, _bpt <= 10000
+        // TODO: update in Treasury the division (100000 => 10000)
+    }
+
+    function permanentlyRemoveTaxes() public onlyOwner {
+        // TODO: Reduce taxType 0/1/2/ down to 0
+        // TODO: transferOwnership to address(0)
+    }
+
+
+    // ~ Admin ~
+
+    function transferOwnership(address _owner) public onlyOwner {
+        owner = _owner;
+    }
+
+    function setTreasury(address _treasury) public onlyOwner {
+        require(!treasurySet);
+        treasury = _treasury;
+        treasurySet = true;
+    }
+
+    function modifyWhitelist() public onlyOwner {
+        // TODO: Some checks if they are currently on Blacklist.
+    }
+
+    function modifyBlacklist() public onlyOwner {
+        // TODO: Some checks if they are currently on Whitelist.
+    }
+
+
 }
