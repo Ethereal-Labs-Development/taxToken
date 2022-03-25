@@ -70,6 +70,20 @@ contract TaxTokenTest is Utility {
         );
     }
 
+    // Test permanentlyRemoveTaxes() fail case, where input != 42.
+    function testFail_remove_taxes_permanently() public {
+        taxToken.permanentlyRemoveTaxes(41);
+    }
+
+    // Test permanentlyRemoveTaxes() success case, taxes are 0 for the 3 explicit tax types (0, 1, 2).
+    function test_remove_taxes_permanently() public {
+        taxToken.permanentlyRemoveTaxes(42);
+        assertEq(taxToken.basisPointsTax(0), 0);
+        assertEq(taxToken.basisPointsTax(1), 0);
+        assertEq(taxToken.basisPointsTax(2), 0);
+        assertEq(taxToken.owner(), address(0));
+    }
+
 
     // ~ ERC20 Pausable Tests ~
 
