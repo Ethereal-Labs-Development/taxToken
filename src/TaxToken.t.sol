@@ -81,7 +81,12 @@ contract TaxTokenTest is Utility {
         assertEq(taxToken.basisPointsTax(0), 0);
         assertEq(taxToken.basisPointsTax(1), 0);
         assertEq(taxToken.basisPointsTax(2), 0);
-        assertEq(taxToken.owner(), address(0));
+    }
+
+    // Test permanentlyRemoveTaxes() that it is impossible to call adjustBasisPoints() afterwards.
+    function testFail_remove_taxes_adjust() public {
+        taxToken.permanentlyRemoveTaxes(42);
+        taxToken.adjustBasisPointsTax(0, 1000);
     }
 
 

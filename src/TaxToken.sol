@@ -5,9 +5,9 @@ import { ITreasury } from "./interfaces/ERC20.sol";
 
 contract TaxToken {
  
-    // ---------
+    // ---------------
     // State Variables
-    // ---------
+    // ---------------
 
     // ERC20 Basic
     uint256 _totalSupply;
@@ -23,6 +23,7 @@ contract TaxToken {
     address public adminWallet;
     address public treasury;
     bool public treasurySet;
+    bool public taxesRemoved;   // Once true, taxes are permanently set to 0 and CAN NOT be increased in the future.
 
     // ERC20 Mappings
     mapping(address => uint256) balances;                       // Track balances.
@@ -273,6 +274,7 @@ contract TaxToken {
 
     function adjustBasisPointsTax(uint _taxType, uint _bpt) public onlyOwner {
         require(_bpt <= 10000, "err TaxToken.sol _bpt > 10000");
+        require(!taxesRemoved, "err TaxToken.sol taxation has been removed");
         basisPointsTax[_taxType] = _bpt;
     }
 
@@ -283,7 +285,7 @@ contract TaxToken {
         basisPointsTax[0] = 0;
         basisPointsTax[1] = 0;
         basisPointsTax[2] = 0;
-        transferOwnership(address(0));
+        taxesRemoved = true;
     }
 
 
