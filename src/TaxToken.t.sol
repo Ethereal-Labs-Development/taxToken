@@ -77,7 +77,7 @@ contract TaxTokenTest is Utility {
 
     // Test permanentlyRemoveTaxes() success case, taxes are 0 for the 3 explicit tax types (0, 1, 2).
     function test_remove_taxes_permanently() public {
-        taxToken.permanentlyRemoveTaxes(42);
+        taxToken.permanentlyRemoveTaxes(41);
         assertEq(taxToken.basisPointsTax(0), 0);
         assertEq(taxToken.basisPointsTax(1), 0);
         assertEq(taxToken.basisPointsTax(2), 0);
