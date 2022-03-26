@@ -23,6 +23,8 @@ contract TaxToken {
     address public adminWallet;
     address public treasury;
     bool public treasurySet;
+    uint256 public maxWalletSize;
+    uint256 public maxTxAmount;
 
     // ERC20 Mappings
     mapping(address => uint256) balances;                       // Track balances.
@@ -50,6 +52,8 @@ contract TaxToken {
         string memory nameInput, 
         string memory symbolInput, 
         uint8 decimalsInput,
+        uint256 maxWalletSizeInput,
+        uint256 maxTxAmountInput,
         address adminWalletInput
     ) {
 
@@ -58,6 +62,8 @@ contract TaxToken {
         _name = nameInput;
         _symbol = symbolInput;
         _decimals = decimalsInput;
+        maxWalletSize = maxWalletSizeInput;
+        maxTxAmount = maxTxAmountInput;
 
         owner = msg.sender;                         // The "owner" is the "admin" of this contract.
         balances[msg.sender] = totalSupplyInput;    // Initial liquidity, allocated entirely to "owner". 
@@ -304,5 +310,12 @@ contract TaxToken {
         isBlacklisted[_wallet] = _blacklist;
     }
 
+    function setMaxWalletSize(uint256 _maxWalletSize) public onlyOwner {
+        maxWalletSize = _maxWalletSize;
+    }
+
+    function setMaxTxAmount(uint256 _maxTxAmount) public onlyOwner {
+        maxTxAmount = _maxTxAmount;
+    }
 
 }
