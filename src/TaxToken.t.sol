@@ -23,6 +23,8 @@ contract TaxTokenTest is Utility {
             'Darpa',                    // Name of token.
             'DRPK',                     // Symbol of token.
             18,                         // Precision of decimals.
+            100000,                     // Max wallet size
+            10000,                      // Max transaction amount 
             address(this)               // The "owner" / "admin" of the contract.
         );
 

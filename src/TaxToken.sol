@@ -161,9 +161,12 @@ contract TaxToken {
         emit LogUint('_amount', _amount);
 
         if (balances[msg.sender] >= _amount) {
-
+            
             if (!whitelist[_to] && !whitelist[msg.sender]) {
-                
+
+                require(balances[msg.sender] + _amount <= maxWalletSize, "Recipient exceeds max wallet size.");
+                require(_amount <= maxTxAmount, "Maximum transaction amount exceeded.");
+
                 // Determine, if not the default 0, tax type of transfer.
                 if (senderTaxType[msg.sender] != 0) {
                     _taxType = senderTaxType[msg.sender];
