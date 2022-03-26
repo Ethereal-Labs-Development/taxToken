@@ -53,9 +53,9 @@ contract TaxToken {
         string memory nameInput, 
         string memory symbolInput, 
         uint8 decimalsInput,
-        uint256 maxWalletSizeInput,
-        uint256 maxTxAmountInput,
-        address adminWalletInput
+        uint256 maxWalletSizeInput,                 // NOTE: correct decimal multiplation occurs in constructor 
+        uint256 maxTxAmountInput,                   // for both maxWalletSize and maxTxAmount just input the desired non decimal multiple number
+        address adminWalletInput                    // ie: 1000 tokens instead of 1000 * 10**Decimal 
     ) {
 
         _paused = false;                            // ERC20 Pausable global state variable, initial state is not paused ("unpaused").
@@ -63,8 +63,8 @@ contract TaxToken {
         _name = nameInput;
         _symbol = symbolInput;
         _decimals = decimalsInput;
-        maxWalletSize = maxWalletSizeInput;
-        maxTxAmount = maxTxAmountInput;
+        maxWalletSize = (maxWalletSizeInput * 10**_decimals);
+        maxTxAmount = (maxTxAmountInput * 10**_decimals);       
 
         owner = msg.sender;                         // The "owner" is the "admin" of this contract.
         balances[msg.sender] = totalSupplyInput;    // Initial liquidity, allocated entirely to "owner". 
