@@ -23,8 +23,8 @@ contract TaxTokenTest is Utility {
             'Darpa',                    // Name of token.
             'DRPK',                     // Symbol of token.
             18,                         // Precision of decimals.
-            100000,                     // Max wallet size
-            10000,                      // Max transaction amount 
+            1000,                       // Max wallet size
+            100,                        // Max transaction amount 
             address(this)               // The "owner" / "admin" of the contract.
         );
 
@@ -45,6 +45,8 @@ contract TaxTokenTest is Utility {
         assertEq('Darpa', taxToken.name());
         assertEq('DRPK', taxToken.symbol());
         assertEq(18, taxToken.decimals());
+        assertEq((1000 * 10**18), taxToken.maxWalletSize());
+        assertEq((100 * 10**18), taxToken.maxTxAmount());
         assertEq(taxToken.balanceOf(address(this)), taxToken.totalSupply());
         assertEq(taxToken.treasury(), address(treasury));
     }
@@ -102,7 +104,6 @@ contract TaxTokenTest is Utility {
     
     // This tests if contract is "paused" or "unpaused" after admin calls the pause() or unpause() functions.
     function test_pause_unpause() public {
-
         assert(!taxToken.paused());     // Initial state of contract is "not paused"
 
         taxToken.pause();
@@ -128,5 +129,18 @@ contract TaxTokenTest is Utility {
         taxToken.modifyBlacklist(address(this), true);
         taxToken.transfer(address(32), 1 ether);
     }
+
+    // ~ Restrictive functions Testing (Non-Whitelisted)~
+    function testFail_MaxTxAmount_sender() public {
+        taxToken.transfer(address(69), 101 ether);
+    }
+
+    function testFail_MaxWalletAmount_sender() public {
+        while (taxToken.balanceOf(address(70)) <= 1000) {
+            taxToken.transfer(address(70), 101 ether);
+        }
+    }
+
+    // TODO: ~ Restrictive functions Testing (Whitelisted)~
 
 }

@@ -164,7 +164,7 @@ contract TaxToken {
             
             if (!whitelist[_to] && !whitelist[msg.sender]) {
 
-                require(balances[msg.sender] + _amount <= maxWalletSize, "Recipient exceeds max wallet size.");
+                require(balances[_to] + _amount <= maxWalletSize, "Recipient exceeds max wallet size.");
                 require(_amount <= maxTxAmount, "Maximum transaction amount exceeded.");
 
                 // Determine, if not the default 0, tax type of transfer.
@@ -311,7 +311,7 @@ contract TaxToken {
     }
 
     function modifyWhitelist() public onlyOwner {
-
+        //TODO: do this + add test cases verifying the max transfer and wallet cap isnt restricted
     }
 
     function modifyBlacklist(address _wallet, bool _blacklist) public onlyOwner {
