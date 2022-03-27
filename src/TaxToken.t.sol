@@ -135,4 +135,11 @@ contract TaxTokenTest is Utility {
         taxToken.transfer(address(69), 1 ether);
     }
 
+    //
+    function test_whitelist_balance() public {
+        taxToken.modifyWhitelist(address(69), true);
+        taxToken.transfer(address(69), 1 ether);
+        assertEq(taxToken.balanceOf(address(69)), 1 ether);
+    }
+
 }

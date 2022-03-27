@@ -98,7 +98,7 @@ contract TaxToken {
     event LogAddy(string s, address a);     /// @notice This is a logging function for HEVM testing.
     event Paused(address account);          /// @dev Emitted when the pause is triggered by `account`.
     event Unpaused(address account);        /// @dev Emitted when the pause is lifted by `account`.
-    event LogString(string s);
+    event LogString(string s);              /// @notice This is used to log basic strings for HEVM testing.
 
     /// @dev Emitted when approve() is called.
     event Approval(address indexed _owner, address indexed _spender, uint256 _value);   
@@ -311,8 +311,5 @@ contract TaxToken {
     function modifyBlacklist(address _wallet, bool _blacklist) public onlyOwner {
         isBlacklisted[_wallet] = _blacklist;
     }
-
     
-
-
 }
