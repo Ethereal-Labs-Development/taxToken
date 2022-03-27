@@ -135,7 +135,7 @@ contract TaxTokenTest is Utility {
         taxToken.transfer(address(69), 1 ether);
     }
 
-    //
+    // This tests once a whitelisted wallet calls a transfer, they receive the full amount of tokens
     function test_whitelist_balance() public {
         taxToken.modifyWhitelist(address(69), true);
         taxToken.transfer(address(69), 1 ether);
