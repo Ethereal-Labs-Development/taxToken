@@ -142,5 +142,13 @@ contract TaxTokenTest is Utility {
     }
 
     // TODO: ~ Restrictive functions Testing (Whitelisted)~
+    //function test_WLMaxTxAmount_sender() public {
+    //    taxToken.transfer(address(69), 101 ether);
+    //}
 
+    //function test_WLMaxWalletAmount_sender() public {
+    //    while (taxToken.balanceOf(address(70)) <= 1000) {
+    //        taxToken.transfer(address(70), 101 ether);
+    //    }
+    //}
 }
