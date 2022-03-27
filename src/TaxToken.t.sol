@@ -24,8 +24,7 @@ contract TaxTokenTest is Utility {
             'DRPK',                     // Symbol of token.
             18,                         // Precision of decimals.
             1000,                       // Max wallet size
-            100,                        // Max transaction amount 
-            address(this)               // The "owner" / "admin" of the contract.
+            100                         // Max transaction amount 
         );
 
         // TODO: Instantiate the tax basis rates for Type 0, 1, and 2.
@@ -137,7 +136,7 @@ contract TaxTokenTest is Utility {
 
     function testFail_MaxWalletAmount_sender() public {
         while (taxToken.balanceOf(address(70)) <= 1000) {
-            taxToken.transfer(address(70), 101 ether);
+            taxToken.transfer(address(70), 10 ether);
         }
     }
 

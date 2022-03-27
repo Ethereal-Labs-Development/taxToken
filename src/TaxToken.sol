@@ -54,8 +54,8 @@ contract TaxToken {
         string memory symbolInput, 
         uint8 decimalsInput,
         uint256 maxWalletSizeInput,                 // NOTE: correct decimal multiplation occurs in constructor 
-        uint256 maxTxAmountInput,                   // for both maxWalletSize and maxTxAmount just input the desired non decimal multiple number
-        address adminWalletInput                    // ie: 1000 tokens instead of 1000 * 10**Decimal 
+        uint256 maxTxAmountInput                    // for both maxWalletSize and maxTxAmount just input the desired non decimal multiple number
+                                                    // ie: 1000 tokens instead of 1000 * 10**Decimal
     ) {
 
         _paused = false;                            // ERC20 Pausable global state variable, initial state is not paused ("unpaused").
@@ -230,6 +230,12 @@ contract TaxToken {
  
     function transferFrom(address _from, address _to, uint256 _amount) public whenNotPaused returns (bool success) {
         require(!isBlacklisted[msg.sender] && !isBlacklisted[_to], "ERROR: Sender or Receiver is blacklisted");
+
+        //if (!whitelist[_to] && !whitelist[msg.sender]) {
+        require(balances[_to] + _amount <= maxWalletSize, "Recipient exceeds max wallet size.");
+        require(_amount <= maxTxAmount, "Maximum transaction amount exceeded.");
+        //}
+
         if (balances[_from] >= _amount && allowed[_from][msg.sender] >= _amount && _amount > 0 && balances[_to] + _amount > balances[_to]) {
             balances[_from] -= _amount;
             balances[_to] += _amount;

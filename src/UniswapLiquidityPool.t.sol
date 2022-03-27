@@ -29,8 +29,7 @@ contract TaxTokenTest is Utility {
             'DRPK',                     // Symbol of token.
             18,                         // Precision of decimals.
             1000,                       // Max wallet size
-            100,                        // Max transaction amount 
-            address(this)               // The "owner" / "admin" of the contract.
+            100                         // Max transaction amount 
         );
         treasury = new Treasury(
             address(this), address(taxToken)
