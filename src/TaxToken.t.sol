@@ -19,18 +19,18 @@ contract TaxTokenTest is Utility {
 
         // taxToken constructor
         taxToken = new TaxToken(
-            1000 ether,                 // Initial liquidity
+            1000 ether,                // Initial liquidity
             'Darpa',                    // Name of token.
             'DRPK',                     // Symbol of token.
             18,                         // Precision of decimals.
-            1000,                       // Max wallet size
-            100                         // Max transaction amount 
+            100,                       // Max wallet size
+            10                         // Max transaction amount 
         );
 
         // TODO: Instantiate the tax basis rates for Type 0, 1, and 2.
         treasury = new Treasury(address(this), address(taxToken));
         taxToken.setTreasury(address(treasury));
-        taxToken.adjustBasisPointsTax(0, 10000); // 10.00 %
+        taxToken.adjustBasisPointsTax(0, 1000); // 10.00 %
     }
 
     // TODO: Add more specific test-cases (pre-state / post-state).
@@ -44,8 +44,8 @@ contract TaxTokenTest is Utility {
         assertEq('Darpa', taxToken.name());
         assertEq('DRPK', taxToken.symbol());
         assertEq(18, taxToken.decimals());
-        assertEq((1000 * 10**18), taxToken.maxWalletSize());
-        assertEq((100 * 10**18), taxToken.maxTxAmount());
+        assertEq((100 * 10**18), taxToken.maxWalletSize());
+        assertEq((10 * 10**18), taxToken.maxTxAmount());
         assertEq(taxToken.balanceOf(address(this)), taxToken.totalSupply());
         assertEq(taxToken.treasury(), address(treasury));
     }
@@ -130,14 +130,24 @@ contract TaxTokenTest is Utility {
     }
 
     // ~ Restrictive functions Testing (Non-Whitelisted)~
-    function testFail_MaxTxAmount_sender() public {
-        taxToken.transfer(address(69), 101 ether);
+    function test_MaxTxAmount_sender() public {
+        assert(!taxToken.transfer(address(69), 11 ether));
     }
 
-    function testFail_MaxWalletAmount_sender() public {
-        while (taxToken.balanceOf(address(70)) <= 1000) {
-            taxToken.transfer(address(70), 10 ether);
-        }
+    function test_MaxWalletAmount_sender() public {
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        assert(!taxToken.transfer(address(70), 10 ether));
+
     }
 
     // TODO: ~ Restrictive functions Testing (Whitelisted)~

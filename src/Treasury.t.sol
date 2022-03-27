@@ -26,8 +26,8 @@ contract TaxTokenTest is Utility {
             'Darpa',                    // Name of token.
             'DRPK',                     // Symbol of token.
             18,                         // Precision of decimals.
-            1000,                       // Max wallet size
-            100                        // Max transaction amount 
+            100,                       // Max wallet size
+            10                        // Max transaction amount 
         );
 
         treasury = new Treasury(
@@ -37,7 +37,7 @@ contract TaxTokenTest is Utility {
         taxToken.setTreasury(address(treasury));
 
         // TODO: Instantiate the tax basis rates for Type 0, 1, and 2.
-        taxToken.adjustBasisPointsTax(0, 10000); // 10.00 %
+        taxToken.adjustBasisPointsTax(0, 1000); // 10.00 %
     }
 
 }
