@@ -5,9 +5,9 @@ import { ITreasury } from "./interfaces/ERC20.sol";
 
 contract TaxToken {
  
-    // ---------
+    // ---------------
     // State Variables
-    // ---------
+    // ---------------
 
     // ERC20 Basic
     uint256 _totalSupply;
@@ -23,6 +23,7 @@ contract TaxToken {
     address public adminWallet;
     address public treasury;
     bool public treasurySet;
+    bool public taxesRemoved;   // Once true, taxes are permanently set to 0 and CAN NOT be increased in the future.
 
     // ERC20 Mappings
     mapping(address => uint256) balances;                       // Track balances.
@@ -33,7 +34,7 @@ contract TaxToken {
     mapping(address => bool) public whitelist;         // Any transfer that involves a whitelisted address, will not incur a tax.
     mapping(address => uint) senderTaxType;     // Identifies tax type for msg.sender of transfer() call.
     mapping(address => uint) receiverTaxType;   // Identifies tax type for _to of transfer() call.
-    mapping(uint => uint) basisPointsTax;       // Mapping between taxType and basisPoints (taxed).
+    mapping(uint => uint) public basisPointsTax;       // Mapping between taxType and basisPoints (taxed).
 
     // TODO: Add-in blacklist.
     
@@ -61,7 +62,6 @@ contract TaxToken {
 
         owner = msg.sender;                         // The "owner" is the "admin" of this contract.
         balances[msg.sender] = totalSupplyInput;    // Initial liquidity, allocated entirely to "owner". 
-        adminWallet = adminWalletInput;             // TODO: Identify what this variable is used for. Remove if unnecessary.
     }
 
 
@@ -85,7 +85,7 @@ contract TaxToken {
     /// @dev onlyOwner() is used if msg.sender MUST be owner.
     modifier onlyOwner {
        require(msg.sender == owner, "ERR: TaxToken.sol, onlyOwner()"); 
-       _;   //_; acts as a "continue after this" specifically for modifiers
+       _;
     }
 
 
@@ -168,8 +168,8 @@ contract TaxToken {
                 }
 
                 // Calculate taxAmt and sendAmt
-                uint _taxAmt = _amount * basisPointsTax[_taxType] / 100000;
-                uint _sendAmt = _amount * (100000 - basisPointsTax[_taxType]) / 100000;
+                uint _taxAmt = _amount * basisPointsTax[_taxType] / 10000;
+                uint _sendAmt = _amount * (10000 - basisPointsTax[_taxType]) / 10000;
 
                 emit LogUint('_taxAmt', _taxAmt);
                 emit LogUint('_sendAmt', _sendAmt);
@@ -202,8 +202,8 @@ contract TaxToken {
                 
                 emit Transfer(msg.sender, _to, _sendAmt);
                 emit TransferTax(msg.sender, treasury, _taxAmt, _taxType);
-                return true;
 
+                return true;
             }
 
             else {
@@ -273,14 +273,19 @@ contract TaxToken {
     }
 
     function adjustBasisPointsTax(uint _taxType, uint _bpt) public onlyOwner {
+        require(_bpt <= 10000, "err TaxToken.sol _bpt > 10000");
+        require(!taxesRemoved, "err TaxToken.sol taxation has been removed");
         basisPointsTax[_taxType] = _bpt;
-        // TODO: constrict range, _bpt <= 10000
-        // TODO: update in Treasury the division (100000 => 10000)
     }
 
-    function permanentlyRemoveTaxes() public onlyOwner {
-        // TODO: Reduce taxType 0/1/2/ down to 0
-        // TODO: transferOwnership to address(0)
+    /// @dev An input is required here for sanity-check, given importance of this function call (and irreversible nature).
+    /// @param _key This value MUST equal 42 for function to execute.
+    function permanentlyRemoveTaxes(uint _key) public onlyOwner {
+        require(_key == 42, "err TaxToken.sol _key != 42");
+        basisPointsTax[0] = 0;
+        basisPointsTax[1] = 0;
+        basisPointsTax[2] = 0;
+        taxesRemoved = true;
     }
 
 
