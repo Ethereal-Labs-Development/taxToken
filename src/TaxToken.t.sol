@@ -130,10 +130,13 @@ contract TaxTokenTest is Utility {
     }
 
     // ~ Restrictive functions Testing (Non-Whitelisted)~
+    // Test a transfer amount greater than the maxTxAmount - Expected return: False
     function test_MaxTxAmount_sender() public {
         assert(!taxToken.transfer(address(69), 11 ether));
     }
 
+    // TODO: Figure out how to use a while loop lol
+    // Test adding an amount greater than the maxWalletAmount - Expected return: False
     function test_MaxWalletAmount_sender() public {
         taxToken.transfer(address(70), 10 ether);
         taxToken.transfer(address(70), 10 ether);
@@ -147,7 +150,6 @@ contract TaxTokenTest is Utility {
         taxToken.transfer(address(70), 10 ether);
         taxToken.transfer(address(70), 10 ether);
         assert(!taxToken.transfer(address(70), 10 ether));
-
     }
 
     // TODO: ~ Restrictive functions Testing (Whitelisted)~
