@@ -127,4 +127,19 @@ contract TaxTokenTest is Utility {
         taxToken.transfer(address(32), 1 ether);
     }
 
+    // ~ Whitelist Testing ~
+
+    // This tests whether a transfer is taxed when the receiver is whitelisted
+    function test_whitelist_transfer() public {
+        taxToken.modifyWhitelist(address(69), true);
+        taxToken.transfer(address(69), 1 ether);
+    }
+
+    // This tests once a whitelisted wallet calls a transfer, they receive the full amount of tokens
+    function test_whitelist_balance() public {
+        taxToken.modifyWhitelist(address(69), true);
+        taxToken.transfer(address(69), 1 ether);
+        assertEq(taxToken.balanceOf(address(69)), 1 ether);
+    }
+
 }
