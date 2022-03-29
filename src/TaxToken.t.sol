@@ -23,6 +23,7 @@ contract TaxTokenTest is Utility {
             'Darpa',                    // Name of token.
             'DRPK',                     // Symbol of token.
             18,                         // Precision of decimals.
+            100,                        // Max wallet size
             10,                         // Max transaction amount 
             address(this)               // The "owner" / "admin" of the contract.
         );
@@ -30,7 +31,7 @@ contract TaxTokenTest is Utility {
         // TODO: Instantiate the tax basis rates for Type 0, 1, and 2.
         treasury = new Treasury(address(this), address(taxToken));
         taxToken.setTreasury(address(treasury));
-        taxToken.adjustBasisPointsTax(0, 10000); // 10.00 %
+        taxToken.adjustBasisPointsTax(0, 1000);   // 1000 = 10.00 %
     }
 
     // TODO: Add a better TaxType 0 test
@@ -44,6 +45,7 @@ contract TaxTokenTest is Utility {
         assertEq('Darpa', taxToken.name());
         assertEq('DRPK', taxToken.symbol());
         assertEq(18, taxToken.decimals());
+        assertEq((100 * 10**18), taxToken.maxWalletSize());
         assertEq((10 * 10**18), taxToken.maxTxAmount());
         assertEq(taxToken.balanceOf(address(this)), taxToken.totalSupply());
         assertEq(taxToken.treasury(), address(treasury));
@@ -145,17 +147,59 @@ contract TaxTokenTest is Utility {
     }
 
     // ~ Restrictive functions Testing (Non-Whitelisted)~
+    // Test changing maxWalletSize
+    function test_updateMaxWalletSize() public {
+        taxToken.updateMaxWalletSize(300);
+        assertEq((300 * 10**18), taxToken.maxWalletSize());
+
+    }
+
     // Test a transfer amount greater than the maxTxAmount NON Whitelisted - Expected return: False
     function test_MaxTxAmount_sender() public {
         taxToken.modifyWhitelist(address(70), false);
         assert(!taxToken.transfer(address(70), 11 ether));
     }
 
+    // Test adding an amount greater than the maxWalletAmount - Expected return: False
+    function test_MaxWalletAmount_sender() public {
+        taxToken.modifyWhitelist(address(70), false);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        assert(!taxToken.transfer(address(70), 10 ether));
+    }
+
+
     // ~ Restrictive functions Testing (Whitelisted)~
     // Test a transfer amount greater than the maxTxAmount Whitelisted - Expected return: True
     function test_WLMaxTxAmount_sender() public {
         taxToken.modifyWhitelist(address(70), true);
         assert(taxToken.transfer(address(70), 11 ether));
+    }
+
+        // Test adding an amount greater than the maxWalletAmount - Expected return: False
+    function test_WLMaxWalletAmount_sender() public {
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.transfer(address(70), 10 ether);
+        taxToken.modifyWhitelist(address(70), true);
+        assert(taxToken.transfer(address(70), 10 ether));
     }
 
 }

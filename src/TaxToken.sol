@@ -24,6 +24,7 @@ contract TaxToken {
     address public treasury;
     bool public treasurySet;
     bool public taxesRemoved;   // Once true, taxes are permanently set to 0 and CAN NOT be increased in the future.
+    uint256 public maxWalletSize;
     uint256 public maxTxAmount;
 
     // ERC20 Mappings
@@ -49,9 +50,10 @@ contract TaxToken {
         string memory nameInput, 
         string memory symbolInput, 
         uint8 decimalsInput,
-        uint256 maxTxAmountInput,                   // for maxTxAmount just input the desired non decimal multiple number - ie: 1000 tokens instead of 1000 * 10**Decimal
+        uint256 maxWalletSizeInput,                  // for MaxWalletSize and MaxTxAmount just input the desired non decimal multiple number -
+        uint256 maxTxAmountInput,                    // ie: 1000 tokens instead of 1000 * 10**Decimal
         address adminWalletInput
-        
+
     ) {
 
         _paused = false;                            // ERC20 Pausable global state variable, initial state is not paused ("unpaused").
@@ -62,6 +64,7 @@ contract TaxToken {
 
         owner = msg.sender;                         // The "owner" is the "admin" of this contract.
         balances[msg.sender] = totalSupplyInput;    // Initial liquidity, allocated entirely to "owner".
+        maxWalletSize = (maxWalletSizeInput * 10**_decimals);
         maxTxAmount = (maxTxAmountInput * 10**_decimals);      
     }
 
@@ -174,39 +177,42 @@ contract TaxToken {
                     uint _taxAmt = _amount * basisPointsTax[_taxType] / 10000;
                     uint _sendAmt = _amount * (10000 - basisPointsTax[_taxType]) / 10000;
 
-                    emit LogUint('_taxAmt', _taxAmt);
-                    emit LogUint('_sendAmt', _sendAmt);
-                    emit LogUint('_taxType', _taxType);
-                    emit LogUint('basisPointsTax[_taxType]', basisPointsTax[_taxType]);
+                    if (balances[_to] + _sendAmt <= maxWalletSize){
 
-                    // Pre-state logs.
-                    emit LogUint('pre_balances[msg.sender]', balances[msg.sender]);
-                    emit LogUint('pre_balances[_to]', balances[_to]);
-                    emit LogUint('pre_balances[treasury]', balances[treasury]);
+                        emit LogUint('_taxAmt', _taxAmt);
+                        emit LogUint('_sendAmt', _sendAmt);
+                        emit LogUint('_taxType', _taxType);
+                        emit LogUint('basisPointsTax[_taxType]', basisPointsTax[_taxType]);
 
-                    balances[msg.sender] -= _amount;
-                    balances[_to] += _sendAmt;
-                    balances[treasury] += _taxAmt;
+                        // Pre-state logs.
+                        emit LogUint('pre_balances[msg.sender]', balances[msg.sender]);
+                        emit LogUint('pre_balances[_to]', balances[_to]);
+                        emit LogUint('pre_balances[treasury]', balances[treasury]);
 
-                    // Post-state logs.
-                    emit LogUint('post_balances[msg.sender]', balances[msg.sender]);
-                    emit LogUint('post_balances[_to]', balances[_to]);
-                    emit LogUint('post_balances[treasury]', balances[treasury]);
+                        balances[msg.sender] -= _amount;
+                        balances[_to] += _sendAmt;
+                        balances[treasury] += _taxAmt;
 
+                        // Post-state logs.
+                        emit LogUint('post_balances[msg.sender]', balances[msg.sender]);
+                        emit LogUint('post_balances[_to]', balances[_to]);
+                        emit LogUint('post_balances[treasury]', balances[treasury]);
+
+                        
+                        emit LogAddy('treasury', treasury);
+
+                        require(_taxAmt + _sendAmt == _amount, "Critical error, math.");
                     
-                    emit LogAddy('treasury', treasury);
+                        // Update accounting in Treasury.
+                        ITreasury(treasury).updateTaxesAccrued(
+                            _taxType, _taxAmt
+                        );
+                        
+                        emit Transfer(msg.sender, _to, _sendAmt);
+                        emit TransferTax(msg.sender, treasury, _taxAmt, _taxType);
 
-                    require(_taxAmt + _sendAmt == _amount, "Critical error, math.");
-                
-                    // Update accounting in Treasury.
-                    ITreasury(treasury).updateTaxesAccrued(
-                        _taxType, _taxAmt
-                    );
-                    
-                    emit Transfer(msg.sender, _to, _sendAmt);
-                    emit TransferTax(msg.sender, treasury, _taxAmt, _taxType);
-
-                    return true;
+                        return true;
+                    }
                 }
             }
 
@@ -307,6 +313,10 @@ contract TaxToken {
         require(!treasurySet);
         treasury = _treasury;
         treasurySet = true;
+    }
+
+    function updateMaxWalletSize(uint256 _maxWalletSize) public onlyOwner {
+        maxWalletSize = (_maxWalletSize * 10**18 );
     }
 
     function modifyWhitelist(address _wallet, bool _whitelist) public onlyOwner {
