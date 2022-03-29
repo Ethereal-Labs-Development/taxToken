@@ -27,7 +27,7 @@ contract TaxToken {
 
     // ERC20 Mappings
     mapping(address => uint256) balances;                       // Track balances.
-    mapping(address => mapping(address => uint256)) allowed;    // Track allowances. TODO: Consider if rename to allowances().
+    mapping(address => mapping(address => uint256)) allowed;    // Track allowances.
 
     // Extras Mappings
     mapping(address => bool) public isBlacklisted;     // If an address is blacklisted, they cannot transact
@@ -35,9 +35,6 @@ contract TaxToken {
     mapping(address => uint) senderTaxType;     // Identifies tax type for msg.sender of transfer() call.
     mapping(address => uint) receiverTaxType;   // Identifies tax type for _to of transfer() call.
     mapping(uint => uint) public basisPointsTax;       // Mapping between taxType and basisPoints (taxed).
-
-    // TODO: Add-in blacklist.
-    
 
 
     // -----------
@@ -96,9 +93,10 @@ contract TaxToken {
 
     event LogUint(string s, uint u);        /// @notice This is a logging function for HEVM testing.
     event LogAddy(string s, address a);     /// @notice This is a logging function for HEVM testing.
+    event LogString(string s);              /// @notice This is used to log basic strings for HEVM testing.
+
     event Paused(address account);          /// @dev Emitted when the pause is triggered by `account`.
     event Unpaused(address account);        /// @dev Emitted when the pause is lifted by `account`.
-    event LogString(string s);              /// @notice This is used to log basic strings for HEVM testing.
 
     /// @dev Emitted when approve() is called.
     event Approval(address indexed _owner, address indexed _spender, uint256 _value);   
@@ -235,7 +233,6 @@ contract TaxToken {
         }
     }
     
-    // TODO: Consider if this is even needed, or if newer standard is appropriate?
     function allowance(address _owner, address _spender) public view returns (uint256 remaining) {
         return allowed[_owner][_spender];
     }
