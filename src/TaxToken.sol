@@ -309,6 +309,10 @@ contract TaxToken {
         treasurySet = true;
     }
 
+    function updateMaxTxAmount(uint256 _maxTxAmount) public onlyOwner {
+        maxTxAmount = (_maxTxAmount * 10**18 );
+    }
+
     function modifyWhitelist(address _wallet, bool _whitelist) public onlyOwner {
         whitelist[_wallet] = _whitelist;
     }

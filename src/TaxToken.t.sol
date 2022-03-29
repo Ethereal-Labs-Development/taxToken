@@ -146,6 +146,12 @@ contract TaxTokenTest is Utility {
 
     // ~ Restrictive functions Testing (Non-Whitelisted)~
     // Test a transfer amount greater than the maxTxAmount NON Whitelisted - Expected return: False
+    function test_updateMaxTxAmount() public {
+        taxToken.updateMaxTxAmount(30);
+        assertEq((30 * 10**18), taxToken.maxTxAmount());
+
+    }
+
     function test_MaxTxAmount_sender() public {
         taxToken.modifyWhitelist(address(70), false);
         assert(!taxToken.transfer(address(70), 11 ether));
