@@ -232,10 +232,7 @@ contract TaxToken {
     function transferFrom(address _from, address _to, uint256 _amount) public whenNotPaused returns (bool success) {
         require(!isBlacklisted[msg.sender] && !isBlacklisted[_to], "ERROR: Sender or Receiver is blacklisted");
 
-        //if (!whitelist[_to] && !whitelist[msg.sender]) {
-        //require(balances[_to] + _amount <= maxWalletSize, "Recipient exceeds max wallet size.");
-        //require(_amount <= maxTxAmount, "Maximum transaction amount exceeded.");
-        //}
+        // TODO: implement whitelist and maxes for this function
 
         if (balances[_from] >= _amount && allowed[_from][msg.sender] >= _amount && _amount > 0 && balances[_to] + _amount > balances[_to]) {
             balances[_from] -= _amount;
