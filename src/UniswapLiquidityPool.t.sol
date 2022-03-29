@@ -27,15 +27,16 @@ contract TaxTokenTest is Utility {
             'Darpa',                    // Name of token.
             'DRPK',                     // Symbol of token.
             18,                         // Precision of decimals.
+            100,                        // Max wallet size
             10,                         // Max transaction amount 
             address(this)               // The "owner" / "admin" of the contract.
         );
-        
+
         treasury = new Treasury(
             address(this), address(taxToken)
         );
         taxToken.setTreasury(address(treasury));
-        taxToken.adjustBasisPointsTax(0, 10000);
+        taxToken.adjustBasisPointsTax(0, 1000);   // 1000 = 10.00 %
 
         // Convert our ETH to WETH
         uint depositAmt = 100 ether;
