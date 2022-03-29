@@ -23,6 +23,7 @@ contract TaxTokenTest is Utility {
             'Darpa',                    // Name of token.
             'DRPK',                     // Symbol of token.
             18,                         // Precision of decimals.
+            10,                         // Max transaction amount 
             address(this)               // The "owner" / "admin" of the contract.
         );
 
@@ -43,6 +44,7 @@ contract TaxTokenTest is Utility {
         assertEq('Darpa', taxToken.name());
         assertEq('DRPK', taxToken.symbol());
         assertEq(18, taxToken.decimals());
+        assertEq((10 * 10**18), taxToken.maxTxAmount());
         assertEq(taxToken.balanceOf(address(this)), taxToken.totalSupply());
         assertEq(taxToken.treasury(), address(treasury));
     }
@@ -140,6 +142,26 @@ contract TaxTokenTest is Utility {
         taxToken.modifyWhitelist(address(69), true);
         taxToken.transfer(address(69), 1 ether);
         assertEq(taxToken.balanceOf(address(69)), 1 ether);
+    }
+
+    // ~ Restrictive functions Testing (Non-Whitelisted)~
+    // Test a transfer amount greater than the maxTxAmount NON Whitelisted - Expected return: False
+    function test_updateMaxTxAmount() public {
+        taxToken.updateMaxTxAmount(30);
+        assertEq((30 * 10**18), taxToken.maxTxAmount());
+
+    }
+
+    function test_MaxTxAmount_sender() public {
+        taxToken.modifyWhitelist(address(70), false);
+        assert(!taxToken.transfer(address(70), 11 ether));
+    }
+
+    // ~ Restrictive functions Testing (Whitelisted)~
+    // Test a transfer amount greater than the maxTxAmount Whitelisted - Expected return: True
+    function test_WLMaxTxAmount_sender() public {
+        taxToken.modifyWhitelist(address(70), true);
+        assert(taxToken.transfer(address(70), 11 ether));
     }
 
 }

@@ -23,12 +23,14 @@ contract TaxTokenTest is Utility {
     // setUp() runs before every tests conduct.
     function setUp() public {
         taxToken = new TaxToken(
-            1000 ether,
-            'Darpa',
-            'DRPK',
-            18,
-            address(this)
+            1000 ether,                 // Initial liquidity
+            'Darpa',                    // Name of token.
+            'DRPK',                     // Symbol of token.
+            18,                         // Precision of decimals.
+            10,                         // Max transaction amount 
+            address(this)               // The "owner" / "admin" of the contract.
         );
+        
         treasury = new Treasury(
             address(this), address(taxToken)
         );
