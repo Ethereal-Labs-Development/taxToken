@@ -32,7 +32,7 @@ contract TaxTokenTest is Utility {
         taxToken.adjustBasisPointsTax(0, 10000); // 10.00 %
     }
 
-    // TODO: Add more specific test-cases (pre-state / post-state).
+    // TODO: Add a better TaxType 0 test
     function test_simple_transfer_taxType_0() public {
         taxToken.transfer(address(0), 1 ether);
     }
