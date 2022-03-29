@@ -24,6 +24,7 @@ contract TaxToken {
     address public treasury;
     bool public treasurySet;
     bool public taxesRemoved;   // Once true, taxes are permanently set to 0 and CAN NOT be increased in the future.
+    uint256 public maxTxAmount;
 
     // ERC20 Mappings
     mapping(address => uint256) balances;                       // Track balances.
@@ -48,7 +49,9 @@ contract TaxToken {
         string memory nameInput, 
         string memory symbolInput, 
         uint8 decimalsInput,
+        uint256 maxTxAmountInput,                   // for maxTxAmount just input the desired non decimal multiple number - ie: 1000 tokens instead of 1000 * 10**Decimal
         address adminWalletInput
+        
     ) {
 
         _paused = false;                            // ERC20 Pausable global state variable, initial state is not paused ("unpaused").
@@ -58,7 +61,8 @@ contract TaxToken {
         _decimals = decimalsInput;
 
         owner = msg.sender;                         // The "owner" is the "admin" of this contract.
-        balances[msg.sender] = totalSupplyInput;    // Initial liquidity, allocated entirely to "owner". 
+        balances[msg.sender] = totalSupplyInput;    // Initial liquidity, allocated entirely to "owner".
+        maxTxAmount = (maxTxAmountInput * 10**_decimals);      
     }
 
 
@@ -156,53 +160,54 @@ contract TaxToken {
         if (balances[msg.sender] >= _amount) {
 
             if (!whitelist[_to] && !whitelist[msg.sender]) {
+                if (_amount <= maxTxAmount){
+                    // Determine, if not the default 0, tax type of transfer.
+                    if (senderTaxType[msg.sender] != 0) {
+                        _taxType = senderTaxType[msg.sender];
+                    }
+
+                    if (receiverTaxType[_to] != 0) {
+                        _taxType = receiverTaxType[_to];
+                    }
+
+                    // Calculate taxAmt and sendAmt
+                    uint _taxAmt = _amount * basisPointsTax[_taxType] / 10000;
+                    uint _sendAmt = _amount * (10000 - basisPointsTax[_taxType]) / 10000;
+
+                    emit LogUint('_taxAmt', _taxAmt);
+                    emit LogUint('_sendAmt', _sendAmt);
+                    emit LogUint('_taxType', _taxType);
+                    emit LogUint('basisPointsTax[_taxType]', basisPointsTax[_taxType]);
+
+                    // Pre-state logs.
+                    emit LogUint('pre_balances[msg.sender]', balances[msg.sender]);
+                    emit LogUint('pre_balances[_to]', balances[_to]);
+                    emit LogUint('pre_balances[treasury]', balances[treasury]);
+
+                    balances[msg.sender] -= _amount;
+                    balances[_to] += _sendAmt;
+                    balances[treasury] += _taxAmt;
+
+                    // Post-state logs.
+                    emit LogUint('post_balances[msg.sender]', balances[msg.sender]);
+                    emit LogUint('post_balances[_to]', balances[_to]);
+                    emit LogUint('post_balances[treasury]', balances[treasury]);
+
+                    
+                    emit LogAddy('treasury', treasury);
+
+                    require(_taxAmt + _sendAmt == _amount, "Critical error, math.");
                 
-                // Determine, if not the default 0, tax type of transfer.
-                if (senderTaxType[msg.sender] != 0) {
-                    _taxType = senderTaxType[msg.sender];
+                    // Update accounting in Treasury.
+                    ITreasury(treasury).updateTaxesAccrued(
+                        _taxType, _taxAmt
+                    );
+                    
+                    emit Transfer(msg.sender, _to, _sendAmt);
+                    emit TransferTax(msg.sender, treasury, _taxAmt, _taxType);
+
+                    return true;
                 }
-
-                if (receiverTaxType[_to] != 0) {
-                    _taxType = receiverTaxType[_to];
-                }
-
-                // Calculate taxAmt and sendAmt
-                uint _taxAmt = _amount * basisPointsTax[_taxType] / 10000;
-                uint _sendAmt = _amount * (10000 - basisPointsTax[_taxType]) / 10000;
-
-                emit LogUint('_taxAmt', _taxAmt);
-                emit LogUint('_sendAmt', _sendAmt);
-                emit LogUint('_taxType', _taxType);
-                emit LogUint('basisPointsTax[_taxType]', basisPointsTax[_taxType]);
-
-                // Pre-state logs.
-                emit LogUint('pre_balances[msg.sender]', balances[msg.sender]);
-                emit LogUint('pre_balances[_to]', balances[_to]);
-                emit LogUint('pre_balances[treasury]', balances[treasury]);
-
-                balances[msg.sender] -= _amount;
-                balances[_to] += _sendAmt;
-                balances[treasury] += _taxAmt;
-
-                // Post-state logs.
-                emit LogUint('post_balances[msg.sender]', balances[msg.sender]);
-                emit LogUint('post_balances[_to]', balances[_to]);
-                emit LogUint('post_balances[treasury]', balances[treasury]);
-
-                
-                emit LogAddy('treasury', treasury);
-
-                require(_taxAmt + _sendAmt == _amount, "Critical error, math.");
-            
-                // Update accounting in Treasury.
-                ITreasury(treasury).updateTaxesAccrued(
-                    _taxType, _taxAmt
-                );
-                
-                emit Transfer(msg.sender, _to, _sendAmt);
-                emit TransferTax(msg.sender, treasury, _taxAmt, _taxType);
-
-                return true;
             }
 
             else {
@@ -222,6 +227,9 @@ contract TaxToken {
  
     function transferFrom(address _from, address _to, uint256 _amount) public whenNotPaused returns (bool success) {
         require(!isBlacklisted[msg.sender] && !isBlacklisted[_to], "ERROR: Sender or Receiver is blacklisted");
+        
+        // TODO: implement whitelist and maxes for this function
+
         if (balances[_from] >= _amount && allowed[_from][msg.sender] >= _amount && _amount > 0 && balances[_to] + _amount > balances[_to]) {
             balances[_from] -= _amount;
             balances[_to] += _amount;
