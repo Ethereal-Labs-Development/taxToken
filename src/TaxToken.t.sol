@@ -118,17 +118,17 @@ contract TaxTokenTest is Utility {
     // ~ Blacklist Testing ~
 
     // This tests blacklisting of the receiver
-    function testFail_blacklist_receiver() public {
+    function test_blacklist_receiver() public {
         taxToken.transfer(address(32), 1 ether);
         taxToken.modifyBlacklist(address(32), true);
-        taxToken.transfer(address(32), 1 ether);
+        assert(!taxToken.transfer(address(32), 1 ether));
     }
 
     // This tests blacklisting of the sender
-    function testFail_blacklist_sender() public {
+    function test_blacklist_sender() public {
         taxToken.transfer(address(32), 1 ether);
         taxToken.modifyBlacklist(address(this), true);
-        taxToken.transfer(address(32), 1 ether);
+        assert(!taxToken.transfer(address(32), 1 ether));
     }
 
     // ~ Whitelist Testing ~
@@ -184,7 +184,8 @@ contract TaxTokenTest is Utility {
     }
 
 
-    // ~ Restrictive functions Testing (Whitelisted)~
+    // ~ Restrictive functions Testing (Whitelisted) ~
+    
     // Test a transfer amount greater than the maxTxAmount Whitelisted - Expected return: True
     function test_WLMaxTxAmount_sender() public {
         taxToken.modifyWhitelist(address(70), true);
