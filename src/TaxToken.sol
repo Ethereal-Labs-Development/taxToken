@@ -151,77 +151,84 @@ contract TaxToken {
  
     function transfer(address _to, uint256 _amount) public whenNotPaused returns (bool success) {   
 
-        require(!isBlacklisted[msg.sender] && !isBlacklisted[_to], "ERROR: Sender or Receiver is blacklisted");
-
         // Tax Type 0 => Xfer Tax (10%) => 10% (1wallets, marketing)
         // Tax Type 1 => Buy Tax (12%) => 6%/6% (2wallets, use/marketing))
         // Tax Type 2 => Sell Tax (12%) => 2%/4%/6% (3wallets, use/marketing/staking)
         uint _taxType;
-
+        
+        emit LogAddy('msg.sender', msg.sender);
+        emit LogAddy('_to', _to);
         emit LogUint('_amount', _amount);
 
-        if (balances[msg.sender] >= _amount) {
+        if (balances[msg.sender] >= _amount && (!isBlacklisted[msg.sender] && !isBlacklisted[_to])) {
 
-            if (!whitelist[_to] && !whitelist[msg.sender]) {
-                if (_amount <= maxTxAmount){
-                    // Determine, if not the default 0, tax type of transfer.
-                    if (senderTaxType[msg.sender] != 0) {
-                        _taxType = senderTaxType[msg.sender];
-                    }
+            // Take a tax from them if neither party is whitelisted.
+            if (!whitelist[_to] && !whitelist[msg.sender] && _amount <= maxTxAmount) {
 
-                    if (receiverTaxType[_to] != 0) {
-                        _taxType = receiverTaxType[_to];
-                    }
-
-                    // Calculate taxAmt and sendAmt
-                    uint _taxAmt = _amount * basisPointsTax[_taxType] / 10000;
-                    uint _sendAmt = _amount * (10000 - basisPointsTax[_taxType]) / 10000;
-
-                    if (balances[_to] + _sendAmt <= maxWalletSize){
-
-                        emit LogUint('_taxAmt', _taxAmt);
-                        emit LogUint('_sendAmt', _sendAmt);
-                        emit LogUint('_taxType', _taxType);
-                        emit LogUint('basisPointsTax[_taxType]', basisPointsTax[_taxType]);
-
-                        // Pre-state logs.
-                        emit LogUint('pre_balances[msg.sender]', balances[msg.sender]);
-                        emit LogUint('pre_balances[_to]', balances[_to]);
-                        emit LogUint('pre_balances[treasury]', balances[treasury]);
-
-                        balances[msg.sender] -= _amount;
-                        balances[_to] += _sendAmt;
-                        balances[treasury] += _taxAmt;
-
-                        // Post-state logs.
-                        emit LogUint('post_balances[msg.sender]', balances[msg.sender]);
-                        emit LogUint('post_balances[_to]', balances[_to]);
-                        emit LogUint('post_balances[treasury]', balances[treasury]);
-
-                        
-                        emit LogAddy('treasury', treasury);
-
-                        require(_taxAmt + _sendAmt == _amount, "Critical error, math.");
-                    
-                        // Update accounting in Treasury.
-                        ITreasury(treasury).updateTaxesAccrued(
-                            _taxType, _taxAmt
-                        );
-                        
-                        emit Transfer(msg.sender, _to, _sendAmt);
-                        emit TransferTax(msg.sender, treasury, _taxAmt, _taxType);
-
-                        return true;
-                    }
+                // Determine, if not the default 0, tax type of transfer.
+                if (senderTaxType[msg.sender] != 0) {
+                    _taxType = senderTaxType[msg.sender];
                 }
+
+                if (receiverTaxType[_to] != 0) {
+                    _taxType = receiverTaxType[_to];
+                }
+
+                // Calculate taxAmt and sendAmt
+                uint _taxAmt = _amount * basisPointsTax[_taxType] / 10000;
+                uint _sendAmt = _amount * (10000 - basisPointsTax[_taxType]) / 10000;
+
+                if (balances[_to] + _sendAmt <= maxWalletSize) {
+
+                    emit LogUint('_taxAmt', _taxAmt);
+                    emit LogUint('_sendAmt', _sendAmt);
+                    emit LogUint('_taxType', _taxType);
+                    emit LogUint('basisPointsTax[_taxType]', basisPointsTax[_taxType]);
+
+                    // Pre-state logs.
+                    emit LogUint('pre_balances[msg.sender]', balances[msg.sender]);
+                    emit LogUint('pre_balances[_to]', balances[_to]);
+                    emit LogUint('pre_balances[treasury]', balances[treasury]);
+
+                    balances[msg.sender] -= _amount;
+                    balances[_to] += _sendAmt;
+                    balances[treasury] += _taxAmt;
+
+                    // Post-state logs.
+                    emit LogUint('post_balances[msg.sender]', balances[msg.sender]);
+                    emit LogUint('post_balances[_to]', balances[_to]);
+                    emit LogUint('post_balances[treasury]', balances[treasury]);
+
+                    
+                    emit LogAddy('treasury', treasury);
+
+                    require(_taxAmt + _sendAmt == _amount, "Critical error, math.");
+                
+                    // Update accounting in Treasury.
+                    ITreasury(treasury).updateTaxesAccrued(
+                        _taxType, _taxAmt
+                    );
+                    
+                    emit Transfer(msg.sender, _to, _sendAmt);
+                    emit TransferTax(msg.sender, treasury, _taxAmt, _taxType);
+
+                    return true;
+                }
+
+                else {
+                    return false;
+                }
+
+            }
+
+            else if (!whitelist[_to] && !whitelist[msg.sender] && _amount > maxTxAmount) {
+                return false;
             }
 
             else {
                 balances[msg.sender] -= _amount;
                 balances[_to] += _amount;
-
-                emit LogString("taxes werent taken");
-            
+                emit LogString("TaxToken.sol transfer() no taxation occurred");
                 emit Transfer(msg.sender, _to, _amount);
                 return true;
             }
@@ -232,15 +239,99 @@ contract TaxToken {
     }
  
     function transferFrom(address _from, address _to, uint256 _amount) public whenNotPaused returns (bool success) {
-        require(!isBlacklisted[msg.sender] && !isBlacklisted[_to], "ERROR: Sender or Receiver is blacklisted");
-        
-        // TODO: implement whitelist and maxes for this function
 
-        if (balances[_from] >= _amount && allowed[_from][msg.sender] >= _amount && _amount > 0 && balances[_to] + _amount > balances[_to]) {
-            balances[_from] -= _amount;
-            balances[_to] += _amount;
-            emit Transfer(_from, _to, _amount);
-            return true;
+        // Tax Type 0 => Xfer Tax (10%) => 10% (1wallets, marketing)
+        // Tax Type 1 => Buy Tax (12%) => 6%/6% (2wallets, use/marketing))
+        // Tax Type 2 => Sell Tax (12%) => 2%/4%/6% (3wallets, use/marketing/staking)
+        uint _taxType;
+        
+        emit LogAddy('msg.sender', msg.sender);
+        emit LogAddy('_from', _from);
+        emit LogAddy('_to', _to);
+        emit LogUint('_amount', _amount);
+
+        if (
+            balances[_from] >= _amount && 
+            allowed[_from][msg.sender] >= _amount && 
+            _amount > 0 && balances[_to] + _amount > balances[_to] && 
+            _amount <= maxTxAmount && (!isBlacklisted[_from] && !isBlacklisted[_to])
+        ) {
+
+            // Take a tax from them if neither party is whitelisted.
+            if (!whitelist[_to] && !whitelist[_from] && _amount <= maxTxAmount) {
+
+                // Determine, if not the default 0, tax type of transfer.
+                if (senderTaxType[_from] != 0) {
+                    _taxType = senderTaxType[_from];
+                }
+
+                if (receiverTaxType[_to] != 0) {
+                    _taxType = receiverTaxType[_to];
+                }
+
+                // Calculate taxAmt and sendAmt
+                uint _taxAmt = _amount * basisPointsTax[_taxType] / 10000;
+                uint _sendAmt = _amount * (10000 - basisPointsTax[_taxType]) / 10000;
+
+                // TODO: Check pre/post allowance, confirm if needs to decrease or not.
+
+                if (balances[_to] + _sendAmt <= maxWalletSize) {
+
+                    emit LogUint('_taxAmt', _taxAmt);
+                    emit LogUint('_sendAmt', _sendAmt);
+                    emit LogUint('_taxType', _taxType);
+                    emit LogUint('basisPointsTax[_taxType]', basisPointsTax[_taxType]);
+
+                    // Pre-state logs.
+                    emit LogUint('pre_allowances[_from][msg.sender]', allowance(_from, msg.sender));
+                    emit LogUint('pre_balances[_from]', balances[_from]);
+                    emit LogUint('pre_balances[_to]', balances[_to]);
+                    emit LogUint('pre_balances[treasury]', balances[treasury]);
+
+                    balances[_from] -= _amount;
+                    balances[_to] += _sendAmt;
+                    balances[treasury] += _taxAmt;
+
+                    // Post-state logs.
+                    emit LogUint('post_allowances[_from][msg.sender]', allowance(_from, msg.sender));
+                    emit LogUint('post_balances[_from]', balances[_from]);
+                    emit LogUint('post_balances[_to]', balances[_to]);
+                    emit LogUint('post_balances[treasury]', balances[treasury]);
+                    
+                    emit LogAddy('treasury', treasury);
+
+                    require(_taxAmt + _sendAmt == _amount, "Critical error, math.");
+                
+                    // Update accounting in Treasury.
+                    ITreasury(treasury).updateTaxesAccrued(
+                        _taxType, _taxAmt
+                    );
+                    
+                    emit Transfer(_from, _to, _sendAmt);
+                    emit TransferTax(_from, treasury, _taxAmt, _taxType);
+
+                    return true;
+                }
+                
+                else {
+                    return false;
+                }
+
+            }
+
+            else if (!whitelist[_to] && !whitelist[_from] && _amount > maxTxAmount) {
+                return false;
+            }
+
+            // Skip taxation if either party is whitelisted (_from or _to).
+            else {
+                balances[_from] -= _amount;
+                balances[_to] += _amount;
+                emit LogString("TaxToken.sol transferFrom() no taxation occurred");
+                emit Transfer(_from, _to, _amount);
+                return true;
+            }
+
         }
         else {
             return false;
