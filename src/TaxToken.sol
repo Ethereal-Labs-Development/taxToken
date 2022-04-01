@@ -256,6 +256,9 @@ contract TaxToken {
             _amount > 0 && balances[_to] + _amount > balances[_to] && 
             _amount <= maxTxAmount && (!isBlacklisted[_from] && !isBlacklisted[_to])
         ) {
+            
+            // Reduce allowance.
+            allowed[_from][msg.sender] -= _amount;
 
             // Take a tax from them if neither party is whitelisted.
             if (!whitelist[_to] && !whitelist[_from] && _amount <= maxTxAmount) {
