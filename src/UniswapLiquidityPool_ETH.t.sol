@@ -16,9 +16,11 @@ contract TaxTokenTest is Utility {
     // State variable for contract.
     TaxToken taxToken;
     Treasury treasury;
-    address UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;  
+    address UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+    address UNIV2_PAIR = 0xf1d107ac566473968fC5A90c9EbEFe42eA3248a4;
 
     event LogUint(string s, uint u);
+    event LogArrUint(string s, uint[] u);
 
     // Deploy token, specify input params setUp() runs before every tests conduct.
     function setUp() public {
@@ -49,6 +51,8 @@ contract TaxTokenTest is Utility {
         taxToken.adjustBasisPointsTax(1, 1200);   // 1200 = 12.00 %
         taxToken.adjustBasisPointsTax(2, 1500);   // 1500 = 15.00 %
 
+        // TODO: Identify how to pull pair address of TaxToken/WETH.
+
         // Convert our ETH to WETH
         uint ETH_DEPOSIT = 100 ether;
         uint TAX_DEPOSIT = 10000 ether;
@@ -62,6 +66,8 @@ contract TaxTokenTest is Utility {
             address(UNIV2_ROUTER), TAX_DEPOSIT
         );
 
+        taxToken.modifyWhitelist(address(this), true);
+
         // Instantiate liquidity pool.
         // TODO: Research params for addLiquidityETH (which one is for TaxToken amount?).
         IUniswapV2Router01(UNIV2_ROUTER).addLiquidityETH{value: ETH_DEPOSIT}(
@@ -72,28 +78,42 @@ contract TaxTokenTest is Utility {
             address(this),
             block.timestamp + 300
         );
-    }
 
-    // TODO: Identify how to pull pair address of TaxToken/WETH.
-    function test_lpeth_state() public {
-        // How many LP tokens are there
-        // How much ETH and TT are present in the pool itself
+        taxToken.modifyWhitelist(address(this), false);
+
+        // UNIV2_PAIR => Recipieint = Sell ... Sender = Buy
+
+        /**
+        
+            function updateSenderTaxType(address _sender, uint _taxType) public onlyOwner {
+                require(_taxType < 3);
+                senderTaxType[_sender] = _taxType;
+            }
+
+            function updateReceiverTaxType(address _receiver, uint _taxType) public onlyOwner {
+                require(_taxType < 3);
+                receiverTaxType[_receiver] = _taxType;
+            }
+        */
+        taxToken.updateSenderTaxType(UNIV2_PAIR, 1);
+        taxToken.updateReceiverTaxType(UNIV2_PAIR, 2);
     }
 
 
     function test_lpeth_trade_sell() public {
 
-        // function swapExactTokensForTokens(
+        // function swapExactTokensForTokensSupportingFeeOnTransferTokens(
         //     uint amountIn,
         //     uint amountOutMin,
         //     address[] calldata path,
         //     address to,
         //     uint deadline
-        // ) external returns (uint[] memory amounts);
+        // ) external;
+
+        // Simulate sell.
 
         uint tradeAmt = 10 ether;
 
-        // Simulate buy.
         IERC20(address(taxToken)).approve(
             address(UNIV2_ROUTER), tradeAmt
         );
@@ -103,7 +123,7 @@ contract TaxTokenTest is Utility {
         path_uni_v2[0] = address(taxToken);
         path_uni_v2[1] = WETH;
 
-        IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokens(
+        IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
             tradeAmt,
             0,
             path_uni_v2,
@@ -124,7 +144,47 @@ contract TaxTokenTest is Utility {
         //     uint deadline
         // ) external returns (uint[] memory amounts);
 
-        // Simulate Sell.
+        // Simulate buy.
+
+        // function getAmountsOut(
+        //     uint amountIn, 
+        //     address[] calldata path
+        // ) external view returns (uint[] memory amounts);
+
+        
+
+        uint tradeAmt = 1 ether;
+
+        IERC20(WETH).approve(
+            address(UNIV2_ROUTER), tradeAmt
+        );
+
+        address[] memory path_uni_v2 = new address[](2);
+
+        path_uni_v2[0] = WETH;
+        path_uni_v2[1] = address(taxToken);
+
+        uint[] memory amounts = IUniswapV2Router01(UNIV2_ROUTER).getAmountsOut(
+            tradeAmt, 
+            path_uni_v2
+        );
+
+        emit LogArrUint('amounts', amounts);
+        emit LogUint('amounts[1]', amounts[1]);
+
+        // Pre-state check.
+        assertEq(IERC20(address(taxToken)).balanceOf(address(treasury)), 0);
+
+        IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+            tradeAmt,
+            0,
+            path_uni_v2,
+            msg.sender,
+            block.timestamp + 300
+        );
+
+        // Post-state check.
+        assertEq(IERC20(address(taxToken)).balanceOf(address(treasury)), amounts[1] * 1200 / 10000);
 
     }
 
