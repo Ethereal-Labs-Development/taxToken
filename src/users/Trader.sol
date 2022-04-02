@@ -22,4 +22,5 @@ contract Trader {
         string memory sig = "transfer(address,uint256)";
         (ok,) = address(token).call(abi.encodeWithSignature(sig, to, amt));
     }
+    
 }

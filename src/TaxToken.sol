@@ -151,9 +151,9 @@ contract TaxToken {
  
     function transfer(address _to, uint256 _amount) public whenNotPaused returns (bool success) {   
 
-        // Tax Type 0 => Xfer Tax (10%) => 10% (1wallets, marketing)
-        // Tax Type 1 => Buy Tax (12%) => 6%/6% (2wallets, use/marketing))
-        // Tax Type 2 => Sell Tax (12%) => 2%/4%/6% (3wallets, use/marketing/staking)
+        // taxType 0 => Xfer Tax (10%)  => 10% (1wallets, marketing)
+        // taxType 1 => Buy Tax (12%)   => 6%/6% (2wallets, use/marketing))
+        // taxType 2 => Sell Tax (15%)  => 5%/4%/6% (3wallets, use/marketing/staking)
         uint _taxType;
         
         emit LogAddy('msg.sender', msg.sender);
@@ -202,7 +202,7 @@ contract TaxToken {
                     
                     emit LogAddy('treasury', treasury);
 
-                    require(_taxAmt + _sendAmt == _amount, "Critical error, math.");
+                    require(_taxAmt + _sendAmt >= _amount * 999999999 / 1000000000, "Critical error, math.");
                 
                     // Update accounting in Treasury.
                     ITreasury(treasury).updateTaxesAccrued(
