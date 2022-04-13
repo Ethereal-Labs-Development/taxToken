@@ -209,4 +209,20 @@ contract TaxTokenTest is Utility {
         assert(taxToken.transfer(address(70), 10 ether));
     }
 
+    
+    // ~ Taxt Type 0 Testing ~
+
+    // Test taking a tax of type 0 from a transfer
+    function test_TaxOnTransfer() public {
+        taxToken.transfer(address(15), 10 ether);
+        assertEq(taxToken.balanceOf(address(15)), 9 ether);
+    }
+
+    // Test taking a tax of type 0 from a transfer when the wallet is whitelisted
+    function testFail_TaxOnTransfer_WL() public {
+        taxToken.modifyWhitelist(address(16), true);
+        taxToken.transfer(address(16), 10 ether);
+        assertEq(taxToken.balanceOf(address(16)), 9 ether);
+    }
+
 }
