@@ -151,8 +151,4 @@ contract Treasury {
         distributeTaxes(2);
     }
 
-
-    /// @dev    Distributes all taxToken to given address and resets accounting variables.
-    function cleanse() public { }
-
 }
