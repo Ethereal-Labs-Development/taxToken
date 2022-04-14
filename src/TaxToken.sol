@@ -39,6 +39,7 @@ contract TaxToken {
     mapping(uint => uint) public basisPointsTax;       // Mapping between taxType and basisPoints (taxed).
 
 
+
     // -----------
     // Constructor
     // -----------
@@ -68,8 +69,8 @@ contract TaxToken {
         maxTxAmount = (maxTxAmountInput * 10**_decimals);      
     }
 
-
  
+
     // ---------
     // Modifiers
     // ---------
