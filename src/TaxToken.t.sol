@@ -146,7 +146,7 @@ contract TaxTokenTest is Utility {
         assertEq(taxToken.balanceOf(address(69)), 1 ether);
     }
 
-    // ~ Restrictive functions Testing (Non-Whitelisted)~
+    // ~ Restrictive functions Testing (Non-Whitelisted) ~
     // Test changing maxWalletSize
     function test_updateMaxWalletSize() public {
         taxToken.updateMaxWalletSize(300);
@@ -154,7 +154,7 @@ contract TaxTokenTest is Utility {
 
     }
 
-    // Test a transfer amount greater than the maxTxAmount NON Whitelisted - Expected return: False
+    // Test a transfer amount greater than the maxTxAmount NON Whitelisted
     function test_updateMaxTxAmount() public {
         taxToken.updateMaxTxAmount(30);
         assertEq((30 * 10**18), taxToken.maxTxAmount());
@@ -166,8 +166,8 @@ contract TaxTokenTest is Utility {
         assert(!taxToken.transfer(address(70), 11 ether));
     }
 
-    // Test adding an amount greater than the maxWalletAmount - Expected return: False
-    function test_MaxWalletAmount_sender() public {
+    // Test adding an amount greater than the maxWalletAmount
+    function testFail_MaxWalletAmount_sender() public {
         taxToken.modifyWhitelist(address(70), false);
         taxToken.transfer(address(70), 10 ether);
         taxToken.transfer(address(70), 10 ether);
@@ -180,19 +180,19 @@ contract TaxTokenTest is Utility {
         taxToken.transfer(address(70), 10 ether);
         taxToken.transfer(address(70), 10 ether);
         taxToken.transfer(address(70), 10 ether);
-        assert(!taxToken.transfer(address(70), 10 ether));
+        assert(taxToken.transfer(address(70), 10 ether));
     }
 
 
     // ~ Restrictive functions Testing (Whitelisted) ~
     
-    // Test a transfer amount greater than the maxTxAmount Whitelisted - Expected return: True
+    // Test a transfer amount greater than the maxTxAmount Whitelisted
     function test_WLMaxTxAmount_sender() public {
         taxToken.modifyWhitelist(address(70), true);
         assert(taxToken.transfer(address(70), 11 ether));
     }
 
-        // Test adding an amount greater than the maxWalletAmount - Expected return: False
+    // Test adding an amount greater than the maxWalletAmount
     function test_WLMaxWalletAmount_sender() public {
         taxToken.transfer(address(70), 10 ether);
         taxToken.transfer(address(70), 10 ether);
