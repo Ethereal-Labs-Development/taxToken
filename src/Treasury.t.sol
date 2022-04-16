@@ -147,4 +147,95 @@ contract TaxTokenTest is Utility {
         assertEq(sum, taxToken.balanceOf(address(treasury)));
     }
 
+    // Test require statement fail: require(walletCount == wallets.length)
+    function testFail_treasury_modify_taxSetting_require_0() public {
+        address[] memory wallets = new address[](3);
+        address[] memory convertToAsset = new address[](2);
+        uint[] memory percentDistribution = new uint[](2);
+        
+        wallets[0] = address(0);
+        wallets[1] = address(1);
+        wallets[2] = address(2);
+        convertToAsset[0] = address(taxToken);
+        convertToAsset[1] = address(taxToken);
+        percentDistribution[0] = 50;
+        percentDistribution[1] = 50;
+        
+        treasury.setTaxDistribution(
+            0, 
+            2, 
+            wallets, 
+            convertToAsset, 
+            percentDistribution
+        );
+    }
+
+    // Test require statement fail: require(walletCount == convertToAsset.length)
+    function testFail_treasury_modify_taxSetting_require_1() public {
+        address[] memory wallets = new address[](2);
+        address[] memory convertToAsset = new address[](3);
+        uint[] memory percentDistribution = new uint[](2);
+        
+        wallets[0] = address(0);
+        wallets[1] = address(1);
+        convertToAsset[0] = address(taxToken);
+        convertToAsset[1] = address(taxToken);
+        convertToAsset[2] = address(taxToken);
+        percentDistribution[0] = 50;
+        percentDistribution[1] = 50;
+        
+        treasury.setTaxDistribution(
+            0, 
+            2, 
+            wallets, 
+            convertToAsset, 
+            percentDistribution
+        );
+    }
+
+    // Test require statement fail: require(walletCount == percentDistribution.length)
+    function testFail_treasury_modify_taxSetting_require_2() public {
+        address[] memory wallets = new address[](2);
+        address[] memory convertToAsset = new address[](2);
+        uint[] memory percentDistribution = new uint[](3);
+        
+        wallets[0] = address(0);
+        wallets[1] = address(1);
+        convertToAsset[0] = address(taxToken);
+        convertToAsset[1] = address(taxToken);
+        percentDistribution[0] = 50;
+        percentDistribution[1] = 49;
+        percentDistribution[2] = 1;
+        
+        treasury.setTaxDistribution(
+            0, 
+            2, 
+            wallets, 
+            convertToAsset, 
+            percentDistribution
+        );
+    }
+
+    // Test require statement fail: require(sumPercentDistribution == 100)
+    function testFail_treasury_modify_taxSetting_require_3() public {
+        address[] memory wallets = new address[](2);
+        address[] memory convertToAsset = new address[](2);
+        uint[] memory percentDistribution = new uint[](2);
+        
+        wallets[0] = address(0);
+        wallets[1] = address(1);
+        convertToAsset[0] = address(taxToken);
+        convertToAsset[1] = address(taxToken);
+        percentDistribution[0] = 50;
+        percentDistribution[1] = 49;
+        
+        treasury.setTaxDistribution(
+            0, 
+            2, 
+            wallets, 
+            convertToAsset, 
+            percentDistribution
+        );
+    }
+
 }
