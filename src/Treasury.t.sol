@@ -96,8 +96,10 @@ contract TreasuryTest is Utility {
         path_uni_v2[0] = address(taxToken);
         path_uni_v2[1] = WETH;
 
+        // Documentation on IUniswapV2Router:
+        // https://docs.uniswap.org/protocol/V2/reference/smart-contracts/router-02#swapexacttokensfortokens
         IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
-            tradeAmt,
+            tradeAmt,           
             0,
             path_uni_v2,
             msg.sender,
