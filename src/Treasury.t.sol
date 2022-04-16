@@ -119,11 +119,6 @@ contract TreasuryTest is Utility {
         path_uni_v2[0] = WETH;
         path_uni_v2[1] = address(taxToken);
 
-        uint[] memory amounts = IUniswapV2Router01(UNIV2_ROUTER).getAmountsOut(
-            tradeAmt, 
-            path_uni_v2
-        );
-
         IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
             tradeAmt,
             0,
