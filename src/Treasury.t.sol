@@ -136,10 +136,15 @@ contract TaxTokenTest is Utility {
 
     }
 
+    // Initial state check on treasury.
+    // Each taxType (0, 1, and 2) should have some greater than 0 value.
+    // The sum of all taxes accrued for each taxType should equal taxToken.balanceOf(treasury).
     function test_treasury_initialState() public {
-        emit LogUint("taxTokenAccruedForTaxType[0]", treasury.taxTokenAccruedForTaxType(0));
-        emit LogUint("taxTokenAccruedForTaxType[1]", treasury.taxTokenAccruedForTaxType(1));
-        emit LogUint("taxTokenAccruedForTaxType[2]", treasury.taxTokenAccruedForTaxType(2));
+        assert(treasury.taxTokenAccruedForTaxType(0) > 0);
+        assert(treasury.taxTokenAccruedForTaxType(1) > 0);
+        assert(treasury.taxTokenAccruedForTaxType(2) > 0);
+        uint sum = treasury.taxTokenAccruedForTaxType(0) + treasury.taxTokenAccruedForTaxType(1) + treasury.taxTokenAccruedForTaxType(2);
+        assertEq(sum, taxToken.balanceOf(address(treasury)));
     }
 
 }
