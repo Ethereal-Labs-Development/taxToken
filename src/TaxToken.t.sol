@@ -10,8 +10,10 @@ import { IERC20 } from "./interfaces/ERC20.sol";
 
 contract TaxTokenTest is Utility {
 
+    // State variable for contract.
     TaxToken taxToken;
     Treasury treasury;
+
 
     // setUp() runs before every single test-case.
     // Each test case uses a new/initial state each time based on actions here.
@@ -32,11 +34,6 @@ contract TaxTokenTest is Utility {
         treasury = new Treasury(address(this), address(taxToken));
         taxToken.setTreasury(address(treasury));
         taxToken.adjustBasisPointsTax(0, 1000);   // 1000 = 10.00 %
-    }
-
-    // TODO: Add a better TaxType 0 test
-    function test_simple_transfer_taxType_0() public {
-        taxToken.transfer(address(0), 1 ether);
     }
 
     // Test initial state of state variables.
