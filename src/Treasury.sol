@@ -158,12 +158,6 @@ contract Treasury {
     }
 
 
-    /// @dev    Helper view function for taxTokenAccruedForTaxType.
-    function viewTaxTokenAccruedForTaxType(uint taxType) public view returns(uint256) {
-        return taxTokenAccruedForTaxType[taxType];
-    }
-
-
     /// @dev    Helper view function for taxSettings.
     function viewTaxSettings(uint taxType) public view returns(uint256, address[] memory, address[] memory, uint[] memory) {
         return (
