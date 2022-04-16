@@ -163,4 +163,15 @@ contract Treasury {
         return taxTokenAccruedForTaxType[taxType];
     }
 
+
+    /// @dev    Helper view function for taxSettings.
+    function viewTaxSettings(uint taxType) public view returns(uint256, address[] memory, address[] memory, uint[] memory) {
+        return (
+            taxSettings[taxType].walletCount,
+            taxSettings[taxType].wallets,
+            taxSettings[taxType].convertToAsset,
+            taxSettings[taxType].percentDistribution
+        );
+    }
+
 }

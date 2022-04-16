@@ -238,4 +238,82 @@ contract TaxTokenTest is Utility {
         );
     }
 
+    // Test that modifying taxSetting works (or initialization).
+    // Perform initialization, then perform modification (two function calls).
+    function test_treasury_modify_taxSetting() public {
+        address[] memory wallets = new address[](2);
+        address[] memory convertToAsset = new address[](2);
+        uint[] memory percentDistribution = new uint[](2);
+        
+        wallets[0] = address(0);
+        wallets[1] = address(1);
+        convertToAsset[0] = address(taxToken);
+        convertToAsset[1] = address(taxToken);
+        percentDistribution[0] = 50;
+        percentDistribution[1] = 50;
+        
+        treasury.setTaxDistribution(
+            0, 
+            2, 
+            wallets, 
+            convertToAsset, 
+            percentDistribution
+        );
+
+        (
+            uint256 _walletCount, 
+            address[] memory _wallets, 
+            address[] memory _convertToAsset, 
+            uint[] memory _percentDistribution
+        ) = treasury.viewTaxSettings(0);
+
+        assertEq(_walletCount, 2);
+        assertEq(_wallets[0], address(0));
+        assertEq(_wallets[1], address(1));
+        assertEq(_convertToAsset[0], address(taxToken));
+        assertEq(_convertToAsset[1], address(taxToken));
+        assertEq(_percentDistribution[0], 50);
+        assertEq(_percentDistribution[1], 50);
+
+        wallets = new address[](3);
+        convertToAsset = new address[](3);
+        percentDistribution = new uint[](3);
+        
+        wallets[0] = address(5);
+        wallets[1] = address(6);
+        wallets[2] = address(7);
+        convertToAsset[0] = address(9);
+        convertToAsset[1] = address(10);
+        convertToAsset[2] = address(10);
+        percentDistribution[0] = 30;
+        percentDistribution[1] = 30;
+        percentDistribution[2] = 40;
+        
+        treasury.setTaxDistribution(
+            0, 
+            3, 
+            wallets, 
+            convertToAsset, 
+            percentDistribution
+        );
+
+        (
+            _walletCount, 
+            _wallets, 
+            _convertToAsset, 
+             _percentDistribution
+        ) = treasury.viewTaxSettings(0);
+
+        assertEq(_walletCount, 3);
+        assertEq(_wallets[0], address(5));
+        assertEq(_wallets[1], address(6));
+        assertEq(_wallets[2], address(7));
+        assertEq(_convertToAsset[0], address(9));
+        assertEq(_convertToAsset[1], address(10));
+        assertEq(_convertToAsset[2], address(10));
+        assertEq(_percentDistribution[0], 30);
+        assertEq(_percentDistribution[1], 30);
+        assertEq(_percentDistribution[2], 40);
+    }
+
 }
