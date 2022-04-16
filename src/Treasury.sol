@@ -112,9 +112,9 @@ contract Treasury {
     function setTaxDistribution(
         uint taxType,
         uint walletCount,
-        address[] calldata wallets,
-        address[] calldata convertToAsset,
-        uint[] calldata percentDistribution
+        address[] memory wallets,
+        address[] memory convertToAsset,
+        uint[] memory percentDistribution
     ) isAdmin public {
 
         // Pre-check that supplied values have equal lengths.
