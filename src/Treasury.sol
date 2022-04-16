@@ -11,14 +11,14 @@ contract Treasury {
     // State Variables
     // ---------------
 
-    address taxToken;   /// @dev The token that fees are taken from, and what is held in escrow here.
-    address admin;      /// @dev The administrator of accounting and distribution settings.
+    address public taxToken;   /// @dev The token that fees are taken from, and what is held in escrow here.
+    address public admin;      /// @dev The administrator of accounting and distribution settings.
 
     /// @dev    Handles the internal accounting for how much taxToken is owed to each taxType.
     /// @notice e.g. 10,000 taxToken owed to taxType 0 => taxTokenAccruedForTaxType[0] = 10000 * 10**18
-    mapping(uint => uint) taxTokenAccruedForTaxType;
+    mapping(uint => uint) public taxTokenAccruedForTaxType;
 
-    mapping(uint => TaxDistribution) taxSettings;   /// @dev Mapping of taxType to TaxDistribution struct.
+    mapping(uint => TaxDistribution) public taxSettings;   /// @dev Mapping of taxType to TaxDistribution struct.
  
     /// @dev    Manages how TaxToken is distributed for a given taxType.
     ///         Variables:
@@ -117,19 +117,24 @@ contract Treasury {
         uint[] memory percentDistribution
     ) isAdmin public {
 
-        // TODO: Require walletCount = wallets.length
-        // TODO: Require walletCount = converToAsset.length
-        // TODO: Require walletCount = percentDistribution.length
-        // TODO: Require sum(percentDistribution) = 100
+        // Pre-check that supplied values have equal lengths.
+        require(walletCount == wallets.length, "err walletCount length != wallets.length");
+        require(walletCount == convertToAsset.length, "err walletCount length != convertToAsset.length");
+        require(walletCount == percentDistribution.length, "err walletCount length != percentDistribution.length");
 
-        // TODO: Do we check if asset in convertToAsset is available via Uniswap V2.
+        // Enforce sum(percentDistribution) = 100;
+        uint sumPercentDistribution;
+        for(uint i = 0; i < walletCount; i++) {
+            sumPercentDistribution += percentDistribution[i];
+        }
+        require(sumPercentDistribution == 100, "err sumPercentDistribution != 100");
 
-        // taxSettings[taxType] = TaxDistribution(
-        //     walletCount,
-        //     wallets,
-        //     convertToAsset,
-        //     percentDistribution
-        // );
+        taxSettings[taxType] = TaxDistribution(
+            walletCount,
+            wallets,
+            convertToAsset,
+            percentDistribution
+        );
     }
 
     /// @dev    Distributes taxes for given taxType.
@@ -149,6 +154,12 @@ contract Treasury {
         distributeTaxes(0);
         distributeTaxes(1);
         distributeTaxes(2);
+    }
+
+
+    /// @dev    Helper view function for taxTokenAccruedForTaxType.
+    function viewTaxTokenAccruedForTaxType(uint taxType) public view returns(uint256) {
+        return taxTokenAccruedForTaxType[taxType];
     }
 
 }
