@@ -13,8 +13,6 @@ contract TaxTokenTest is Utility {
     // State variable for contract.
     TaxToken taxToken;
     Treasury treasury;
-    address UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
-    address UNIV2_PAIR = 0xf1d107ac566473968fC5A90c9EbEFe42eA3248a4;
 
 
     // setUp() runs before every single test-case.
