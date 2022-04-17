@@ -52,6 +52,8 @@ contract TreasuryTest is Utility {
         taxToken.adjustBasisPointsTax(1, 1200);   // 1200 = 12.00 %
         taxToken.adjustBasisPointsTax(2, 1500);   // 1500 = 15.00 %
 
+        taxToken.modifyWhitelist(address(treasury), true);
+
         
         // Convert our ETH to WETH
         uint ETH_DEPOSIT = 100 ether;
@@ -311,6 +313,54 @@ contract TreasuryTest is Utility {
         assertEq(_percentDistribution[0], 30);
         assertEq(_percentDistribution[1], 30);
         assertEq(_percentDistribution[2], 40);
+    }
+
+    function test_treasury_taxDistribution() public {
+
+        address[] memory wallets = new address[](2);
+        address[] memory convertToAsset = new address[](2);
+        uint[] memory percentDistribution = new uint[](2);
+        
+        wallets[0] = address(0);
+        wallets[1] = address(1);
+        convertToAsset[0] = address(taxToken);
+        convertToAsset[1] = address(taxToken);
+        percentDistribution[0] = 50;
+        percentDistribution[1] = 50;
+        
+        treasury.setTaxDistribution(
+            1, 
+            2, 
+            wallets, 
+            convertToAsset, 
+            percentDistribution
+        );
+
+        treasury.distributeTaxes(1);
+    }
+
+    function test_treasury_taxDistribution_conversion() public {
+
+        address[] memory wallets = new address[](2);
+        address[] memory convertToAsset = new address[](2);
+        uint[] memory percentDistribution = new uint[](2);
+        
+        wallets[0] = address(0);
+        wallets[1] = address(1);
+        convertToAsset[0] = address(taxToken);
+        convertToAsset[1] = WETH;
+        percentDistribution[0] = 50;
+        percentDistribution[1] = 50;
+        
+        treasury.setTaxDistribution(
+            1, 
+            2, 
+            wallets, 
+            convertToAsset, 
+            percentDistribution
+        );
+
+        treasury.distributeTaxes(1);
     }
 
 }
