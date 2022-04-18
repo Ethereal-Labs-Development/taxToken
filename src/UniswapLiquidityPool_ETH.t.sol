@@ -11,7 +11,7 @@ import "./Treasury.sol";
 // Import interface.
 import { IERC20, IUniswapV2Router01, IWETH } from "./interfaces/ERC20.sol";
 
-contract TaxTokenTest is Utility {
+contract UniswapLiquidityPoolETHTest is Utility {
 
     // State variable for contract.
     TaxToken taxToken;
