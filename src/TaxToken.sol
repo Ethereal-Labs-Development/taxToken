@@ -400,28 +400,46 @@ contract TaxToken {
 
     // ~ Admin ~
 
+    /// @notice This is used to change the owner's wallet address. Used to give ownership to another wallet.
+    /// @param _owner is the new owner address
     function transferOwnership(address _owner) public onlyOwner {
         owner = _owner;
     }
 
+    /// @notice This is used to set the trasury address of the parallel trasury contract for this tax token.
+    /// @param _treasury is the contract address of the treasury
     function setTreasury(address _treasury) public onlyOwner {
         require(!treasurySet);
         treasury = _treasury;
         treasurySet = true;
     }
 
+    /// @notice This function is used to set the max Tx amount per wallet
+    /// @dev does not affect whitelisted wallets
+    /// @param _maxTxAmount is the max amount of tokens that can be transacted at one time for a non-whitelisted wallet
     function updateMaxTxAmount(uint256 _maxTxAmount) public onlyOwner {
         maxTxAmount = (_maxTxAmount * 10**18 );
     }
-    
+
+    /// @notice This function is used to set the max wallet size aka the max amount of tokens a wallet can hold
+    /// @dev does not affect whitelisted wallets
+    /// @param _maxWalletSize is the max amount of tokens that can be held on a non-whitelisted wallet.
     function updateMaxWalletSize(uint256 _maxWalletSize) public onlyOwner {
         maxWalletSize = (_maxWalletSize * 10**18 );
     }
 
+    /// @notice This function is used to add wallets to the whitelist mapping
+    /// @dev whitelisted wallets are not affected by maxWalletSize, maxTxAmount, and taxes
+    /// @param _wallet is the wallet address that will be added to whitelist
+    /// @param _whitelist true if wallet is whitelisted, otherwise false
     function modifyWhitelist(address _wallet, bool _whitelist) public onlyOwner {
         whitelist[_wallet] = _whitelist;
     }
 
+    /// @notice This function is used to add wallets to the isBlacklisted mapping
+    /// @dev blacklisted wallets cannot perform a transaction
+    /// @param _wallet is the wallet address that will be added to the blacklist
+    /// @param _blacklist true if wallet is blacklisted, otherwise false
     function modifyBlacklist(address _wallet, bool _blacklist) public onlyOwner {
         isBlacklisted[_wallet] = _blacklist;
     }
