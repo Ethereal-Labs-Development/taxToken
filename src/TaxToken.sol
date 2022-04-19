@@ -371,18 +371,30 @@ contract TaxToken {
     
     // ~ TaxType & Fee Management ~
 
+    /// @notice Used to store the LP Pair to differ type of transaction. Will be used to mark a BUY
+    /// @dev _taxType must be lower than 3 because there can only be 3 tax types; buy, sell, & send
+    /// @param _sender This value is the PAIR address
+    /// @param _taxType This value must be be 0, 1, or 2. Best to correspond value with the BUY tax type
     function updateSenderTaxType(address _sender, uint _taxType) public onlyOwner {
-        require(_taxType < 3);
+        require(_taxType < 3, "err _taxType must be less than 3");
         senderTaxType[_sender] = _taxType;
     }
 
+    /// @notice Used to store the LP Pair to differ type of transaction. Will be used to mark a SELL
+    /// @dev _taxType must be lower than 3 because there can only be 3 tax types; buy, sell, & send
+    /// @param _receiver This value is the PAIR address
+    /// @param _taxType This value must be be 0, 1, or 2. Best to correspond value with the SELL tax type
     function updateReceiverTaxType(address _receiver, uint _taxType) public onlyOwner {
-        require(_taxType < 3);
+        require(_taxType < 3, "err _taxType must be less than 3");
         receiverTaxType[_receiver] = _taxType;
     }
 
+    /// @notice Used to map the tax type 0, 1 or 2 with it's corresponding tax percentage
+    /// @dev Must be lower than 10000 which is equivalent to 100%
+    /// @param _taxType This value is the tax type. Has to be 0, 1, or 2
+    /// @param _bpt This is the corresponding percentage that is taken for royalties. 1200 = 12%
     function adjustBasisPointsTax(uint _taxType, uint _bpt) public onlyOwner {
-        require(_bpt <= 10000, "err TaxToken.sol _bpt > 10000");
+        require(_bpt <= 10000, "err TaxToken.sol _bpt > 100.00%");
         require(!taxesRemoved, "err TaxToken.sol taxation has been removed");
         basisPointsTax[_taxType] = _bpt;
     }
