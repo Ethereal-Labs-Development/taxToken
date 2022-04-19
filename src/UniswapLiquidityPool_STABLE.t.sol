@@ -23,13 +23,12 @@ contract UniswapLiquidityPoolSTABLETest is Utility {
     // setUp() runs before every tests conduct.
     function setUp() public {
         taxToken = new TaxToken(
-            1000 ether,                 // Initial liquidity
-            'Darpa',                    // Name of token.
-            'DRPK',                     // Symbol of token.
-            18,                         // Precision of decimals.
-            100,                        // Max wallet size
-            10,                         // Max transaction amount 
-            address(this)               // The "owner" / "admin" of the contract.
+            1000,                 // Initial liquidity
+            'Darpa',              // Name of token.
+            'DRPK',               // Symbol of token.
+            18,                   // Precision of decimals.
+            100,                  // Max wallet size
+            10                    // Max transaction amount
         );
 
         treasury = new Treasury(

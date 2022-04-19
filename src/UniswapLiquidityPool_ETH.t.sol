@@ -28,13 +28,12 @@ contract UniswapLiquidityPoolETHTest is Utility {
 
         // Token instantiation.
         taxToken = new TaxToken(
-            1000000000 ether,           // Initial liquidity
-            'ProveZero',                // Name of token.
-            'PROZ',                     // Symbol of token.
-            18,                         // Precision of decimals.
-            1000000,                    // Max wallet size
-            100000,                     // Max transaction amount 
-            address(this)               // The "owner" / "admin" of the contract.
+            1000000000,             // Initial liquidity
+            'ProveZero',            // Name of token.
+            'PROZ',                 // Symbol of token.
+            18,                     // Precision of decimals.
+            1000000,                // Max wallet size
+            100000                  // Max transaction amount 
         );
 
         // Treasury instantiation. TaxToken reference updated.
@@ -95,8 +94,8 @@ contract UniswapLiquidityPoolETHTest is Utility {
                 receiverTaxType[_receiver] = _taxType;
             }
         */
-        taxToken.updateSenderTaxType(UNIV2_PAIR, 1);
-        taxToken.updateReceiverTaxType(UNIV2_PAIR, 2);
+        // taxToken.updateSenderTaxType(UNIV2_PAIR, 1);
+        // taxToken.updateReceiverTaxType(UNIV2_PAIR, 2);
     }
 
 

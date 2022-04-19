@@ -16,6 +16,7 @@ contract TreasuryTest is Utility {
     // State variable for contract.
     TaxToken taxToken;
     Treasury treasury;
+
     address UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
     address UNIV2_PAIR = 0xf1d107ac566473968fC5A90c9EbEFe42eA3248a4;
 
@@ -28,13 +29,12 @@ contract TreasuryTest is Utility {
 
         // Token instantiation.
         taxToken = new TaxToken(
-            1000000000 ether,           // Initial liquidity
-            'ProveZero',                // Name of token.
-            'PROZ',                     // Symbol of token.
-            18,                         // Precision of decimals.
-            1000000,                    // Max wallet size
-            100000,                     // Max transaction amount 
-            address(this)               // The "owner" / "admin" of the contract.
+            1000000000,                // Initial liquidity
+            'ProveZero',               // Name of token.
+            'PROZ',                    // Symbol of token.
+            18,                        // Precision of decimals.
+            1000000,                   // Max wallet size
+            100000                     // Max transaction amount
         );
 
         treasury = new Treasury(
@@ -82,8 +82,8 @@ contract TreasuryTest is Utility {
         );
 
         taxToken.modifyWhitelist(address(this), false);
-        taxToken.updateSenderTaxType(UNIV2_PAIR, 1);
-        taxToken.updateReceiverTaxType(UNIV2_PAIR, 2);
+        // taxToken.updateSenderTaxType(UNIV2_PAIR, 1);
+        // taxToken.updateReceiverTaxType(UNIV2_PAIR, 2);
 
         // Simulate sell (taxType 2)
 

@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import { ITreasury } from "./interfaces/ERC20.sol";
+import { ITreasury, IUniswapV2Factory, IUniswapV2Router01 } from "./interfaces/ERC20.sol";
 
 contract TaxToken {
  
@@ -20,8 +20,8 @@ contract TaxToken {
 
     // Extras
     address public owner;
-    address public adminWallet;
     address public treasury;
+    address public UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
     bool public treasurySet;
     bool public taxesRemoved;   // Once true, taxes are permanently set to 0 and CAN NOT be increased in the future.
     uint256 public maxWalletSize;
@@ -32,11 +32,11 @@ contract TaxToken {
     mapping(address => mapping(address => uint256)) allowed;    // Track allowances.
 
     // Extras Mappings
-    mapping(address => bool) public isBlacklisted;     // If an address is blacklisted, they cannot transact
-    mapping(address => bool) public whitelist;         // Any transfer that involves a whitelisted address, will not incur a tax.
-    mapping(address => uint) senderTaxType;     // Identifies tax type for msg.sender of transfer() call.
-    mapping(address => uint) receiverTaxType;   // Identifies tax type for _to of transfer() call.
-    mapping(uint => uint) public basisPointsTax;       // Mapping between taxType and basisPoints (taxed).
+    mapping(address => bool) public blacklist;      // If an address is blacklisted, they cannot transact
+    mapping(address => bool) public whitelist;      // Any transfer that involves a whitelisted address, will not incur a tax.
+    mapping(address => uint) senderTaxType;         // Identifies tax type for msg.sender of transfer() call.
+    mapping(address => uint) receiverTaxType;       // Identifies tax type for _to of transfer() call.
+    mapping(uint => uint) public basisPointsTax;    // Mapping between taxType and basisPoints (taxed).
 
 
 
@@ -51,22 +51,27 @@ contract TaxToken {
         string memory nameInput, 
         string memory symbolInput, 
         uint8 decimalsInput,
-        uint256 maxWalletSizeInput,                  // for MaxWalletSize and MaxTxAmount just input the desired non decimal multiple number -
-        uint256 maxTxAmountInput,                    // ie: 1000 tokens instead of 1000 * 10**Decimal
-        address adminWalletInput
-
+        uint256 maxWalletSizeInput,                 // for MaxWalletSize and MaxTxAmount just input the desired non decimal multiple number -
+        uint256 maxTxAmountInput                    // ie: 1000 tokens instead of 1000 * 10**Decimal
     ) {
-
-        _paused = false;                            // ERC20 Pausable global state variable, initial state is not paused ("unpaused").
-        _totalSupply = totalSupplyInput;
+        _paused = false;    // ERC20 Pausable global state variable, initial state is not paused ("unpaused").
         _name = nameInput;
         _symbol = symbolInput;
         _decimals = decimalsInput;
+        _totalSupply = totalSupplyInput * 10**_decimals;
 
-        owner = msg.sender;                         // The "owner" is the "admin" of this contract.
-        balances[msg.sender] = totalSupplyInput;    // Initial liquidity, allocated entirely to "owner".
-        maxWalletSize = (maxWalletSizeInput * 10**_decimals);
-        maxTxAmount = (maxTxAmountInput * 10**_decimals);      
+        // Create a uniswap pair for this new token
+        address UNISWAP_V2_PAIR = IUniswapV2Factory(
+            IUniswapV2Router01(UNIV2_ROUTER).factory()
+        ).createPair(address(this), IUniswapV2Router01(UNIV2_ROUTER).WETH());
+ 
+        senderTaxType[UNISWAP_V2_PAIR] = 1;
+        receiverTaxType[UNISWAP_V2_PAIR] = 2;
+
+        owner = msg.sender;                                         // The "owner" is the "admin" of this contract.
+        balances[msg.sender] = totalSupplyInput * 10**_decimals;    // Initial liquidity, allocated entirely to "owner".
+        maxWalletSize = maxWalletSizeInput * 10**_decimals;
+        maxTxAmount = maxTxAmountInput * 10**_decimals;      
     }
 
  
@@ -161,7 +166,7 @@ contract TaxToken {
         emit LogAddy('_to', _to);
         emit LogUint('_amount', _amount);
 
-        if (balances[msg.sender] >= _amount && (!isBlacklisted[msg.sender] && !isBlacklisted[_to])) {
+        if (balances[msg.sender] >= _amount && (!blacklist[msg.sender] && !blacklist[_to])) {
 
             // Take a tax from them if neither party is whitelisted.
             if (!whitelist[_to] && !whitelist[msg.sender] && _amount <= maxTxAmount) {
@@ -255,7 +260,7 @@ contract TaxToken {
             balances[_from] >= _amount && 
             allowed[_from][msg.sender] >= _amount && 
             _amount > 0 && balances[_to] + _amount > balances[_to] && 
-            _amount <= maxTxAmount && (!isBlacklisted[_from] && !isBlacklisted[_to])
+            _amount <= maxTxAmount && (!blacklist[_from] && !blacklist[_to])
         ) {
             
             // Reduce allowance.
@@ -405,9 +410,7 @@ contract TaxToken {
     }
 
     function setTreasury(address _treasury) public onlyOwner {
-        require(!treasurySet);
         treasury = _treasury;
-        treasurySet = true;
     }
 
     function updateMaxTxAmount(uint256 _maxTxAmount) public onlyOwner {
@@ -423,7 +426,7 @@ contract TaxToken {
     }
 
     function modifyBlacklist(address _wallet, bool _blacklist) public onlyOwner {
-        isBlacklisted[_wallet] = _blacklist;
+        blacklist[_wallet] = _blacklist;
     }
     
 }
