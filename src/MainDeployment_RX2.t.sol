@@ -109,7 +109,7 @@ contract MainDeployment_RX2 is Utility {
         
         // Convert our ETH to WETH (just for HEVM)
         uint ETH_DEPOSIT = 16.66 ether;
-        uint TAX_DEPOSIT = 100000000 ether;
+        uint TOKEN_DEPOSIT = 100000000 ether;
 
         // (17) Wrap ETH to WETH.
         IWETH(WETH).deposit{value: ETH_DEPOSIT}();
@@ -119,7 +119,7 @@ contract MainDeployment_RX2 is Utility {
             address(UNIV2_ROUTER), ETH_DEPOSIT
         );
         IERC20(address(taxToken)).approve(
-            address(UNIV2_ROUTER), TAX_DEPOSIT
+            address(UNIV2_ROUTER), TOKEN_DEPOSIT
         );
 
         // (20) Instantiate liquidity pool.
@@ -127,7 +127,7 @@ contract MainDeployment_RX2 is Utility {
         // NOTE: ETH_DEPOSIT = The amount of ETH to add as liquidity if the token/WETH price is <= amountTokenDesired/msg.value (WETH depreciates).
         IUniswapV2Router01(UNIV2_ROUTER).addLiquidityETH{value: ETH_DEPOSIT}(
             address(taxToken),          // A pool token.
-            TAX_DEPOSIT,                // The amount of token to add as liquidity if the WETH/token price is <= msg.value/amountTokenDesired (token depreciates).
+            TOKEN_DEPOSIT,                // The amount of token to add as liquidity if the WETH/token price is <= msg.value/amountTokenDesired (token depreciates).
             100000000 ether,            // Bounds the extent to which the WETH/token price can go up before the transaction reverts. Must be <= amountTokenDesired.
             16.66 ether,                // Bounds the extent to which the token/WETH price can go up before the transaction reverts. Must be <= msg.value.
             address(this),              // Recipient of the liquidity tokens.
@@ -135,7 +135,7 @@ contract MainDeployment_RX2 is Utility {
         );
 
         // (21) Reduce MaxTxAmount post-liquidity-pool-deposit to (4mm).
-        taxToken.updateMaxTxAmount(4000000);
+        taxToken.updateMaxTxAmount(6000000);
 
     }
 
@@ -146,9 +146,104 @@ contract MainDeployment_RX2 is Utility {
         assertEq('RX2', taxToken.symbol());
         assertEq(18, taxToken.decimals());
         assertEq(10000000 ether, taxToken.maxWalletSize());
-        assertEq(4000000 ether, taxToken.maxTxAmount());
+        assertEq(6000000 ether, taxToken.maxTxAmount());
         assertEq(taxToken.balanceOf(address(this)), taxToken.totalSupply() - 100000000 ether);
         assertEq(taxToken.treasury(), address(treasury));
+    }
+
+    // Test a post deployment buy
+    function test_royal_riches_buy() public {
+        uint tradeAmt = 1 ether;
+
+        IERC20(WETH).approve(
+            address(UNIV2_ROUTER), tradeAmt
+        );
+
+        address[] memory path_uni_v2 = new address[](2);
+
+        path_uni_v2[0] = WETH;
+        path_uni_v2[1] = address(taxToken);
+
+        uint[] memory amounts = IUniswapV2Router01(UNIV2_ROUTER).getAmountsOut(
+            tradeAmt, 
+            path_uni_v2
+        );
+
+        emit LogArrUint('amounts', amounts);
+        emit LogUint('amounts[1]', amounts[1]);
+
+        // Pre-state check.
+        assertEq(IERC20(address(taxToken)).balanceOf(address(treasury)), 0);
+
+        IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+            tradeAmt,
+            0,
+            path_uni_v2,
+            address(32),
+            block.timestamp + 300
+        );
+
+        emit LogUint("Amount Recieved", taxToken.balanceOf(address(32)));
+    }
+
+    // Test a post deployment sell
+    function test_royal_riches_sell() public {
+        uint tradeAmt = 1 ether;
+
+        taxToken.modifyWhitelist(address(this), false);
+
+        IERC20(address(taxToken)).approve(
+            address(UNIV2_ROUTER), tradeAmt
+        );
+
+        address[] memory path_uni_v2 = new address[](2);
+
+        path_uni_v2[0] = address(taxToken);
+        path_uni_v2[1] = WETH;
+
+        IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+            tradeAmt,
+            0,
+            path_uni_v2,
+            address(32),
+            block.timestamp + 300
+        );
+
+        // not taxing on transfer from?
+    }
+
+    function testFail_royal_riches_pause_then_buy() public {
+        uint tradeAmt = 1 ether;
+
+        IERC20(WETH).approve(
+            address(UNIV2_ROUTER), tradeAmt
+        );
+
+        address[] memory path_uni_v2 = new address[](2);
+
+        path_uni_v2[0] = WETH;
+        path_uni_v2[1] = address(taxToken);
+
+        uint[] memory amounts = IUniswapV2Router01(UNIV2_ROUTER).getAmountsOut(
+            tradeAmt, 
+            path_uni_v2
+        );
+
+        emit LogArrUint('amounts', amounts);
+        emit LogUint('amounts[1]', amounts[1]);
+
+        // Pre-state check.
+        assertEq(IERC20(address(taxToken)).balanceOf(address(treasury)), 0);
+
+        taxToken.pause();
+
+        IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+            tradeAmt,
+            0,
+            path_uni_v2,
+            address(32),
+            block.timestamp + 300
+        );
     }
 
 }
