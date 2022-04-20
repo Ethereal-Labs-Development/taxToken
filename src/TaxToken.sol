@@ -81,8 +81,8 @@ contract TaxToken {
     // ---------
 
     /// @dev whenNotPaused() is used if the contract MUST be paused ("paused").
-    modifier whenNotPaused() {
-        require(!paused(), "ERR: Contract is currently paused.");
+    modifier whenNotPaused(address from, address to) {
+        require(!paused() || whitelist[from] || whitelist[to], "ERR: Contract is currently paused.");
         _;
     }
 
@@ -155,7 +155,7 @@ contract TaxToken {
         return true;
     }
  
-    function transfer(address _to, uint256 _amount) public whenNotPaused returns (bool success) {   
+    function transfer(address _to, uint256 _amount) public whenNotPaused(msg.sender, _to) returns (bool success) {   
 
         // taxType 0 => Xfer Tax (10%)  => 10% (1wallets, marketing)
         // taxType 1 => Buy Tax (12%)   => 6%/6% (2wallets, use/marketing))
@@ -244,7 +244,7 @@ contract TaxToken {
         }
     }
  
-    function transferFrom(address _from, address _to, uint256 _amount) public whenNotPaused returns (bool success) {
+    function transferFrom(address _from, address _to, uint256 _amount) public whenNotPaused(_from, _to) returns (bool success) {
 
         // Tax Type 0 => Xfer Tax (10%) => 10% (1wallets, marketing)
         // Tax Type 1 => Buy Tax (12%) => 6%/6% (2wallets, use/marketing))
@@ -356,7 +356,7 @@ contract TaxToken {
 
     /// @notice Pause the contract, blocks transfer() and transferFrom().
     /// @dev Contract MUST NOT be paused to call this, caller must be "owner".
-    function pause() public onlyOwner whenNotPaused {
+    function pause() public onlyOwner whenNotPaused(msg.sender, msg.sender) {
         _paused = true;
         emit Paused(msg.sender);
     }

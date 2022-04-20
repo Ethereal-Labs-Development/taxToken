@@ -122,6 +122,8 @@ contract MainDeployment_RX2 is Utility {
             address(UNIV2_ROUTER), TOKEN_DEPOSIT
         );
 
+        taxToken.pause();
+
         // (20) Instantiate liquidity pool.
         // https://docs.uniswap.org/protocol/V2/reference/smart-contracts/router-02#addliquidityeth
         // NOTE: ETH_DEPOSIT = The amount of ETH to add as liquidity if the token/WETH price is <= amountTokenDesired/msg.value (WETH depreciates).
@@ -136,6 +138,8 @@ contract MainDeployment_RX2 is Utility {
 
         // (21) Reduce MaxTxAmount post-liquidity-pool-deposit to (4mm).
         taxToken.updateMaxTxAmount(6000000);
+
+        taxToken.unpause();
 
     }
 
@@ -189,8 +193,11 @@ contract MainDeployment_RX2 is Utility {
     // Test a post deployment sell
     function test_royal_riches_sell() public {
         uint tradeAmt = 1 ether;
+        taxToken.transfer(address(32), 2 ether);
 
-        taxToken.modifyWhitelist(address(this), false);
+        emit LogUint("Balance of address 32", taxToken.balanceOf(address(32)));
+
+        taxToken.modifyWhitelist(address(this), false); // Had to remove address(this) from whitelist to yield a taxed sell
 
         IERC20(address(taxToken)).approve(
             address(UNIV2_ROUTER), tradeAmt
@@ -209,9 +216,10 @@ contract MainDeployment_RX2 is Utility {
             block.timestamp + 300
         );
 
-        // not taxing on transfer from?
+        
     }
 
+    // Test a post deployment buy after pausing the contract
     function testFail_royal_riches_pause_then_buy() public {
         uint tradeAmt = 1 ether;
 
@@ -234,6 +242,101 @@ contract MainDeployment_RX2 is Utility {
 
         // Pre-state check.
         assertEq(IERC20(address(taxToken)).balanceOf(address(treasury)), 0);
+
+        taxToken.pause(); // pause
+
+        IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+            tradeAmt,
+            0,
+            path_uni_v2,
+            address(32),
+            block.timestamp + 300
+        );
+    }
+
+    // Test a post deployment sell atfer pausing the contract
+    function testFail_royal_riches_pause_then_sell() public {
+        uint tradeAmt = 1 ether;
+        taxToken.transfer(address(32), 2 ether);
+
+        emit LogUint("Balance of address 32", taxToken.balanceOf(address(32)));
+
+        taxToken.modifyWhitelist(address(this), false);
+
+        IERC20(address(taxToken)).approve(
+            address(UNIV2_ROUTER), tradeAmt
+        );
+
+        address[] memory path_uni_v2 = new address[](2);
+
+        path_uni_v2[0] = address(taxToken);
+        path_uni_v2[1] = WETH;
+
+        taxToken.pause(); // pause
+
+        IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+            tradeAmt,
+            0,
+            path_uni_v2,
+            address(32),
+            block.timestamp + 300
+        );
+    }
+
+    // Test a post deployment whitelisted buy after pausing the contract
+    function test_royal_riches_pause_then_WL_buy() public {
+        uint tradeAmt = 1 ether;
+        
+        taxToken.modifyWhitelist(address(32), true);
+
+        IERC20(WETH).approve(
+            address(UNIV2_ROUTER), tradeAmt
+        );
+
+        address[] memory path_uni_v2 = new address[](2);
+
+        path_uni_v2[0] = WETH;
+        path_uni_v2[1] = address(taxToken);
+
+        uint[] memory amounts = IUniswapV2Router01(UNIV2_ROUTER).getAmountsOut(
+            tradeAmt, 
+            path_uni_v2
+        );
+
+        emit LogArrUint('amounts', amounts);
+        emit LogUint('amounts[1]', amounts[1]);
+
+        // Pre-state check.
+        assertEq(IERC20(address(taxToken)).balanceOf(address(treasury)), 0);
+
+        taxToken.pause();
+
+        IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+            tradeAmt,
+            0,
+            path_uni_v2,
+            address(32),
+            block.timestamp + 300
+        );
+    }
+
+    // Test a post deployment whitelisted sell after pausing the contract
+    function test_royal_riches_pause_then_WL_sell() public {
+        uint tradeAmt = 1 ether;
+        taxToken.transfer(address(32), 2 ether);
+
+        emit LogUint("Balance of address 32", taxToken.balanceOf(address(32)));
+
+        taxToken.modifyWhitelist(address(32), true);
+
+        IERC20(address(taxToken)).approve(
+            address(UNIV2_ROUTER), tradeAmt
+        );
+
+        address[] memory path_uni_v2 = new address[](2);
+
+        path_uni_v2[0] = address(taxToken);
+        path_uni_v2[1] = WETH;
 
         taxToken.pause();
 
