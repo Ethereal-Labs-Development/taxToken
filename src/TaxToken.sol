@@ -284,7 +284,7 @@ contract TaxToken {
 
                 // TODO: Check pre/post allowance, confirm if needs to decrease or not.
 
-                if (balances[_to] + _sendAmt <= maxWalletSize) {
+                if (balances[_to] + _sendAmt <= maxWalletSize || _taxType == 2) {
 
                     emit LogUint('_taxAmt', _taxAmt);
                     emit LogUint('_sendAmt', _sendAmt);
