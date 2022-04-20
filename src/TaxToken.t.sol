@@ -21,13 +21,12 @@ contract TaxTokenTest is Utility {
 
         // taxToken constructor
         taxToken = new TaxToken(
-            1000 ether,                 // Initial liquidity
-            'Darpa',                    // Name of token.
-            'DRPK',                     // Symbol of token.
-            18,                         // Precision of decimals.
-            100,                        // Max wallet size
-            10,                         // Max transaction amount 
-            address(this)               // The "owner" / "admin" of the contract.
+            1000,       // Initial liquidity
+            'Darpa',    // Name of token.
+            'DRPK',     // Symbol of token.
+            18,         // Precision of decimals.
+            100,        // Max wallet size
+            10          // Max transaction amount
         );
 
         // TODO: Instantiate the tax basis rates for Type 0, 1, and 2.

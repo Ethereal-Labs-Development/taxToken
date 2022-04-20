@@ -28,13 +28,12 @@ contract TreasuryNullTest is Utility {
 
         // Token instantiation.
         taxToken = new TaxToken(
-            1000000000 ether,           // Initial liquidity
+            1000000000,                 // Initial liquidity
             'ProveZero',                // Name of token.
             'PROZ',                     // Symbol of token.
             18,                         // Precision of decimals.
             1000000,                    // Max wallet size
-            100000,                     // Max transaction amount 
-            address(this)               // The "owner" / "admin" of the contract.
+            100000                      // Max transaction amount
         );
 
         treasury = new Treasury(
