@@ -136,7 +136,7 @@ contract MainDeployment_RX2 is Utility {
             block.timestamp + 300       // Unix timestamp after which the transaction will revert.
         );
 
-        // (21) Reduce MaxTxAmount post-liquidity-pool-deposit to (4mm).
+        // (21) Reduce MaxTxAmount post-liquidity-pool-deposit to (6mm).
         taxToken.updateMaxTxAmount(6000000);
 
         taxToken.unpause();
@@ -187,7 +187,7 @@ contract MainDeployment_RX2 is Utility {
             block.timestamp + 300
         );
 
-        emit LogUint("Amount Recieved", taxToken.balanceOf(address(32)));
+        emit LogUint("Amount_Recieved_TaxToken", taxToken.balanceOf(address(32)));
     }
 
     // Test a post deployment sell
@@ -216,7 +216,7 @@ contract MainDeployment_RX2 is Utility {
             block.timestamp + 300
         );
 
-        
+        emit LogUint("Amount_Received_WETH", IERC20(WETH).balanceOf(address(32)));
     }
 
     // Test a post deployment buy after pausing the contract
