@@ -394,7 +394,7 @@ contract TaxToken {
     /// @param _taxType This value is the tax type. Has to be 0, 1, or 2
     /// @param _bpt This is the corresponding percentage that is taken for royalties. 1200 = 12%
     function adjustBasisPointsTax(uint _taxType, uint _bpt) public onlyOwner {
-        require(_bpt <= 10000, "err TaxToken.sol _bpt > 100.00%");
+        require(_bpt <= 10000, "err TaxToken.sol _bpt > 10000");
         require(!taxesRemoved, "err TaxToken.sol taxation has been removed");
         basisPointsTax[_taxType] = _bpt;
     }
@@ -418,7 +418,7 @@ contract TaxToken {
         owner = _owner;
     }
 
-    /// @notice This is used to set the trasury address of the parallel trasury contract for this tax token.
+    /// @notice This is used to set the treasury address of the parallel treasury contract for this tax token.
     /// @param _treasury is the contract address of the treasury
     function setTreasury(address _treasury) public onlyOwner {
         require(!treasurySet);
@@ -430,14 +430,14 @@ contract TaxToken {
     /// @dev does not affect whitelisted wallets
     /// @param _maxTxAmount is the max amount of tokens that can be transacted at one time for a non-whitelisted wallet
     function updateMaxTxAmount(uint256 _maxTxAmount) public onlyOwner {
-        maxTxAmount = (_maxTxAmount * 10**18 );
+        maxTxAmount = (_maxTxAmount * 10**_decimals);
     }
 
     /// @notice This function is used to set the max wallet size aka the max amount of tokens a wallet can hold
     /// @dev does not affect whitelisted wallets
     /// @param _maxWalletSize is the max amount of tokens that can be held on a non-whitelisted wallet.
     function updateMaxWalletSize(uint256 _maxWalletSize) public onlyOwner {
-        maxWalletSize = (_maxWalletSize * 10**18 );
+        maxWalletSize = (_maxWalletSize * 10**_decimals);
     }
 
     /// @notice This function is used to add wallets to the whitelist mapping
