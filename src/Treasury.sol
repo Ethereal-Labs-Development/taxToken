@@ -92,7 +92,19 @@ contract Treasury {
         taxTokenAccruedForTaxType[taxType] += amt;
     }
 
-    
+    /// @dev    View function for taxes accrued (a.k.a. "claimable") for each tax type, and the sum.
+    /// @return _taxType0 Taxes accrued (claimable) for taxType0.
+    /// @return _taxType1 Taxes accrued (claimable) for taxType1.
+    /// @return _taxType2 Taxes accrued (claimable) for taxType2.
+    /// @return _sum Taxes accrued (claimable) for all tax types.
+    function viewTaxesAccrued() public view returns(uint _taxType0, uint _taxType1, uint _taxType2, uint _sum) {
+        return (
+            taxTokenAccruedForTaxType[0],
+            taxTokenAccruedForTaxType[1],
+            taxTokenAccruedForTaxType[2],
+            taxTokenAccruedForTaxType[0] + taxTokenAccruedForTaxType[1] + taxTokenAccruedForTaxType[2]
+        );
+    }
 
     /// @dev    This function modifies the distribution settings for a given taxType.
     /// @notice Only callable by Admin.
