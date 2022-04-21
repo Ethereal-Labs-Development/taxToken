@@ -363,4 +363,22 @@ contract TreasuryTest is Utility {
         treasury.distributeTaxes(1);
     }
 
+    function test_view_function_taxesAccrued() public {
+        (
+            uint _taxType0,
+            uint _taxType1,
+            uint _taxType2,
+            uint _sum
+        ) = treasury.viewTaxesAccrued();
+
+        emit LogUint("_taxType0", _taxType0);
+        emit LogUint("_taxType1", _taxType1);
+        emit LogUint("_taxType2", _taxType2);
+        emit LogUint("_sum", _sum);
+        assert(_taxType0 > 0);
+        assert(_taxType1 > 0);
+        assert(_taxType2 > 0);
+        assertEq(_sum, taxToken.balanceOf(address(treasury)));
+    }
+
 }
