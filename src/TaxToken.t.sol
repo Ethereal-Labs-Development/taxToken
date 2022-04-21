@@ -75,6 +75,11 @@ contract TaxTokenTest is Utility {
         taxToken.permanentlyRemoveTaxes(41);
     }
 
+    // Test adjustBasisPointsTax and ensure it is impossible to set basis tax over 20%
+    function testFail_adjustBasisPointsTax_aboveMax() public {
+        taxToken.adjustBasisPointsTax(0, 2100);
+    }
+
     // Test permanentlyRemoveTaxes() success case, taxes are 0 for the 3 explicit tax types (0, 1, 2).
     function test_remove_taxes_permanently() public {
         taxToken.permanentlyRemoveTaxes(42);
