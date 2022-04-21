@@ -171,9 +171,6 @@ contract UniswapLiquidityPoolETHTest is Utility {
         emit LogArrUint('amounts', amounts);
         emit LogUint('amounts[1]', amounts[1]);
 
-        // Pre-state check.
-        assertEq(IERC20(address(taxToken)).balanceOf(address(treasury)), 0);
-
         IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
             tradeAmt,
             0,

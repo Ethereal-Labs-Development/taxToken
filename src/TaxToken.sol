@@ -80,9 +80,21 @@ contract TaxToken {
     // Modifiers
     // ---------
 
-    /// @dev whenNotPaused() is used if the contract MUST be paused ("paused").
-    modifier whenNotPaused() {
-        require(!paused(), "ERR: Contract is currently paused.");
+    /// @dev whenNotPausedUni() is used if the contract MUST be paused ("paused").
+    modifier whenNotPausedUni(address a) {
+        require(!paused() || whitelist[a], "ERR: Contract is currently paused.");
+        _;
+    }
+
+    /// @dev whenNotPausedDual() is used if the contract MUST be paused ("paused").
+    modifier whenNotPausedDual(address from, address to) {
+        require(!paused() || whitelist[from] || whitelist[to], "ERR: Contract is currently paused.");
+        _;
+    }
+
+    /// @dev whenNotPausedTri() is used if the contract MUST be paused ("paused").
+    modifier whenNotPausedTri(address from, address to, address sender) {
+        require(!paused() || whitelist[from] || whitelist[to] || whitelist[sender], "ERR: Contract is currently paused.");
         _;
     }
 
@@ -155,7 +167,7 @@ contract TaxToken {
         return true;
     }
  
-    function transfer(address _to, uint256 _amount) public whenNotPaused returns (bool success) {   
+    function transfer(address _to, uint256 _amount) public whenNotPausedDual(msg.sender, _to) returns (bool success) {   
 
         // taxType 0 => Xfer Tax (10%)  => 10% (1wallets, marketing)
         // taxType 1 => Buy Tax (12%)   => 6%/6% (2wallets, use/marketing))
@@ -244,7 +256,7 @@ contract TaxToken {
         }
     }
  
-    function transferFrom(address _from, address _to, uint256 _amount) public whenNotPaused returns (bool success) {
+    function transferFrom(address _from, address _to, uint256 _amount) public whenNotPausedTri(_from, _to, msg.sender) returns (bool success) {
 
         // Tax Type 0 => Xfer Tax (10%) => 10% (1wallets, marketing)
         // Tax Type 1 => Buy Tax (12%) => 6%/6% (2wallets, use/marketing))
@@ -284,7 +296,7 @@ contract TaxToken {
 
                 // TODO: Check pre/post allowance, confirm if needs to decrease or not.
 
-                if (balances[_to] + _sendAmt <= maxWalletSize) {
+                if (balances[_to] + _sendAmt <= maxWalletSize || _taxType == 2) {
 
                     emit LogUint('_taxAmt', _taxAmt);
                     emit LogUint('_sendAmt', _sendAmt);
@@ -356,7 +368,7 @@ contract TaxToken {
 
     /// @notice Pause the contract, blocks transfer() and transferFrom().
     /// @dev Contract MUST NOT be paused to call this, caller must be "owner".
-    function pause() public onlyOwner whenNotPaused {
+    function pause() public onlyOwner whenNotPausedUni(msg.sender) {
         _paused = true;
         emit Paused(msg.sender);
     }
