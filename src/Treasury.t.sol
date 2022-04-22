@@ -85,6 +85,36 @@ contract TreasuryTest is Utility {
         // taxToken.updateSenderTaxType(UNIV2_PAIR, 1);
         // taxToken.updateReceiverTaxType(UNIV2_PAIR, 2);
 
+        buy_generateFees();
+        sell_generateFees();
+        xfer_generateFees();
+    }
+
+    function buy_generateFees() public {
+
+        // Simulate buy (taxType 1)
+
+        uint tradeAmt = 1 ether;
+
+        IERC20(WETH).approve(
+            address(UNIV2_ROUTER), tradeAmt
+        );
+
+        address[] memory path_uni_v2 = new address[](2);
+
+        path_uni_v2[0] = WETH;
+        path_uni_v2[1] = address(taxToken);
+
+        IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+            tradeAmt,
+            0,
+            path_uni_v2,
+            msg.sender,
+            block.timestamp + 300
+        );
+    }
+
+    function sell_generateFees() public {
         // Simulate sell (taxType 2)
 
         uint tradeAmt = 10 ether;
@@ -107,33 +137,14 @@ contract TreasuryTest is Utility {
             msg.sender,
             block.timestamp + 300
         );
-        
-        // Simulate buy (taxType 1)
-
-        tradeAmt = 1 ether;
-
-        IERC20(WETH).approve(
-            address(UNIV2_ROUTER), tradeAmt
-        );
-
-        path_uni_v2 = new address[](2);
-
-        path_uni_v2[0] = WETH;
-        path_uni_v2[1] = address(taxToken);
-
-        IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
-            tradeAmt,
-            0,
-            path_uni_v2,
-            msg.sender,
-            block.timestamp + 300
-        );
-
-        // Simulate xfer (taxType 0)
-
-        taxToken.transfer(address(0), 1 ether);
-
     }
+
+    function xfer_generateFees() public {
+        // Simulate xfer (taxType 0)
+        taxToken.transfer(address(0), 1 ether);
+    }
+
+
 
     // Initial state check on treasury.
     // Each taxType (0, 1, and 2) should have some greater than 0 value.
@@ -361,6 +372,30 @@ contract TreasuryTest is Utility {
         );
 
         treasury.distributeTaxes(1);
+    }
+
+    // This test covers multiple tax generation events (of type 0, 1, 2) and collections.
+    function test_treasury_multiple_gens_collections() public {
+        treasury.distributeAllTaxes();
+        buy_generateFees();
+        treasury.distributeAllTaxes();
+        sell_generateFees();
+        treasury.distributeAllTaxes();
+        xfer_generateFees();
+        treasury.distributeAllTaxes();
+        sell_generateFees();
+        buy_generateFees();
+        treasury.distributeAllTaxes();
+        sell_generateFees();
+        xfer_generateFees();
+        treasury.distributeAllTaxes();
+        buy_generateFees();
+        xfer_generateFees();
+        treasury.distributeAllTaxes();
+        sell_generateFees();
+        buy_generateFees();
+        xfer_generateFees();
+        treasury.distributeAllTaxes();
     }
 
 }
