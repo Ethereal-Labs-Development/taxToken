@@ -407,11 +407,11 @@ contract TaxToken {
     }
 
     /// @notice Used to map the tax type 0, 1 or 2 with it's corresponding tax percentage
-    /// @dev Must be lower than 10000 which is equivalent to 100%
+    /// @dev Must be lower than 2000 which is equivalent to 20%
     /// @param _taxType This value is the tax type. Has to be 0, 1, or 2
     /// @param _bpt This is the corresponding percentage that is taken for royalties. 1200 = 12%
     function adjustBasisPointsTax(uint _taxType, uint _bpt) public onlyOwner {
-        require(_bpt <= 10000, "err TaxToken.sol _bpt > 10000");
+        require(_bpt <= 2000, "err TaxToken.sol _bpt > 2000 (20%)");
         require(!taxesRemoved, "err TaxToken.sol taxation has been removed");
         basisPointsTax[_taxType] = _bpt;
     }
