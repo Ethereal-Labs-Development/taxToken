@@ -92,7 +92,19 @@ contract Treasury {
         taxTokenAccruedForTaxType[taxType] += amt;
     }
 
-    
+    /// @dev    View function for taxes accrued (a.k.a. "claimable") for each tax type, and the sum.
+    /// @return _taxType0 Taxes accrued (claimable) for taxType0.
+    /// @return _taxType1 Taxes accrued (claimable) for taxType1.
+    /// @return _taxType2 Taxes accrued (claimable) for taxType2.
+    /// @return _sum Taxes accrued (claimable) for all tax types.
+    function viewTaxesAccrued() public view returns(uint _taxType0, uint _taxType1, uint _taxType2, uint _sum) {
+        return (
+            taxTokenAccruedForTaxType[0],
+            taxTokenAccruedForTaxType[1],
+            taxTokenAccruedForTaxType[2],
+            taxTokenAccruedForTaxType[0] + taxTokenAccruedForTaxType[1] + taxTokenAccruedForTaxType[2]
+        );
+    }
 
     /// @dev    This function modifies the distribution settings for a given taxType.
     /// @notice Only callable by Admin.
@@ -145,44 +157,49 @@ contract Treasury {
     */
 
     /// @dev    Distributes taxes for given taxType.
-    /// @param  taxType chosen taxType to distribute.
-    function distributeTaxes(uint taxType) public {
+    /// @param  taxType Chosen taxType to distribute.
+    /// @return amountToDistribute TaxToken amount distributed.
+    function distributeTaxes(uint taxType) public returns(uint amountToDistribute) {
 
-        uint amountToDistribute = taxTokenAccruedForTaxType[taxType];
-        taxTokenAccruedForTaxType[taxType] = 0;
-        uint walletCount = taxSettings[taxType].walletCount;
+        amountToDistribute = taxTokenAccruedForTaxType[taxType];
 
-        emit LogUint("amountToDistribute", amountToDistribute);
-        emit LogUint("walletCount", walletCount);
-        emit LogUint("Balance of Treasury", IERC20(taxToken).balanceOf(address(this)));
+        if (amountToDistribute > 0) {
+            taxTokenAccruedForTaxType[taxType] = 0;
+            uint walletCount = taxSettings[taxType].walletCount;
 
-        for (uint i = 0; i < walletCount; i++) {
-            uint amountForWallet = (amountToDistribute * taxSettings[taxType].percentDistribution[i]) / 100;
-            emit LogUint("amountForWallet", amountForWallet);
-            address walletToAirdrop = taxSettings[taxType].wallets[i];
+            emit LogUint("amountToDistribute", amountToDistribute);
+            emit LogUint("walletCount", walletCount);
+            emit LogUint("Balance of Treasury", IERC20(taxToken).balanceOf(address(this)));
 
-            if (taxSettings[taxType].convertToAsset[i] == taxToken) {
-                IERC20(taxToken).transfer(walletToAirdrop, amountForWallet);
-            }
-            else {
-                IERC20(address(taxToken)).approve(address(UNIV2_ROUTER), amountForWallet);
+            for (uint i = 0; i < walletCount; i++) {
+                uint amountForWallet = (amountToDistribute * taxSettings[taxType].percentDistribution[i]) / 100;
+                emit LogUint("amountForWallet", amountForWallet);
+                address walletToAirdrop = taxSettings[taxType].wallets[i];
 
-                address[] memory path_uni_v2 = new address[](2);
+                if (taxSettings[taxType].convertToAsset[i] == taxToken) {
+                    IERC20(taxToken).transfer(walletToAirdrop, amountForWallet);
+                }
+                else {
+                    IERC20(address(taxToken)).approve(address(UNIV2_ROUTER), amountForWallet);
 
-                path_uni_v2[0] = address(taxToken);
-                path_uni_v2[1] = taxSettings[taxType].convertToAsset[i];
+                    address[] memory path_uni_v2 = new address[](2);
 
-                // Documentation on IUniswapV2Router:
-                // https://docs.uniswap.org/protocol/V2/reference/smart-contracts/router-02#swapexacttokensfortokens
-                IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokens(
-                    amountForWallet,           
-                    0,
-                    path_uni_v2,
-                    walletToAirdrop,
-                    block.timestamp + 30000
-                );
+                    path_uni_v2[0] = address(taxToken);
+                    path_uni_v2[1] = taxSettings[taxType].convertToAsset[i];
+
+                    // Documentation on IUniswapV2Router:
+                    // https://docs.uniswap.org/protocol/V2/reference/smart-contracts/router-02#swapexacttokensfortokens
+                    IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokens(
+                        amountForWallet,           
+                        0,
+                        path_uni_v2,
+                        walletToAirdrop,
+                        block.timestamp + 30000
+                    );
+                }
             }
         }
+
     }
 
     /// @dev    Distributes taxes for all taxTypes.
