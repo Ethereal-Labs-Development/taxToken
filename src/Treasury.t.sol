@@ -438,6 +438,17 @@ contract TreasuryTest is Utility {
             address(treasury),  // Send USDC to treasury instead of msg.sender
             block.timestamp + 300
         );
+
+        uint preBal_treasury = IERC20(USDC).balanceOf(address(treasury));
+        uint preBal_admin = IERC20(USDC).balanceOf(address(this));
+
+        treasury.safeWithdraw(USDC);
+
+        uint postBal_treasury = IERC20(USDC).balanceOf(address(treasury));
+        uint postBal_admin = IERC20(USDC).balanceOf(address(this));
+
+        assertEq(preBal_admin, postBal_treasury);
+        assertEq(postBal_admin, preBal_treasury);
     }
 
     function test_treasury_safeWithdraw_DAI() public {
@@ -461,12 +472,24 @@ contract TreasuryTest is Utility {
             address(treasury),  // Send DAI to treasury instead of msg.sender
             block.timestamp + 300
         );
+
+        uint preBal_treasury = IERC20(DAI).balanceOf(address(treasury));
+        uint preBal_admin = IERC20(DAI).balanceOf(address(this));
+
+        treasury.safeWithdraw(DAI);
+
+        uint postBal_treasury = IERC20(DAI).balanceOf(address(treasury));
+        uint postBal_admin = IERC20(DAI).balanceOf(address(this));
+
+        assertEq(preBal_admin, postBal_treasury);
+        assertEq(postBal_admin, preBal_treasury);
     }
 
     function test_treasury_safeWithdraw_USDT() public {
 
         // Buy USDT through Uniswap and deposit into Treasury.
         uint tradeAmt = 10 ether;
+        address USDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
 
         IERC20(WETH).approve(
             address(UNIV2_ROUTER), tradeAmt
@@ -484,9 +507,22 @@ contract TreasuryTest is Utility {
             address(treasury),  // Send USDT to treasury instead of msg.sender
             block.timestamp + 300
         );
+
+        uint preBal_treasury = IERC20(USDT).balanceOf(address(treasury));
+        uint preBal_admin = IERC20(USDT).balanceOf(address(this));
+
+        treasury.safeWithdraw(USDT);
+
+        uint postBal_treasury = IERC20(USDT).balanceOf(address(treasury));
+        uint postBal_admin = IERC20(USDT).balanceOf(address(this));
+
+        assertEq(preBal_admin, postBal_treasury);
+        assertEq(postBal_admin, preBal_treasury);
     }
 
-
-    // TODO: Add in admin change test here.
+    function test_treasury_updateAdmin() public {
+        treasury.updateAdmin(address(32));
+        assertEq(treasury.admin(), address(32));
+    }
 
 }
