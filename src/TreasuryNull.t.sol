@@ -264,7 +264,7 @@ contract TreasuryNullTest is Utility {
             percentDistribution
         );
 
-        treasury.distributeTaxes(1);
+        assertEq(treasury.distributeTaxes(1), 0);
     }
 
     // Test converting tokens when none exist
@@ -289,7 +289,7 @@ contract TreasuryNullTest is Utility {
             percentDistribution
         );
 
-        treasury.distributeTaxes(1);
+        assertEq(treasury.distributeTaxes(1), 0);
     }
 
 }

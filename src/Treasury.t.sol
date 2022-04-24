@@ -347,7 +347,7 @@ contract TreasuryTest is Utility {
             percentDistribution
         );
 
-        treasury.distributeTaxes(1);
+        assertEq(treasury.distributeTaxes(1), 11845896412764735586);
     }
 
     function test_treasury_taxDistribution_conversion() public {
@@ -371,7 +371,7 @@ contract TreasuryTest is Utility {
             percentDistribution
         );
 
-        treasury.distributeTaxes(1);
+        assertEq(treasury.distributeTaxes(1), 11845896412764735586);
     }
 
 
