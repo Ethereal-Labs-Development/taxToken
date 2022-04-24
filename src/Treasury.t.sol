@@ -417,4 +417,19 @@ contract TreasuryTest is Utility {
         assertEq(_sum, taxToken.balanceOf(address(treasury)));
     }
 
+    function test_treasury_safeWithdraw_USDC() public {
+        // inject the treasury with USDC and USDC
+        mint("USDC", address(treasury), 20000000 * USD);
+
+        emit LogUint("Amount of USDC in Treasury", IERC20(USDC).balanceOf(address(treasury)));
+
+        // call safewithdraw of USDC
+    }
+
+    function test_treasury_safeWithdraw_DAI() public {
+        // inject the treasury with USDC and DAI
+
+        // call safewithdraw of DAI
+    }
+
 }

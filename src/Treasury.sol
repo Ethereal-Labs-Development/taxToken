@@ -220,4 +220,14 @@ contract Treasury {
         );
     }
 
+    /// @dev withdraw a non-taxToken from the contract
+    function safeWithdraw(address token) public isAdmin {
+        require(token != taxToken, "err cannot withdraw native tokens from this contract");
+        IERC20(token).transfer(msg.sender, IERC20(token).balanceOf(address(this)));
+    }
+
+    function updateAdmin(address _admin) public isAdmin {
+        admin = _admin;
+    }
+
 }
