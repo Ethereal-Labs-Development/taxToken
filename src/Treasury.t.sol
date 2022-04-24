@@ -338,7 +338,7 @@ contract TreasuryTest is Utility {
         convertToAsset[1] = address(taxToken);
         percentDistribution[0] = 50;
         percentDistribution[1] = 50;
-        
+
         treasury.setTaxDistribution(
             1, 
             2, 
@@ -347,7 +347,9 @@ contract TreasuryTest is Utility {
             percentDistribution
         );
 
-        treasury.distributeTaxes(1);
+        uint _preTaxAccrued = treasury.taxTokenAccruedForTaxType(1);
+
+        assertEq(treasury.distributeTaxes(1), _preTaxAccrued);
     }
 
     function test_treasury_taxDistribution_conversion() public {
@@ -371,7 +373,9 @@ contract TreasuryTest is Utility {
             percentDistribution
         );
 
-        treasury.distributeTaxes(1);
+        uint _preTaxAccrued = treasury.taxTokenAccruedForTaxType(1);
+        
+        assertEq(treasury.distributeTaxes(1), _preTaxAccrued);
     }
 
 
