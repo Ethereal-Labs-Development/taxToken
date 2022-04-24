@@ -220,4 +220,20 @@ contract Treasury {
         );
     }
 
+    /// @dev    Withdraw a non-taxToken from the treasury.
+    /// @notice Reverts if token == taxtoken.
+    /// @notice Only callable by Admin.
+    /// @param  token The token to withdraw from the treasury.
+    function safeWithdraw(address token) public isAdmin {
+        require(token != taxToken, "err cannot withdraw native tokens from this contract");
+        IERC20(token).transfer(msg.sender, IERC20(token).balanceOf(address(this)));
+    }
+
+    /// @dev    Change the admin for the treasury.
+    /// @notice Only callable by Admin.
+    /// @param  _admin New admin address.
+    function updateAdmin(address _admin) public isAdmin {
+        admin = _admin;
+    }
+
 }
