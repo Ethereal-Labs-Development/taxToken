@@ -268,7 +268,7 @@ contract TreasuryNullTest is Utility {
     }
 
     // Test converting tokens when none exist
-    function testFail_nullTreasury_taxDistribution_conversion() public {
+    function test_nullTreasury_taxDistribution_conversion() public {
 
         address[] memory wallets = new address[](2);
         address[] memory convertToAsset = new address[](2);
