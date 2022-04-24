@@ -418,18 +418,75 @@ contract TreasuryTest is Utility {
     }
 
     function test_treasury_safeWithdraw_USDC() public {
-        // inject the treasury with USDC and USDC
-        mint("USDC", address(treasury), 20000000 * USD);
+        
+        // Buy USDC through Uniswap and deposit into Treasury.
+        uint tradeAmt = 10 ether;
 
-        emit LogUint("Amount of USDC in Treasury", IERC20(USDC).balanceOf(address(treasury)));
+        IERC20(WETH).approve(
+            address(UNIV2_ROUTER), tradeAmt
+        );
 
-        // call safewithdraw of USDC
+        address[] memory path_uni_v2 = new address[](2);
+
+        path_uni_v2[0] = WETH;
+        path_uni_v2[1] = address(USDC);
+
+        IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokens(
+            tradeAmt,
+            0,
+            path_uni_v2,
+            address(treasury),  // Send USDC to treasury instead of msg.sender
+            block.timestamp + 300
+        );
     }
 
     function test_treasury_safeWithdraw_DAI() public {
-        // inject the treasury with USDC and DAI
+        
+        // Buy DAI through Uniswap and deposit into Treasury.
+        uint tradeAmt = 10 ether;
 
-        // call safewithdraw of DAI
+        IERC20(WETH).approve(
+            address(UNIV2_ROUTER), tradeAmt
+        );
+
+        address[] memory path_uni_v2 = new address[](2);
+
+        path_uni_v2[0] = WETH;
+        path_uni_v2[1] = address(DAI);
+
+        IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokens(
+            tradeAmt,
+            0,
+            path_uni_v2,
+            address(treasury),  // Send DAI to treasury instead of msg.sender
+            block.timestamp + 300
+        );
     }
+
+    function test_treasury_safeWithdraw_USDT() public {
+
+        // Buy USDT through Uniswap and deposit into Treasury.
+        uint tradeAmt = 10 ether;
+
+        IERC20(WETH).approve(
+            address(UNIV2_ROUTER), tradeAmt
+        );
+
+        address[] memory path_uni_v2 = new address[](2);
+
+        path_uni_v2[0] = WETH;
+        path_uni_v2[1] = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
+
+        IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokens(
+            tradeAmt,
+            0,
+            path_uni_v2,
+            address(treasury),  // Send USDT to treasury instead of msg.sender
+            block.timestamp + 300
+        );
+    }
+
+
+    // TODO: Add in admin change test here.
 
 }
