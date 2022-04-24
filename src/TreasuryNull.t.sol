@@ -264,11 +264,11 @@ contract TreasuryNullTest is Utility {
             percentDistribution
         );
 
-        treasury.distributeTaxes(1);
+        assertEq(treasury.distributeTaxes(1), 0);
     }
 
     // Test converting tokens when none exist
-    function testFail_nullTreasury_taxDistribution_conversion() public {
+    function test_nullTreasury_taxDistribution_conversion() public {
 
         address[] memory wallets = new address[](2);
         address[] memory convertToAsset = new address[](2);
@@ -289,7 +289,7 @@ contract TreasuryNullTest is Utility {
             percentDistribution
         );
 
-        treasury.distributeTaxes(1);
+        assertEq(treasury.distributeTaxes(1), 0);
     }
 
 }
