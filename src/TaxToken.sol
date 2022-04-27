@@ -6,7 +6,7 @@ import { ITreasury, IUniswapV2Factory, IUniswapV2Router01 } from "./interfaces/E
 /// @dev    The TaxToken is responsible for supporting generic ERC20 functionality including ERC20Pausable functionality.
 ///         The TaxToken will generate taxes on transfer() and transferFrom() calls for non-whitelisted addresses.
 ///         The Admin can specify the tax fee in basis points for buys, sells, and transfers.
-///         The TaxToken will forward all taxes generated to a Treasury contract.
+///         The TaxToken will forward all taxes generated to a Treasury
 contract TaxToken {
  
     // ---------------
@@ -167,8 +167,11 @@ contract TaxToken {
         return true;
     }
  
-    function transfer(address _to, uint256 _amount) public whenNotPausedDual(msg.sender, _to) returns (bool success) {   
+    function transfer(address _to, uint256 _amount) public whenNotPausedDual(msg.sender, _to) returns (bool success) {  
 
+        // taxType 0 => Xfer Tax
+        // taxType 1 => Buy Tax
+        // taxType 2 => Sell Tax
         uint _taxType;
 
         if (balances[msg.sender] >= _amount && (!blacklist[msg.sender] && !blacklist[_to])) {
@@ -232,6 +235,9 @@ contract TaxToken {
  
     function transferFrom(address _from, address _to, uint256 _amount) public whenNotPausedTri(_from, _to, msg.sender) returns (bool success) {
 
+        // taxType 0 => Xfer Tax
+        // taxType 1 => Buy Tax
+        // taxType 2 => Sell Tax
         uint _taxType;
 
         if (

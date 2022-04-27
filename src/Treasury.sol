@@ -22,6 +22,9 @@ contract Treasury {
 
     /// @dev    Handles the internal accounting for how much taxToken is owed to each taxType.
     /// @notice e.g. 10,000 taxToken owed to taxType 0 => taxTokenAccruedForTaxType[0] = 10000 * 10**18
+    ///         taxType 0 => Xfer Tax
+    ///         taxType 1 => Buy Tax
+    ///         taxType 2 => Sell Tax
     mapping(uint => uint) public taxTokenAccruedForTaxType;
 
     mapping(uint => TaxDistribution) public taxSettings;   /// @dev Mapping of taxType to TaxDistribution struct.
