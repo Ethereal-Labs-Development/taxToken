@@ -28,7 +28,7 @@ contract TaxToken {
     address public UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
 
     bool public treasurySet;
-    bool public taxesRemoved;   /// @notice Once true, taxes are permanently set to 0 and CAN NOT be increased in the future.
+    bool public taxesRemoved;   /// @dev Once true, taxes are permanently set to 0 and CAN NOT be increased in the future.
 
     uint256 public maxWalletSize;
     uint256 public maxTxAmount;
@@ -38,11 +38,11 @@ contract TaxToken {
     mapping(address => mapping(address => uint256)) allowed;    // Track allowances.
 
     // Extras Mappings
-    mapping(address => bool) public blacklist;      // If an address is blacklisted, they cannot transact
-    mapping(address => bool) public whitelist;      // Any transfer that involves a whitelisted address, will not incur a tax.
-    mapping(address => uint) senderTaxType;         // Identifies tax type for msg.sender of transfer() call.
-    mapping(address => uint) receiverTaxType;       // Identifies tax type for _to of transfer() call.
-    mapping(uint => uint) public basisPointsTax;    // Mapping between taxType and basisPoints (taxed).
+    mapping(address => bool) public blacklist;          /// @dev If an address is blacklisted, they cannot perform transfer() or transferFrom().
+    mapping(address => bool) public whitelist;          /// @dev Any transfer that involves a whitelisted address, will not incur a tax.
+    mapping(address => uint) public senderTaxType;      /// @dev  Identifies tax type for msg.sender of transfer() call.
+    mapping(address => uint) public receiverTaxType;    /// @dev  Identifies tax type for _to of transfer() call.
+    mapping(uint => uint) public basisPointsTax;        /// @dev  Mapping between taxType and basisPoints (taxed).
 
 
 
@@ -50,13 +50,20 @@ contract TaxToken {
     // Constructor
     // -----------
 
+    /// @notice Initializes the TaxToken.
+    /// @param  totalSupplyInput    The total supply of this token (this value is multipled by 10**decimals in constructor).
+    /// @param  nameInput           The name of this token.
+    /// @param  symbolInput         The symbol of this token.
+    /// @param  decimalsInput       The decimal precision of this token.
+    /// @param  maxWalletSizeInput  The maximum wallet size (this value is multipled by 10**decimals in constructor).
+    /// @param  maxTxAmountInput    The maximum tx size (this value is multipled by 10**decimals in constructor).
     constructor(
         uint totalSupplyInput, 
         string memory nameInput, 
         string memory symbolInput, 
         uint8 decimalsInput,
-        uint256 maxWalletSizeInput,                 // for MaxWalletSize and MaxTxAmount just input the desired non decimal multiple number -
-        uint256 maxTxAmountInput                    // ie: 1000 tokens instead of 1000 * 10**Decimal
+        uint256 maxWalletSizeInput,
+        uint256 maxTxAmountInput
     ) {
         _paused = false;    // ERC20 Pausable global state variable, initial state is not paused ("unpaused").
         _name = nameInput;
@@ -316,21 +323,21 @@ contract TaxToken {
 
     // ~ ERC20 Pausable ~
 
-    /// @dev    Pause the contract, blocks transfer() and transferFrom().
-    /// @notice Contract MUST NOT be paused to call this, caller must be "owner".
+    /// @notice Pause the contract, blocks transfer() and transferFrom().
+    /// @dev    Contract MUST NOT be paused to call this, caller must be "owner".
     function pause() public onlyOwner whenNotPausedUni(msg.sender) {
         _paused = true;
         emit Paused(msg.sender);
     }
 
-    /// @dev    Unpause the contract.
-    /// @notice Contract MUST be puased to call this, caller must be "owner".
+    /// @notice Unpause the contract.
+    /// @dev    Contract MUST be puased to call this, caller must be "owner".
     function unpause() public onlyOwner whenPaused {
         _paused = false;
         emit Unpaused(msg.sender);
     }
 
-    /// @return _paused Indicates whether the contract is paused (true) or not (false).
+    /// @return _paused Indicates whether the contract is paused (true) or not paused (false).
     function paused() public view virtual returns (bool) {
         return _paused;
     }
@@ -366,8 +373,8 @@ contract TaxToken {
         basisPointsTax[_taxType] = _bpt;
     }
 
-    /// @dev    Permanently remove taxes from this contract.
-    /// @notice An input is required here for sanity-check, given importance of this function call (and irreversible nature).
+    /// @notice Permanently remove taxes from this contract.
+    /// @dev    An input is required here for sanity-check, given importance of this function call (and irreversible nature).
     /// @param  _key This value MUST equal 42 for function to execute.
     function permanentlyRemoveTaxes(uint _key) public onlyOwner {
         require(_key == 42, "err TaxToken.sol _key != 42");
@@ -380,42 +387,42 @@ contract TaxToken {
 
     // ~ Admin ~
 
-    /// @dev    This is used to change the owner's wallet address. Used to give ownership to another wallet.
+    /// @notice This is used to change the owner's wallet address. Used to give ownership to another wallet.
     /// @param  _owner is the new owner address.
     function transferOwnership(address _owner) public onlyOwner {
         owner = _owner;
     }
 
-    /// @dev    Set the treasury (contract)) which receives taxes generated through transfer() and transferFrom().
+    /// @notice Set the treasury (contract)) which receives taxes generated through transfer() and transferFrom().
     /// @param  _treasury is the contract address of the treasury.
     function setTreasury(address _treasury) public onlyOwner {
         treasury = _treasury;
     }
 
-    /// @dev    Adjust maxTxAmount value (maximum amount transferrable in a single transaction).
-    /// @notice Does not affect whitelisted wallets.
+    /// @notice Adjust maxTxAmount value (maximum amount transferrable in a single transaction).
+    /// @dev    Does not affect whitelisted wallets.
     /// @param  _maxTxAmount is the max amount of tokens that can be transacted at one time for a non-whitelisted wallet.
     function updateMaxTxAmount(uint256 _maxTxAmount) public onlyOwner {
         maxTxAmount = (_maxTxAmount * 10**_decimals);
     }
 
-    /// @dev    This function is used to set the max amount of tokens a wallet can hold.
-    /// @notice Does not affect whitelisted wallets.
+    /// @notice This function is used to set the max amount of tokens a wallet can hold.
+    /// @dev    Does not affect whitelisted wallets.
     /// @param  _maxWalletSize is the max amount of tokens that can be held on a non-whitelisted wallet.
     function updateMaxWalletSize(uint256 _maxWalletSize) public onlyOwner {
         maxWalletSize = (_maxWalletSize * 10**_decimals);
     }
 
-    /// @dev    This function is used to add wallets to the whitelist mapping.
-    /// @notice Whitelisted wallets are not affected by maxWalletSize, maxTxAmount, and taxes.
+    /// @notice This function is used to add wallets to the whitelist mapping.
+    /// @dev    Whitelisted wallets are not affected by maxWalletSize, maxTxAmount, and taxes.
     /// @param  _wallet is the wallet address that will have their whitelist status modified.
     /// @param  _whitelist use True to whitelist a wallet, otherwise use False to remove wallet from whitelist.
     function modifyWhitelist(address _wallet, bool _whitelist) public onlyOwner {
         whitelist[_wallet] = _whitelist;
     }
 
-    /// @dev    This function is used to add or remove wallets from the blacklist.
-    /// @notice Blacklisted wallets cannot perform transfer() or transferFrom().
+    /// @notice This function is used to add or remove wallets from the blacklist.
+    /// @dev    Blacklisted wallets cannot perform transfer() or transferFrom().
     /// @param  _wallet is the wallet address that will have their blacklist status modified.
     /// @param  _blacklist use True to blacklist a wallet, otherwise use False to remove wallet from blacklist.
     function modifyBlacklist(address _wallet, bool _blacklist) public onlyOwner {

@@ -4,7 +4,7 @@ pragma solidity ^0.8.6;
 import { IERC20, IUniswapV2Router01, IWETH } from "./interfaces/ERC20.sol";
 
 
-/// @dev    The treasury is responsible for escrow of TaxToken fee's.
+/// @notice The treasury is responsible for escrow of TaxToken fee's.
 ///         The treasury handles accounting, for what's owed to different groups.
 ///         The treasury handles distribution of TaxToken fees to different groups.
 ///         The admin can modify how TaxToken fees are distributed (the TaxDistribution struct).
@@ -20,8 +20,8 @@ contract Treasury {
     address public UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
 
 
-    /// @dev    Handles the internal accounting for how much taxToken is owed to each taxType.
-    /// @notice e.g. 10,000 taxToken owed to taxType 0 => taxTokenAccruedForTaxType[0] = 10000 * 10**18
+    /// @notice Handles the internal accounting for how much taxToken is owed to each taxType.
+    /// @dev    e.g. 10,000 taxToken owed to taxType 0 => taxTokenAccruedForTaxType[0] = 10000 * 10**18
     ///         taxType 0 => Xfer Tax
     ///         taxType 1 => Buy Tax
     ///         taxType 2 => Sell Tax
@@ -29,7 +29,7 @@ contract Treasury {
 
     mapping(uint => TaxDistribution) public taxSettings;   /// @dev Mapping of taxType to TaxDistribution struct.
  
-    /// @dev    Manages how TaxToken is distributed for a given taxType.
+    /// @notice Manages how TaxToken is distributed for a given taxType.
     ///         Variables:
     ///           walletCount           => The number of wallets to distribute fees to.
     ///           wallets               => The addresses to distribute fees (maps with convertToAsset and percentDistribution)
@@ -47,7 +47,7 @@ contract Treasury {
     // Constructor
     // -----------
 
-    /// @dev    Initializes the Treasury.
+    /// @notice Initializes the Treasury.
     /// @param  _admin      The administrator of the contract.
     /// @param  _taxToken   The taxToken (ERC-20 asset) which accumulates in this Treasury.
     constructor(address _admin, address _taxToken) {
@@ -78,15 +78,15 @@ contract Treasury {
     // Functions
     // ---------
 
-    /// @dev    Increases _amt of taxToken allocated to _taxType.
+    /// @notice Increases _amt of taxToken allocated to _taxType.
+    /// @dev    Only callable by taxToken.
     /// @param  taxType The taxType to allocate more taxToken to for distribution.
     /// @param  amt The amount of taxToken going to taxType.
-    /// @notice Only callable by taxToken.
     function updateTaxesAccrued(uint taxType, uint amt) isTaxToken public {
         taxTokenAccruedForTaxType[taxType] += amt;
     }
 
-    /// @dev    View function for taxes accrued (a.k.a. "claimable") for each tax type, and the sum.
+    /// @notice View function for taxes accrued (a.k.a. "claimable") for each tax type, and the sum.
     /// @return _taxType0 Taxes accrued (claimable) for taxType0.
     /// @return _taxType1 Taxes accrued (claimable) for taxType1.
     /// @return _taxType2 Taxes accrued (claimable) for taxType2.
@@ -100,9 +100,8 @@ contract Treasury {
         );
     }
 
-    /// @dev    This function modifies the distribution settings for a given taxType.
-    /// @notice Only callable by Admin.
-    ///         A distribution must be enforced, prior to the change.
+    /// @notice This function modifies the distribution settings for a given taxType.
+    /// @dev    Only callable by Admin.
     /// @param  taxType The taxType to update settings for.
     /// @param  walletCount The number of wallets to distribute across.
     /// @param  wallets The address of wallets to distribute fees across.
@@ -137,7 +136,7 @@ contract Treasury {
         );
     }
 
-    /// @dev    Distributes taxes for given taxType.
+    /// @notice Distributes taxes for given taxType.
     /// @param  taxType Chosen taxType to distribute.
     /// @return amountToDistribute TaxToken amount distributed.
     function distributeTaxes(uint taxType) public returns(uint amountToDistribute) {
@@ -177,7 +176,7 @@ contract Treasury {
 
     }
 
-    /// @dev    Distributes taxes for all taxTypes.
+    /// @notice Distributes taxes for all taxTypes.
     function distributeAllTaxes() public {
         distributeTaxes(0);
         distributeTaxes(1);
@@ -185,7 +184,7 @@ contract Treasury {
     }
 
 
-    /// @dev    Helper view function for taxSettings.
+    /// @notice Helper view function for taxSettings.
     function viewTaxSettings(uint taxType) public view returns(uint256, address[] memory, address[] memory, uint[] memory) {
         return (
             taxSettings[taxType].walletCount,
@@ -195,17 +194,17 @@ contract Treasury {
         );
     }
 
-    /// @dev    Withdraw a non-taxToken from the treasury.
-    /// @notice Reverts if token == taxtoken.
-    /// @notice Only callable by Admin.
+    /// @notice Withdraw a non-taxToken from the treasury.
+    /// @dev    Reverts if token == taxtoken.
+    /// @dev    Only callable by Admin.
     /// @param  token The token to withdraw from the treasury.
     function safeWithdraw(address token) public isAdmin {
         require(token != taxToken, "err cannot withdraw native tokens from this contract");
         IERC20(token).transfer(msg.sender, IERC20(token).balanceOf(address(this)));
     }
 
-    /// @dev    Change the admin for the treasury.
-    /// @notice Only callable by Admin.
+    /// @notice Change the admin for the treasury.
+    /// @dev    Only callable by Admin.
     /// @param  _admin New admin address.
     function updateAdmin(address _admin) public isAdmin {
         admin = _admin;
