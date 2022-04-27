@@ -3,6 +3,10 @@ pragma solidity ^0.8.6;
 
 import { ITreasury, IUniswapV2Factory, IUniswapV2Router01 } from "./interfaces/ERC20.sol";
 
+/// @dev    The TaxToken is responsible for supporting generic ERC20 functionality including ERC20Pausable functionality.
+///         The TaxToken will generate taxes on transfer() and transferFrom() calls for non-whitelisted addresses.
+///         The Admin can specify the tax fee in basis points for buys, sells, and transfers.
+///         The TaxToken will forward all taxes generated to a Treasury contract.
 contract TaxToken {
  
     // ---------------
@@ -22,8 +26,10 @@ contract TaxToken {
     address public owner;
     address public treasury;
     address public UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+
     bool public treasurySet;
-    bool public taxesRemoved;   // Once true, taxes are permanently set to 0 and CAN NOT be increased in the future.
+    bool public taxesRemoved;   /// @notice Once true, taxes are permanently set to 0 and CAN NOT be increased in the future.
+
     uint256 public maxWalletSize;
     uint256 public maxTxAmount;
 
@@ -44,8 +50,6 @@ contract TaxToken {
     // Constructor
     // -----------
 
-    //Instead of hard coding, you can pass things like supply, sumbol, ect through the constructor
-    //upon deployment to reduce LOC. *Limit of 12 inpus per function
     constructor(
         uint totalSupplyInput, 
         string memory nameInput, 
@@ -116,10 +120,6 @@ contract TaxToken {
     // Events
     // ------
 
-    event LogUint(string s, uint u);        /// @notice This is a logging function for HEVM testing.
-    event LogAddy(string s, address a);     /// @notice This is a logging function for HEVM testing.
-    event LogString(string s);              /// @notice This is used to log basic strings for HEVM testing.
-
     event Paused(address account);          /// @dev Emitted when the pause is triggered by `account`.
     event Unpaused(address account);        /// @dev Emitted when the pause is lifted by `account`.
 
@@ -169,14 +169,7 @@ contract TaxToken {
  
     function transfer(address _to, uint256 _amount) public whenNotPausedDual(msg.sender, _to) returns (bool success) {   
 
-        // taxType 0 => Xfer Tax (10%)  => 10% (1wallets, marketing)
-        // taxType 1 => Buy Tax (12%)   => 6%/6% (2wallets, use/marketing))
-        // taxType 2 => Sell Tax (15%)  => 5%/4%/6% (3wallets, use/marketing/staking)
         uint _taxType;
-        
-        emit LogAddy('msg.sender', msg.sender);
-        emit LogAddy('_to', _to);
-        emit LogUint('_amount', _amount);
 
         if (balances[msg.sender] >= _amount && (!blacklist[msg.sender] && !blacklist[_to])) {
 
@@ -192,33 +185,15 @@ contract TaxToken {
                     _taxType = receiverTaxType[_to];
                 }
 
-                // Calculate taxAmt and sendAmt
+                // Calculate taxAmt and sendAmt.
                 uint _taxAmt = _amount * basisPointsTax[_taxType] / 10000;
                 uint _sendAmt = _amount * (10000 - basisPointsTax[_taxType]) / 10000;
 
                 if (balances[_to] + _sendAmt <= maxWalletSize) {
 
-                    emit LogUint('_taxAmt', _taxAmt);
-                    emit LogUint('_sendAmt', _sendAmt);
-                    emit LogUint('_taxType', _taxType);
-                    emit LogUint('basisPointsTax[_taxType]', basisPointsTax[_taxType]);
-
-                    // Pre-state logs.
-                    emit LogUint('pre_balances[msg.sender]', balances[msg.sender]);
-                    emit LogUint('pre_balances[_to]', balances[_to]);
-                    emit LogUint('pre_balances[treasury]', balances[treasury]);
-
                     balances[msg.sender] -= _amount;
                     balances[_to] += _sendAmt;
                     balances[treasury] += _taxAmt;
-
-                    // Post-state logs.
-                    emit LogUint('post_balances[msg.sender]', balances[msg.sender]);
-                    emit LogUint('post_balances[_to]', balances[_to]);
-                    emit LogUint('post_balances[treasury]', balances[treasury]);
-
-                    
-                    emit LogAddy('treasury', treasury);
 
                     require(_taxAmt + _sendAmt >= _amount * 999999999 / 1000000000, "Critical error, math.");
                 
@@ -246,7 +221,6 @@ contract TaxToken {
             else {
                 balances[msg.sender] -= _amount;
                 balances[_to] += _amount;
-                emit LogString("TaxToken.sol transfer() no taxation occurred");
                 emit Transfer(msg.sender, _to, _amount);
                 return true;
             }
@@ -258,15 +232,7 @@ contract TaxToken {
  
     function transferFrom(address _from, address _to, uint256 _amount) public whenNotPausedTri(_from, _to, msg.sender) returns (bool success) {
 
-        // Tax Type 0 => Xfer Tax (10%) => 10% (1wallets, marketing)
-        // Tax Type 1 => Buy Tax (12%) => 6%/6% (2wallets, use/marketing))
-        // Tax Type 2 => Sell Tax (12%) => 2%/4%/6% (3wallets, use/marketing/staking)
         uint _taxType;
-        
-        emit LogAddy('msg.sender', msg.sender);
-        emit LogAddy('_from', _from);
-        emit LogAddy('_to', _to);
-        emit LogUint('_amount', _amount);
 
         if (
             balances[_from] >= _amount && 
@@ -290,36 +256,15 @@ contract TaxToken {
                     _taxType = receiverTaxType[_to];
                 }
 
-                // Calculate taxAmt and sendAmt
+                // Calculate taxAmt and sendAmt.
                 uint _taxAmt = _amount * basisPointsTax[_taxType] / 10000;
                 uint _sendAmt = _amount * (10000 - basisPointsTax[_taxType]) / 10000;
 
-                // TODO: Check pre/post allowance, confirm if needs to decrease or not.
-
                 if (balances[_to] + _sendAmt <= maxWalletSize || _taxType == 2) {
-
-                    emit LogUint('_taxAmt', _taxAmt);
-                    emit LogUint('_sendAmt', _sendAmt);
-                    emit LogUint('_taxType', _taxType);
-                    emit LogUint('basisPointsTax[_taxType]', basisPointsTax[_taxType]);
-
-                    // Pre-state logs.
-                    emit LogUint('pre_allowances[_from][msg.sender]', allowance(_from, msg.sender));
-                    emit LogUint('pre_balances[_from]', balances[_from]);
-                    emit LogUint('pre_balances[_to]', balances[_to]);
-                    emit LogUint('pre_balances[treasury]', balances[treasury]);
 
                     balances[_from] -= _amount;
                     balances[_to] += _sendAmt;
                     balances[treasury] += _taxAmt;
-
-                    // Post-state logs.
-                    emit LogUint('post_allowances[_from][msg.sender]', allowance(_from, msg.sender));
-                    emit LogUint('post_balances[_from]', balances[_from]);
-                    emit LogUint('post_balances[_to]', balances[_to]);
-                    emit LogUint('post_balances[treasury]', balances[treasury]);
-                    
-                    emit LogAddy('treasury', treasury);
 
                     require(_taxAmt + _sendAmt == _amount, "Critical error, math.");
                 
@@ -348,7 +293,6 @@ contract TaxToken {
             else {
                 balances[_from] -= _amount;
                 balances[_to] += _amount;
-                emit LogString("TaxToken.sol transferFrom() no taxation occurred");
                 emit Transfer(_from, _to, _amount);
                 return true;
             }
@@ -366,15 +310,15 @@ contract TaxToken {
 
     // ~ ERC20 Pausable ~
 
-    /// @notice Pause the contract, blocks transfer() and transferFrom().
-    /// @dev Contract MUST NOT be paused to call this, caller must be "owner".
+    /// @dev    Pause the contract, blocks transfer() and transferFrom().
+    /// @notice Contract MUST NOT be paused to call this, caller must be "owner".
     function pause() public onlyOwner whenNotPausedUni(msg.sender) {
         _paused = true;
         emit Paused(msg.sender);
     }
 
-    /// @notice Unpause the contract.
-    /// @dev Contract MUST be puased to call this, caller must be "owner".
+    /// @dev    Unpause the contract.
+    /// @notice Contract MUST be puased to call this, caller must be "owner".
     function unpause() public onlyOwner whenPaused {
         _paused = false;
         emit Unpaused(msg.sender);
@@ -388,36 +332,37 @@ contract TaxToken {
     
     // ~ TaxType & Fee Management ~
 
-    /// @notice Used to store the LP Pair to differ type of transaction. Will be used to mark a BUY
-    /// @dev _taxType must be lower than 3 because there can only be 3 tax types; buy, sell, & send
-    /// @param _sender This value is the PAIR address
-    /// @param _taxType This value must be be 0, 1, or 2. Best to correspond value with the BUY tax type
+    /// @notice     Used to store the LP Pair to differ type of transaction. Will be used to mark a BUY.
+    /// @dev        _taxType must be lower than 3 because there can only be 3 tax types; buy, sell, & send.
+    /// @param      _sender This value is the PAIR address.
+    /// @param      _taxType This value must be be 0, 1, or 2. Best to correspond value with the BUY tax type.
     function updateSenderTaxType(address _sender, uint _taxType) public onlyOwner {
         require(_taxType < 3, "err _taxType must be less than 3");
         senderTaxType[_sender] = _taxType;
     }
 
-    /// @notice Used to store the LP Pair to differ type of transaction. Will be used to mark a SELL
-    /// @dev _taxType must be lower than 3 because there can only be 3 tax types; buy, sell, & send
-    /// @param _receiver This value is the PAIR address
-    /// @param _taxType This value must be be 0, 1, or 2. Best to correspond value with the SELL tax type
+    /// @notice     Used to store the LP Pair to differ type of transaction. Will be used to mark a SELL.
+    /// @dev        _taxType must be lower than 3 because there can only be 3 tax types; buy, sell, & send.
+    /// @param      _receiver This value is the PAIR address.
+    /// @param      _taxType This value must be be 0, 1, or 2. Best to correspond value with the SELL tax type.
     function updateReceiverTaxType(address _receiver, uint _taxType) public onlyOwner {
         require(_taxType < 3, "err _taxType must be less than 3");
         receiverTaxType[_receiver] = _taxType;
     }
 
-    /// @notice Used to map the tax type 0, 1 or 2 with it's corresponding tax percentage
-    /// @dev Must be lower than 2000 which is equivalent to 20%
-    /// @param _taxType This value is the tax type. Has to be 0, 1, or 2
-    /// @param _bpt This is the corresponding percentage that is taken for royalties. 1200 = 12%
+    /// @notice     Used to map the tax type 0, 1 or 2 with it's corresponding tax percentage.
+    /// @dev        Must be lower than 2000 which is equivalent to 20%.
+    /// @param      _taxType This value is the tax type. Has to be 0, 1, or 2.
+    /// @param      _bpt This is the corresponding percentage that is taken for royalties. 1200 = 12%.
     function adjustBasisPointsTax(uint _taxType, uint _bpt) public onlyOwner {
         require(_bpt <= 2000, "err TaxToken.sol _bpt > 2000 (20%)");
         require(!taxesRemoved, "err TaxToken.sol taxation has been removed");
         basisPointsTax[_taxType] = _bpt;
     }
 
-    /// @dev An input is required here for sanity-check, given importance of this function call (and irreversible nature).
-    /// @param _key This value MUST equal 42 for function to execute.
+    /// @dev    Permanently remove taxes from this contract.
+    /// @notice An input is required here for sanity-check, given importance of this function call (and irreversible nature).
+    /// @param  _key This value MUST equal 42 for function to execute.
     function permanentlyRemoveTaxes(uint _key) public onlyOwner {
         require(_key == 42, "err TaxToken.sol _key != 42");
         basisPointsTax[0] = 0;
@@ -429,44 +374,44 @@ contract TaxToken {
 
     // ~ Admin ~
 
-    /// @notice This is used to change the owner's wallet address. Used to give ownership to another wallet.
-    /// @param _owner is the new owner address
+    /// @dev    This is used to change the owner's wallet address. Used to give ownership to another wallet.
+    /// @param  _owner is the new owner address.
     function transferOwnership(address _owner) public onlyOwner {
         owner = _owner;
     }
 
-    /// @notice This is used to set the treasury address of the parallel treasury contract for this tax token.
-    /// @param _treasury is the contract address of the treasury
+    /// @dev    Set the treasury (contract)) which receives taxes generated through transfer() and transferFrom().
+    /// @param  _treasury is the contract address of the treasury.
     function setTreasury(address _treasury) public onlyOwner {
         treasury = _treasury;
     }
 
-    /// @notice This function is used to set the max Tx amount per wallet
-    /// @dev does not affect whitelisted wallets
-    /// @param _maxTxAmount is the max amount of tokens that can be transacted at one time for a non-whitelisted wallet
+    /// @dev    Adjust maxTxAmount value (maximum amount transferrable in a single transaction).
+    /// @notice Does not affect whitelisted wallets.
+    /// @param  _maxTxAmount is the max amount of tokens that can be transacted at one time for a non-whitelisted wallet.
     function updateMaxTxAmount(uint256 _maxTxAmount) public onlyOwner {
         maxTxAmount = (_maxTxAmount * 10**_decimals);
     }
 
-    /// @notice This function is used to set the max wallet size aka the max amount of tokens a wallet can hold
-    /// @dev does not affect whitelisted wallets
-    /// @param _maxWalletSize is the max amount of tokens that can be held on a non-whitelisted wallet.
+    /// @dev    This function is used to set the max amount of tokens a wallet can hold.
+    /// @notice Does not affect whitelisted wallets.
+    /// @param  _maxWalletSize is the max amount of tokens that can be held on a non-whitelisted wallet.
     function updateMaxWalletSize(uint256 _maxWalletSize) public onlyOwner {
         maxWalletSize = (_maxWalletSize * 10**_decimals);
     }
 
-    /// @notice This function is used to add wallets to the whitelist mapping
-    /// @dev whitelisted wallets are not affected by maxWalletSize, maxTxAmount, and taxes
-    /// @param _wallet is the wallet address that will be added to whitelist
-    /// @param _whitelist true if wallet is whitelisted, otherwise false
+    /// @dev    This function is used to add wallets to the whitelist mapping.
+    /// @notice Whitelisted wallets are not affected by maxWalletSize, maxTxAmount, and taxes.
+    /// @param  _wallet is the wallet address that will have their whitelist status modified.
+    /// @param  _whitelist use True to whitelist a wallet, otherwise use False to remove wallet from whitelist.
     function modifyWhitelist(address _wallet, bool _whitelist) public onlyOwner {
         whitelist[_wallet] = _whitelist;
     }
 
-    /// @notice This function is used to add wallets to the isBlacklisted mapping
-    /// @dev blacklisted wallets cannot perform a transaction
-    /// @param _wallet is the wallet address that will be added to the blacklist
-    /// @param _blacklist true if wallet is blacklisted, otherwise false
+    /// @dev    This function is used to add or remove wallets from the blacklist.
+    /// @notice Blacklisted wallets cannot perform transfer() or transferFrom().
+    /// @param  _wallet is the wallet address that will have their blacklist status modified.
+    /// @param  _blacklist use True to blacklist a wallet, otherwise use False to remove wallet from blacklist.
     function modifyBlacklist(address _wallet, bool _blacklist) public onlyOwner {
         blacklist[_wallet] = _blacklist;
     }

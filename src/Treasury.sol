@@ -16,7 +16,8 @@ contract Treasury {
 
     address public taxToken;   /// @dev The token that fees are taken from, and what is held in escrow here.
     address public admin;      /// @dev The administrator of accounting and distribution settings.
-    address UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+
+    address public UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
 
 
     /// @dev    Handles the internal accounting for how much taxToken is owed to each taxType.
@@ -68,16 +69,6 @@ contract Treasury {
         require(msg.sender == taxToken);
         _;
     }
-
-
-
-    // ------
-    // Events
-    // ------
-    
-    event LogUint(string s, uint u);        /// @dev HEVM logging tool for uint.
-    event LogAddy(string s, address a);     /// @dev HEVM logging tool for address.
-
 
 
     // ---------
@@ -143,37 +134,20 @@ contract Treasury {
         );
     }
 
-    // Tax Type 0 => Xfer Tax (10%) => 10% (1wallets, marketing)
-    // Tax Type 1 => Buy Tax (12%) => 6%/6% (2wallets, use/marketing))
-    // Tax Type 2 => Sell Tax (12%) => 2%/4%/6% (3wallets, use/marketing/staking)
-
-    /**
-        struct TaxDistribution {
-            uint walletCount;
-            address[] wallets;
-            address[] convertToAsset;
-            uint[] percentDistribution;
-        }
-    */
-
     /// @dev    Distributes taxes for given taxType.
     /// @param  taxType Chosen taxType to distribute.
     /// @return amountToDistribute TaxToken amount distributed.
     function distributeTaxes(uint taxType) public returns(uint amountToDistribute) {
-
+        
         amountToDistribute = taxTokenAccruedForTaxType[taxType];
 
         if (amountToDistribute > 0) {
+
             taxTokenAccruedForTaxType[taxType] = 0;
             uint walletCount = taxSettings[taxType].walletCount;
 
-            emit LogUint("amountToDistribute", amountToDistribute);
-            emit LogUint("walletCount", walletCount);
-            emit LogUint("Balance of Treasury", IERC20(taxToken).balanceOf(address(this)));
-
             for (uint i = 0; i < walletCount; i++) {
                 uint amountForWallet = (amountToDistribute * taxSettings[taxType].percentDistribution[i]) / 100;
-                emit LogUint("amountForWallet", amountForWallet);
                 address walletToAirdrop = taxSettings[taxType].wallets[i];
 
                 if (taxSettings[taxType].convertToAsset[i] == taxToken) {
@@ -187,8 +161,6 @@ contract Treasury {
                     path_uni_v2[0] = address(taxToken);
                     path_uni_v2[1] = taxSettings[taxType].convertToAsset[i];
 
-                    // Documentation on IUniswapV2Router:
-                    // https://docs.uniswap.org/protocol/V2/reference/smart-contracts/router-02#swapexacttokensfortokens
                     IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokens(
                         amountForWallet,           
                         0,
