@@ -27,7 +27,6 @@ contract TaxToken {
     address public treasury;
     address public UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
 
-    bool public treasurySet;
     bool public taxesRemoved;   /// @dev Once true, taxes are permanently set to 0 and CAN NOT be increased in the future.
 
     uint256 public maxWalletSize;
