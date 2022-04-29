@@ -107,21 +107,15 @@ contract MainDeployment_RX2 is Utility {
             percentDistribution
         );
         
-        // Convert our ETH to WETH (just for HEVM)
         uint ETH_DEPOSIT = 16.66 ether;
         uint TOKEN_DEPOSIT = 100000000 ether;
 
-        // (17) Wrap ETH to WETH.
-        IWETH(WETH).deposit{value: ETH_DEPOSIT}();
-
-        // (18, 19) Approve WETH and TaxToken for UniswapV2Router.
-        IERC20(WETH).approve(
-            address(UNIV2_ROUTER), ETH_DEPOSIT
-        );
+        // (18) Approve TaxToken for UniswapV2Router.
         IERC20(address(taxToken)).approve(
             address(UNIV2_ROUTER), TOKEN_DEPOSIT
         );
 
+        // (19) Pause TaxToken.
         taxToken.pause();
 
         // (20) Instantiate liquidity pool.
@@ -139,6 +133,7 @@ contract MainDeployment_RX2 is Utility {
         // (21) Reduce MaxTxAmount post-liquidity-pool-deposit to (6mm).
         taxToken.updateMaxTxAmount(6000000);
 
+        // (22) Unpause TaxToken.
         taxToken.unpause();
 
     }
