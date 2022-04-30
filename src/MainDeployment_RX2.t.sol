@@ -154,6 +154,7 @@ contract MainDeployment_RX2 is Utility {
     function test_royal_riches_buy() public {
         uint tradeAmt = 1 ether;
 
+        IWETH(WETH).deposit{value: tradeAmt}();
         IERC20(WETH).approve(
             address(UNIV2_ROUTER), tradeAmt
         );
@@ -284,6 +285,7 @@ contract MainDeployment_RX2 is Utility {
         
         taxToken.modifyWhitelist(address(32), true);
 
+        IWETH(WETH).deposit{value: tradeAmt}();
         IERC20(WETH).approve(
             address(UNIV2_ROUTER), tradeAmt
         );
