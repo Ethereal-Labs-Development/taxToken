@@ -19,6 +19,7 @@ contract Treasury {
 
     address public UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
 
+    uint public taxTokenTickThreshold;      /// @dev The threshold for distributing taxes automatically.
 
     /// @notice Handles the internal accounting for how much taxToken is owed to each taxType.
     /// @dev    e.g. 10,000 taxToken owed to taxType 0 => taxTokenAccruedForTaxType[0] = 10000 * 10**18
@@ -84,6 +85,16 @@ contract Treasury {
     /// @param  amt The amount of taxToken going to taxType.
     function updateTaxesAccrued(uint taxType, uint amt) isTaxToken public {
         taxTokenAccruedForTaxType[taxType] += amt;
+        if (taxTokenTickThreshold != 0 && IERC20(taxToken).balanceOf(address(this)) > taxTokenTickThreshold) {
+            distributeAllTaxes();
+        }
+    }
+
+    /// @notice Set taxTokenTickThreshold to new value.
+    /// @dev    Only callable by Admin.
+    /// @param  threshold The new value for taxTokenTickThreshold. 
+    function setThreshold(uint threshold) isAdmin public {
+        taxTokenTickThreshold = threshold * 10**IERC20(taxToken).decimals();
     }
 
     /// @notice View function for taxes accrued (a.k.a. "claimable") for each tax type, and the sum.
