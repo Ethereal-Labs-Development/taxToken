@@ -529,4 +529,30 @@ contract TreasuryTest is Utility {
         assertEq(treasury.admin(), address(32));
     }
 
+    function test_treasury_setTickThreshold() public {
+        assertEq(treasury.taxTokenTickThreshold(), 0);
+
+        treasury.setThreshold(1000);
+
+        assertEq(treasury.taxTokenTickThreshold(), 1000 * 10**taxToken.decimals());
+    }
+
+    //buy_generateFees();
+    //sell_generateFees();
+    //xfer_generateFees();
+
+    function test_treasury_setTickTransfer() public {
+        uint256 preBal_treasury = taxToken.balanceOf(address(treasury));    //~13.44 * 10^18
+
+        treasury.setThreshold(15);
+
+        taxToken.transfer(address(42), 1 ether);
+
+
+        //emit LogUint("taxTokenBal", preBal_treasury);
+
+
+    }
+
+
 }
