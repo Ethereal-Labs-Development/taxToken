@@ -88,13 +88,14 @@ contract TreasuryTest is Utility {
         buy_generateFees();
         sell_generateFees();
         xfer_generateFees();
+
     }
 
     function buy_generateFees() public {
 
         // Simulate buy (taxType 1)
 
-        uint tradeAmt = 1 ether;
+        uint tradeAmt = 10 ether;
 
         IERC20(WETH).approve(
             address(UNIV2_ROUTER), tradeAmt
@@ -550,8 +551,47 @@ contract TreasuryTest is Utility {
 
 
         //emit LogUint("taxTokenBal", preBal_treasury);
+    }
 
+    function test_treasury_automatedTaxDistribution() public {
 
+        // setup taxDistribution
+        address[] memory wallets = new address[](2);
+        address[] memory convertToAsset = new address[](2);
+        uint[] memory percentDistribution = new uint[](2);
+        
+        wallets[0] = address(12);
+        wallets[1] = address(13);
+        convertToAsset[0] = address(taxToken);
+        convertToAsset[1] = address(taxToken);
+        percentDistribution[0] = 50;
+        percentDistribution[1] = 50;
+
+        treasury.setTaxDistribution( 
+            1, 
+            2, 
+            wallets, 
+            convertToAsset, 
+            percentDistribution
+        );
+
+        // check balance of treasury
+        emit LogUint("treasury_balance_preTaxThreshold", IERC20(address(taxToken)).balanceOf(address(treasury)));
+        assertEq(0, IERC20(address(taxToken)).balanceOf(address(12)));
+        assertEq(0, IERC20(address(taxToken)).balanceOf(address(13)));
+
+        // setup taxThreshhold
+        treasury.setThreshold(15);
+
+        // transfer taxTokens to treasury - update taxes accrued
+        xfer_generateFees();
+
+        // check balance of treasury for a 0 balance of tokens
+        emit LogUint("treasury_balance_postTaxThreshold", IERC20(address(taxToken)).balanceOf(address(treasury)));
+
+        // check balance of wallets 12 and 13
+        emit LogUint("wallet_12_balance_postDistribution", IERC20(address(taxToken)).balanceOf(address(12)));
+        emit LogUint("wallet_13_balance_postDistribution", IERC20(address(taxToken)).balanceOf(address(13)));
     }
 
 

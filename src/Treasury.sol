@@ -81,10 +81,10 @@ contract Treasury {
 
     /// @notice Increases _amt of taxToken allocated to _taxType.
     /// @dev    Only callable by taxToken.
-    /// @param  taxType The taxType to allocate more taxToken to for distribution.
-    /// @param  amt The amount of taxToken going to taxType.
-    function updateTaxesAccrued(uint taxType, uint amt) isTaxToken public {
-        taxTokenAccruedForTaxType[taxType] += amt;
+    /// @param  _taxType The taxType to allocate more taxToken to for distribution.
+    /// @param  _amt The amount of taxToken going to taxType.
+    function updateTaxesAccrued(uint _taxType, uint _amt) isTaxToken public {
+        taxTokenAccruedForTaxType[_taxType] += _amt;
         if (taxTokenTickThreshold != 0 && IERC20(taxToken).balanceOf(address(this)) > taxTokenTickThreshold) {
             distributeAllTaxes();
         }
@@ -219,6 +219,12 @@ contract Treasury {
     /// @param  _admin New admin address.
     function updateAdmin(address _admin) public isAdmin {
         admin = _admin;
+    }
+
+    /// @notice Get the amount of taxTokens that are being held inside the treasury
+    /// @dev Not restricted to any specific modifier
+    function getTaxTokenBalance() public view returns(uint256) {
+        return IERC20(taxToken).balanceOf(address(this));
     }
 
 }
