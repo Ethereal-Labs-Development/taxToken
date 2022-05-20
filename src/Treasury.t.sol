@@ -530,22 +530,18 @@ contract TreasuryTest is Utility {
         assertEq(treasury.admin(), address(32));
     }
 
-    function test_treasury_setTickThreshold() public {
-        assertEq(treasury.taxTokenTickThreshold(), 0);
+    function test_treasury_setDistributionThreshold() public {
+        assertEq(treasury.taxTokenDistributionThreshold(), 0);
 
-        treasury.setThreshold(1000);
+        treasury.setDistributionThreshold(1000);
 
-        assertEq(treasury.taxTokenTickThreshold(), 1000 * 10**taxToken.decimals());
+        assertEq(treasury.taxTokenDistributionThreshold(), 1000 * 10**taxToken.decimals());
     }
-
-    //buy_generateFees();
-    //sell_generateFees();
-    //xfer_generateFees();
 
     function test_treasury_setTickTransfer() public {
         uint256 preBal_treasury = taxToken.balanceOf(address(treasury));    //~13.44 * 10^18
 
-        treasury.setThreshold(15);
+        treasury.setDistributionThreshold(15);
 
         taxToken.transfer(address(42), 1 ether);
 
@@ -553,9 +549,10 @@ contract TreasuryTest is Utility {
         //emit LogUint("taxTokenBal", preBal_treasury);
     }
 
-    function test_treasury_automatedTaxDistribution() public {
+    // Test automatic taxToken distribution once threshold is set and sufficient taxes accrue in treasury
+    function test_treasury_automatedBuyTaxDistribution() public {
 
-        // setup taxDistribution
+        // tax distribution for buy, but missing tax distributions for sell and transfer.
         address[] memory wallets = new address[](2);
         address[] memory convertToAsset = new address[](2);
         uint[] memory percentDistribution = new uint[](2);
@@ -576,23 +573,91 @@ contract TreasuryTest is Utility {
         );
 
         // check balance of treasury
-        emit LogUint("treasury_balance_preTaxThreshold", IERC20(address(taxToken)).balanceOf(address(treasury)));
-        assertEq(0, IERC20(address(taxToken)).balanceOf(address(12)));
-        assertEq(0, IERC20(address(taxToken)).balanceOf(address(13)));
+        emit LogUint("treasury_balance_preTaxThreshold", taxToken.balanceOf(address(treasury)));
+        assertEq(0, taxToken.balanceOf(address(12)));
+        assertEq(0, taxToken.balanceOf(address(13)));
+
+        // check balance of wallets 12 and 13
+        emit LogUint("wallet_12_balance_postDistribution", taxToken.balanceOf(address(12)));
+        emit LogUint("wallet_13_balance_postDistribution", taxToken.balanceOf(address(13)));
 
         // setup taxThreshhold
-        treasury.setThreshold(15);
+        treasury.setDistributionThreshold(15);
 
-        // transfer taxTokens to treasury - update taxes accrued
+        // get the value of buy taxes accrued before distribution
+        (, uint taxType1, ,) = treasury.viewTaxesAccrued();
+
+        // get the tax settings for buy distribution to check individual wallet percentages
+        (, , , uint[] memory percentDist) = treasury.viewTaxSettings(1);
+
+        // get distribution percentages for wallets 12 & 13
+        uint percentDist_12 = percentDist[0];
+        uint percentDist_13 = percentDist[1];
+
+        // transfer taxTokens to treasury which updates taxes accrued to trigger distribution
         xfer_generateFees();
 
         // check balance of treasury for a 0 balance of tokens
-        emit LogUint("treasury_balance_postTaxThreshold", IERC20(address(taxToken)).balanceOf(address(treasury)));
+        emit LogUint("treasury_balance_postTaxThreshold", taxToken.balanceOf(address(treasury)));
 
-        // check balance of wallets 12 and 13
-        emit LogUint("wallet_12_balance_postDistribution", IERC20(address(taxToken)).balanceOf(address(12)));
-        emit LogUint("wallet_13_balance_postDistribution", IERC20(address(taxToken)).balanceOf(address(13)));
+        // ensure that the appropriate amounts have been distributed to the wallets based upon their distributions
+        assertEq(taxToken.balanceOf(address(12)), (taxType1*percentDist_12)/100);
+        assertEq(taxToken.balanceOf(address(13)), (taxType1*percentDist_13)/100);
     }
 
+    // Test loss and reset of taxes accrued for tax distribution(s) that are not properly setup
+    // The taxes accrued remain in the treasury, but their amounts are reset to 0 without options to withdrawal.
+    function testFail_treasury_missingDistributions() public {
+
+        // NOTE:
+        // if any tax distributions are NOT set, then the taxes accrued for those distributions will be lost
+        // during any call to the "distributeTaxes" function :)
+
+        // setup taxDistribution for buy tax
+        address[] memory wallets = new address[](2);
+        address[] memory convertToAsset = new address[](2);
+        uint[] memory percentDistribution = new uint[](2);
+        
+        wallets[0] = address(12);
+        wallets[1] = address(13);
+        convertToAsset[0] = address(taxToken);
+        convertToAsset[1] = address(taxToken);
+        percentDistribution[0] = 50;
+        percentDistribution[1] = 50;
+
+        // tax distribution for buy, but missing tax distributions for sell and transfer.
+        treasury.setTaxDistribution( 
+            1, 
+            2, 
+            wallets, 
+            convertToAsset, 
+            percentDistribution
+        );
+
+        // setup taxThreshhold
+        treasury.setDistributionThreshold(15);
+
+        // get the amount of transfer & sell taxes accrued before distribution
+        (uint taxType0_before, , uint taxType2_before,) = treasury.viewTaxesAccrued();
+
+        emit LogUint("treasury_balance_preTaxThreshold", taxToken.balanceOf(address(treasury)));
+
+        // exceeds threshold so distribution occurs, buy will not affect sell or transfer taxes accrued
+        buy_generateFees();
+        
+        // get the amount of transfer & sell taxes accrued after distribution
+        (uint taxType0_after, , uint taxType2_after,) = treasury.viewTaxesAccrued();
+
+        emit LogUint("treasury_balance_afterTaxThreshold", taxToken.balanceOf(address(treasury)));
+        uint treasuryBalanceAfter = taxToken.balanceOf(address(treasury));
+
+        // amount of taxes accrued for transfer/sell taxes before and after will not be equivalent
+        assertEq(taxType0_before, taxType0_after);
+        assertEq(taxType2_before, taxType2_after);
+
+        // remaining treasury balance will not be equivalent to the sum of taxes accrued for transfer/sell
+        // taxes after distribution because of the reset.
+        assertEq(treasuryBalanceAfter, taxType0_after+taxType2_after);
+    }
 
 }

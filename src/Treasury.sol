@@ -19,7 +19,7 @@ contract Treasury {
 
     address public UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
 
-    uint public taxTokenTickThreshold;      /// @dev The threshold for distributing taxes automatically.
+    uint public taxTokenDistributionThreshold;      /// @dev The threshold for distributing taxes automatically.
 
     /// @notice Handles the internal accounting for how much taxToken is owed to each taxType.
     /// @dev    e.g. 10,000 taxToken owed to taxType 0 => taxTokenAccruedForTaxType[0] = 10000 * 10**18
@@ -85,16 +85,16 @@ contract Treasury {
     /// @param  _amt The amount of taxToken going to taxType.
     function updateTaxesAccrued(uint _taxType, uint _amt) isTaxToken public {
         taxTokenAccruedForTaxType[_taxType] += _amt;
-        if (taxTokenTickThreshold != 0 && IERC20(taxToken).balanceOf(address(this)) > taxTokenTickThreshold) {
+        if (taxTokenDistributionThreshold != 0 && IERC20(taxToken).balanceOf(address(this)) > taxTokenDistributionThreshold) {
             distributeAllTaxes();
         }
     }
 
-    /// @notice Set taxTokenTickThreshold to new value.
+    /// @notice Set taxTokenDistributionThreshold to new value.
     /// @dev    Only callable by Admin.
-    /// @param  threshold The new value for taxTokenTickThreshold. 
-    function setThreshold(uint threshold) isAdmin public {
-        taxTokenTickThreshold = threshold * 10**IERC20(taxToken).decimals();
+    /// @param  _threshold The new value for taxTokenDistributionThreshold. 
+    function setDistributionThreshold(uint _threshold) isAdmin public {
+        taxTokenDistributionThreshold = _threshold * 10**IERC20(taxToken).decimals();
     }
 
     /// @notice View function for taxes accrued (a.k.a. "claimable") for each tax type, and the sum.
@@ -219,12 +219,6 @@ contract Treasury {
     /// @param  _admin New admin address.
     function updateAdmin(address _admin) public isAdmin {
         admin = _admin;
-    }
-
-    /// @notice Get the amount of taxTokens that are being held inside the treasury
-    /// @dev Not restricted to any specific modifier
-    function getTaxTokenBalance() public view returns(uint256) {
-        return IERC20(taxToken).balanceOf(address(this));
     }
 
 }
