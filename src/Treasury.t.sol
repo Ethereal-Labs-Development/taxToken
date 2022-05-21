@@ -538,17 +538,6 @@ contract TreasuryTest is Utility {
         assertEq(treasury.taxTokenDistributionThreshold(), 1000 * 10**taxToken.decimals());
     }
 
-    function test_treasury_setTickTransfer() public {
-        uint256 preBal_treasury = taxToken.balanceOf(address(treasury));    //~13.44 * 10^18
-
-        treasury.setDistributionThreshold(15);
-
-        taxToken.transfer(address(42), 1 ether);
-
-
-        //emit LogUint("taxTokenBal", preBal_treasury);
-    }
-
     // Test automatic taxToken distribution once threshold is set and sufficient taxes accrue in treasury
     function test_treasury_automatedBuyTaxDistribution() public {
 
@@ -573,13 +562,16 @@ contract TreasuryTest is Utility {
         );
 
         // check balance of treasury
-        emit LogUint("treasury_balance_preTaxThreshold", taxToken.balanceOf(address(treasury)));
+        //emit LogUint("treasury_balance_preTaxThreshold", taxToken.balanceOf(address(treasury)));
+        
+        // verify that taxToken balances of wallets and threshold state variable are 0
         assertEq(0, taxToken.balanceOf(address(12)));
         assertEq(0, taxToken.balanceOf(address(13)));
+        assertEq(0, treasury.taxTokenDistributionThreshold());
 
         // check balance of wallets 12 and 13
-        emit LogUint("wallet_12_balance_postDistribution", taxToken.balanceOf(address(12)));
-        emit LogUint("wallet_13_balance_postDistribution", taxToken.balanceOf(address(13)));
+        //emit LogUint("wallet_12_balance_postDistribution", taxToken.balanceOf(address(12)));
+        //emit LogUint("wallet_13_balance_postDistribution", taxToken.balanceOf(address(13)));
 
         // setup taxThreshhold
         treasury.setDistributionThreshold(15);
@@ -598,7 +590,7 @@ contract TreasuryTest is Utility {
         xfer_generateFees();
 
         // check balance of treasury for a 0 balance of tokens
-        emit LogUint("treasury_balance_postTaxThreshold", taxToken.balanceOf(address(treasury)));
+        //emit LogUint("treasury_balance_postTaxThreshold", taxToken.balanceOf(address(treasury)));
 
         // ensure that the appropriate amounts have been distributed to the wallets based upon their distributions
         assertEq(taxToken.balanceOf(address(12)), (taxType1*percentDist_12)/100);
@@ -640,7 +632,7 @@ contract TreasuryTest is Utility {
         // get the amount of transfer & sell taxes accrued before distribution
         (uint taxType0_before, , uint taxType2_before,) = treasury.viewTaxesAccrued();
 
-        emit LogUint("treasury_balance_preTaxThreshold", taxToken.balanceOf(address(treasury)));
+        //emit LogUint("treasury_balance_preTaxThreshold", taxToken.balanceOf(address(treasury)));
 
         // exceeds threshold so distribution occurs, buy will not affect sell or transfer taxes accrued
         buy_generateFees();
@@ -648,7 +640,7 @@ contract TreasuryTest is Utility {
         // get the amount of transfer & sell taxes accrued after distribution
         (uint taxType0_after, , uint taxType2_after,) = treasury.viewTaxesAccrued();
 
-        emit LogUint("treasury_balance_afterTaxThreshold", taxToken.balanceOf(address(treasury)));
+        //emit LogUint("treasury_balance_afterTaxThreshold", taxToken.balanceOf(address(treasury)));
         uint treasuryBalanceAfter = taxToken.balanceOf(address(treasury));
 
         // amount of taxes accrued for transfer/sell taxes before and after will not be equivalent
