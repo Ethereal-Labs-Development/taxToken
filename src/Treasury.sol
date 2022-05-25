@@ -28,6 +28,8 @@ contract Treasury {
     mapping(uint => uint) public taxTokenAccruedForTaxType;
 
     mapping(uint => TaxDistribution) public taxSettings;   /// @dev Mapping of taxType to TaxDistribution struct.
+
+    mapping(address => uint) public royaltiesAccrued;      /// @dev Mapping of address to a count of royalties accrued in total.
  
     /// @notice Manages how TaxToken is distributed for a given taxType.
     ///         Variables:
