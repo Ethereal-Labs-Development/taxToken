@@ -25,7 +25,8 @@ contract TaxToken {
     // Extras
     address public owner;
     address public treasury;
-    address public UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+    // address public UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+    address public PANCAKEV2_ROUTER = 0x10ED43C718714eb63d5aA57B78B54704E256024E;
 
     bool public taxesRemoved;   /// @dev Once true, taxes are permanently set to 0 and CAN NOT be increased in the future.
 
@@ -72,8 +73,8 @@ contract TaxToken {
 
         // Create a uniswap pair for this new token
         address UNISWAP_V2_PAIR = IUniswapV2Factory(
-            IUniswapV2Router01(UNIV2_ROUTER).factory()
-        ).createPair(address(this), IUniswapV2Router01(UNIV2_ROUTER).WETH());
+            IUniswapV2Router01(PANCAKEV2_ROUTER).factory()
+        ).createPair(address(this), IUniswapV2Router01(PANCAKEV2_ROUTER).WETH());
  
         senderTaxType[UNISWAP_V2_PAIR] = 1;
         receiverTaxType[UNISWAP_V2_PAIR] = 2;

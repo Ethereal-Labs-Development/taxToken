@@ -17,7 +17,8 @@ contract Treasury {
     address public taxToken;   /// @dev The token that fees are taken from, and what is held in escrow here.
     address public admin;      /// @dev The administrator of accounting and distribution settings.
 
-    address public UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+    // address public UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+    address public PANCAKEV2_ROUTER = 0x10ED43C718714eb63d5aA57B78B54704E256024E;
 
 
     /// @notice Handles the internal accounting for how much taxToken is owed to each taxType.
@@ -156,14 +157,14 @@ contract Treasury {
                     IERC20(taxToken).transfer(walletToAirdrop, amountForWallet);
                 }
                 else {
-                    IERC20(address(taxToken)).approve(address(UNIV2_ROUTER), amountForWallet);
+                    IERC20(address(taxToken)).approve(address(PANCAKEV2_ROUTER), amountForWallet);
 
                     address[] memory path_uni_v2 = new address[](2);
 
                     path_uni_v2[0] = address(taxToken);
                     path_uni_v2[1] = taxSettings[taxType].convertToAsset[i];
 
-                    IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokens(
+                    IUniswapV2Router01(PANCAKEV2_ROUTER).swapExactTokensForTokens(
                         amountForWallet,           
                         0,
                         path_uni_v2,
