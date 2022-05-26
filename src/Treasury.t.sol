@@ -548,7 +548,7 @@ contract TreasuryTest is Utility {
         
         wallets[0] = address(12);
         wallets[1] = address(13);
-        convertToAsset[0] = address(taxToken);
+        convertToAsset[0] = WETH;
         convertToAsset[1] = address(taxToken);
         percentDistribution[0] = 50;
         percentDistribution[1] = 50;
@@ -565,7 +565,7 @@ contract TreasuryTest is Utility {
         //emit LogUint("treasury_balance_preTaxThreshold", taxToken.balanceOf(address(treasury)));
         
         // verify that taxToken balances of wallets and threshold state variable are 0
-        assertEq(0, taxToken.balanceOf(address(12)));
+        assertEq(0, IERC20(WETH).balanceOf(address(12)));
         assertEq(0, taxToken.balanceOf(address(13)));
         assertEq(0, treasury.taxTokenDistributionThreshold());
 

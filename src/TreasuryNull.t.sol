@@ -292,4 +292,106 @@ contract TreasuryNullTest is Utility {
         assertEq(treasury.distributeTaxes(1), 0);
     }
 
+    function test_treasury_scuffedDistribution() public {
+        
+        // set treasury initial state
+        treasury_setDistribution();
+        create_lp();
+        taxToken.modifyWhitelist(address(treasury), true);
+
+        // pre state check
+        assertEq(treasury.taxTokenAccruedForTaxType(0), 0);
+        assertEq(treasury.taxTokenAccruedForTaxType(1), 0);
+        assertEq(treasury.taxTokenAccruedForTaxType(2), 0);
+
+        // load treasury up with tokens
+        taxToken.transfer(address(treasury), 30 ether);
+        treasury.updateTaxesAccrued(0, 30 ether);
+        //treasury.updateTaxesAccrued(1, 10000);
+        //treasury.updateTaxesAccrued(2, 10000);
+        
+        // set threshhold
+        treasury.setDistributionThreshold(30 ether);
+
+        // send over threshold
+        taxToken.transfer(address(treasury), 10 ether);
+        treasury.updateTaxesAccrued(0, 10 ether);
+
+        // post state check
+        assertEq(treasury.taxTokenAccruedForTaxType(0), 0);
+    }
+
+    function treasury_setDistribution() public {
+        address[] memory wallets = new address[](4);
+        address[] memory convertToAsset = new address[](4);
+        uint[] memory percentDistribution = new uint[](4);
+
+        wallets[0] = address(1);
+        wallets[1] = address(2);
+        wallets[2] = address(3);
+        wallets[3] = address(4);
+        convertToAsset[0] = WETH;
+        convertToAsset[1] = WETH;
+        convertToAsset[2] = address(taxToken);
+        convertToAsset[3] = address(taxToken);
+        percentDistribution[0] = 40;
+        percentDistribution[1] = 30;
+        percentDistribution[2] = 20;
+        percentDistribution[3] = 10;
+
+        // (14, 15, 16) Update TaxType 0, 1, 2.
+        treasury.setTaxDistribution(
+            0, 
+            4, 
+            wallets, 
+            convertToAsset, 
+            percentDistribution
+        );
+
+        treasury.setTaxDistribution(
+            1, 
+            4, 
+            wallets, 
+            convertToAsset, 
+            percentDistribution
+        );
+
+        treasury.setTaxDistribution(
+            2, 
+            4, 
+            wallets, 
+            convertToAsset, 
+            percentDistribution
+        );
+    }
+
+    function create_lp() public {
+        // Convert our ETH to WETH
+        uint ETH_DEPOSIT = 100 ether;
+        uint TAX_DEPOSIT = 10000 ether;
+
+        IWETH(WETH).deposit{value: ETH_DEPOSIT}();
+
+        IERC20(WETH).approve(
+            address(UNIV2_ROUTER), ETH_DEPOSIT
+        );
+        IERC20(address(taxToken)).approve(
+            address(UNIV2_ROUTER), TAX_DEPOSIT
+        );
+
+        taxToken.modifyWhitelist(address(this), true);
+
+        // Instantiate liquidity pool.
+        // TODO: Research params for addLiquidityETH (which one is for TaxToken amount?).
+        IUniswapV2Router01(UNIV2_ROUTER).addLiquidityETH{value: ETH_DEPOSIT}(
+            address(taxToken),
+            TAX_DEPOSIT,            // This variable is the TaxToken amount to deposit.
+            10 ether,
+            10 ether,
+            address(this),
+            block.timestamp + 300
+        );
+    }
+    
+
 }
