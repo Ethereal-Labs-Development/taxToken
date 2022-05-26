@@ -25,7 +25,7 @@ contract TaxToken {
     // Extras
     address public owner;
     address public treasury;
-    address public UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+    address public UNIV2_ROUTER = 0x10ED43C718714eb63d5aA57B78B54704E256024E;
 
     bool public taxesRemoved;   /// @dev Once true, taxes are permanently set to 0 and CAN NOT be increased in the future.
 

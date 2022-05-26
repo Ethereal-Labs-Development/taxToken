@@ -17,7 +17,7 @@ contract Treasury {
     address public taxToken;   /// @dev The token that fees are taken from, and what is held in escrow here.
     address public admin;      /// @dev The administrator of accounting and distribution settings.
 
-    address public UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+    address public UNIV2_ROUTER = 0x10ED43C718714eb63d5aA57B78B54704E256024E;
 
 
     /// @notice Handles the internal accounting for how much taxToken is owed to each taxType.

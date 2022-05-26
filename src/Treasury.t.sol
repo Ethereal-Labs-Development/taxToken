@@ -18,7 +18,7 @@ contract TreasuryTest is Utility {
     Treasury treasury;
 
     address UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
-    address UNIV2_PAIR = 0xf1d107ac566473968fC5A90c9EbEFe42eA3248a4;
+    //address UNIV2_PAIR = 0xf1d107ac566473968fC5A90c9EbEFe42eA3248a4;
 
     event LogUint(string s, uint u);
     event LogArrUint(string s, uint[] u);
