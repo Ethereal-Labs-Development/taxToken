@@ -420,5 +420,4 @@ contract TreasuryNullTest is Utility {
         );
     }
     
-
 }

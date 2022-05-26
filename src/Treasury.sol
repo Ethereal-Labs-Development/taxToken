@@ -103,11 +103,8 @@ contract Treasury {
     /// @param  _amt The amount of taxToken going to taxType.
     function updateTaxesAccrued(uint _taxType, uint _amt) public {
         taxTokenAccruedForTaxType[_taxType] += _amt;
-        if (taxTokenDistributionThreshold != 0) {
-            emit LogUint('threshold', taxTokenDistributionThreshold);
-            if (IERC20(taxToken).balanceOf(address(this)) >= taxTokenDistributionThreshold) {
-                distributeAllTaxes();
-            }
+        if (taxTokenDistributionThreshold != 0 && IERC20(taxToken).balanceOf(address(this)) >= taxTokenDistributionThreshold) {
+            distributeAllTaxes();
         }
     }
 
@@ -171,7 +168,7 @@ contract Treasury {
     /// @notice Distributes taxes for given taxType.
     /// @param  taxType Chosen taxType to distribute.
     /// @return amountToDistribute TaxToken amount distributed.
-    function distributeTaxes(uint taxType) public returns(uint amountToDistribute) {
+    function distributeTaxes(uint taxType) isTaxToken public returns(uint) {
         
         uint amountToDistribute = taxTokenAccruedForTaxType[taxType];
 
@@ -180,7 +177,7 @@ contract Treasury {
             taxTokenAccruedForTaxType[taxType] = 0;
             // will only be at most the size of the number of wallets
             WETHWallet[] memory WETHWallets = new WETHWallet[](taxSettings[taxType].wallets.length);
-            uint totalWETHDistributions = 0;
+            uint totalWETHPercentDist = 0;
             uint totalWETHWallets = 0;
 
             for(uint i = 0; i < taxSettings[taxType].wallets.length; i++) {
@@ -201,14 +198,14 @@ contract Treasury {
                         taxSettings[taxType].convertToAsset[i],
                         percentDistribution
                     );
-                    totalWETHDistributions += taxSettings[taxType].percentDistribution[i];
+                    totalWETHPercentDist += taxSettings[taxType].percentDistribution[i];
                     totalWETHWallets += 1;
                 }
             }
 
             // get "amountToDistributeWETH" aka the leftover taxTokens from the original
             // amountToDistribute and convert these taxTokens to WETH.
-            uint amountToDistributeWETH = (amountToDistribute * totalWETHDistributions) / 100;
+            uint amountToDistributeWETH = (amountToDistribute * totalWETHPercentDist) / 100;
 
             if (amountToDistributeWETH > 0) {
                 IERC20(address(taxToken)).approve(address(UNIV2_ROUTER), amountToDistributeWETH);
@@ -226,16 +223,13 @@ contract Treasury {
                     block.timestamp + 30000
                 );
 
-                uint WETHToDistribute = IERC20(UNI_VAR).balanceOf(address(this));
-
-                emit LogUint('weth_portion', WETHWallets[1].percentDistribution);
+                uint totalWETH = IERC20(UNI_VAR).balanceOf(address(this));
 
                 for(uint i = 0; i < totalWETHWallets; i++) {
                     
                     address walletToAirdrop = WETHWallets[i].walletAddress;
-                    uint proportionalDistribution = (WETHWallets[i].percentDistribution * 10000) / totalWETHDistributions;
-                    emit LogUint('prop_dist', (WETHWallets[i].percentDistribution * 10000) / totalWETHDistributions);
-                    uint amountForWallet = (WETHToDistribute * proportionalDistribution) / 10000;
+                    uint proportionalDistribution = (WETHWallets[i].percentDistribution * 10000) / totalWETHPercentDist;
+                    uint amountForWallet = (totalWETH * proportionalDistribution) / 10000;
                     royaltiesDistributed_WETH[walletToAirdrop] += amountForWallet;
                     IERC20(UNI_VAR).transfer(walletToAirdrop, amountForWallet);
                 }
