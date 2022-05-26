@@ -17,16 +17,6 @@ contract Treasury {
     address public taxToken;   /// @dev The token that fees are taken from, and what is held in escrow here.
     address public admin;      /// @dev The administrator of accounting and distribution settings.
 
-    uint amountToDistributeWETH = 0;
-    uint amountToDistributeTT = 0;
-    uint numOfWalletsWETH = 0;
-    uint numOfWalletsTT = 0;
-    uint WETHportion = 0;
-    uint TTportion = 0;
-
-    uint[] WETHIndexes;
-    uint[] TTIndexes;
-
     address public UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
 
     address public UNI_VAR = IUniswapV2Router01(UNIV2_ROUTER).WETH();
@@ -229,10 +219,15 @@ contract Treasury {
                     block.timestamp + 30000
                 );
 
+                uint WETHToDistribute = IERC20(UNI_VAR).balanceOf(address(this));
+
+                emit LogUint('weth_portion', WETHWallets[1].percentDistribution);
+
                 for(uint i = 0; i < WETHWallets.length; i++) {
                     address walletToAirdrop = WETHWallets[i].walletAddress;
-                    uint proportionalDistribution = (WETHWallets[i].percentDistribution / totalWETHDistributions);
-                    uint amountForWallet = (amountToDistributeWETH * proportionalDistribution) / 100;
+                    uint proportionalDistribution = (WETHWallets[i].percentDistribution * 100) / totalWETHDistributions;
+                    emit LogUint('prop_dist', (WETHWallets[i].percentDistribution * 100) / totalWETHDistributions);
+                    uint amountForWallet = (WETHToDistribute * proportionalDistribution) / 100;
                     IERC20(UNI_VAR).transfer(walletToAirdrop, amountForWallet);
                 }
             }

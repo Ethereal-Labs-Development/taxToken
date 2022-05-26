@@ -304,6 +304,8 @@ contract TreasuryNullTest is Utility {
         assertEq(treasury.taxTokenAccruedForTaxType(1), 0);
         assertEq(treasury.taxTokenAccruedForTaxType(2), 0);
 
+        treasury.setDistributionThreshold(30 ether);
+
         // load treasury up with tokens
         taxToken.transfer(address(treasury), 30 ether);
         treasury.updateTaxesAccrued(0, 30 ether);
@@ -316,6 +318,8 @@ contract TreasuryNullTest is Utility {
         // send over threshold
         taxToken.transfer(address(treasury), 10 ether);
         treasury.updateTaxesAccrued(0, 10 ether);
+
+        treasury.distributeAllTaxes();
 
         // post state check
         assertEq(treasury.taxTokenAccruedForTaxType(0), 0);
