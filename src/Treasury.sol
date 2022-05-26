@@ -101,7 +101,7 @@ contract Treasury {
     /// @dev    Only callable by taxToken.
     /// @param  _taxType The taxType to allocate more taxToken to for distribution.
     /// @param  _amt The amount of taxToken going to taxType.
-    function updateTaxesAccrued(uint _taxType, uint _amt) public {
+    function updateTaxesAccrued(uint _taxType, uint _amt) isTaxToken public {
         taxTokenAccruedForTaxType[_taxType] += _amt;
         if (taxTokenDistributionThreshold != 0 && IERC20(taxToken).balanceOf(address(this)) >= taxTokenDistributionThreshold) {
             distributeAllTaxes();
@@ -168,7 +168,7 @@ contract Treasury {
     /// @notice Distributes taxes for given taxType.
     /// @param  taxType Chosen taxType to distribute.
     /// @return amountToDistribute TaxToken amount distributed.
-    function distributeTaxes(uint taxType) isTaxToken public returns(uint) {
+    function distributeTaxes(uint taxType) public returns(uint) {
         
         uint amountToDistribute = taxTokenAccruedForTaxType[taxType];
 
@@ -226,7 +226,6 @@ contract Treasury {
                 uint totalWETH = IERC20(UNI_VAR).balanceOf(address(this));
 
                 for(uint i = 0; i < totalWETHWallets; i++) {
-                    
                     address walletToAirdrop = WETHWallets[i].walletAddress;
                     uint proportionalDistribution = (WETHWallets[i].percentDistribution * 10000) / totalWETHPercentDist;
                     uint amountForWallet = (totalWETH * proportionalDistribution) / 10000;
