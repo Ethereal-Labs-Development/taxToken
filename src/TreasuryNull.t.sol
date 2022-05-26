@@ -304,25 +304,48 @@ contract TreasuryNullTest is Utility {
         assertEq(treasury.taxTokenAccruedForTaxType(1), 0);
         assertEq(treasury.taxTokenAccruedForTaxType(2), 0);
 
-        treasury.setDistributionThreshold(30 ether);
+        uint preBal = IERC20(WETH).balanceOf(address(11));
+        uint preBal2 = IERC20(WETH).balanceOf(address(12));
+        uint preBal3 = IERC20(address(taxToken)).balanceOf(address(13));
+        uint preBal4 = IERC20(address(taxToken)).balanceOf(address(14));
 
         // load treasury up with tokens
         taxToken.transfer(address(treasury), 30 ether);
         treasury.updateTaxesAccrued(0, 30 ether);
-        //treasury.updateTaxesAccrued(1, 10000);
-        //treasury.updateTaxesAccrued(2, 10000);
-        
-        // set threshhold
-        treasury.setDistributionThreshold(30 ether);
-
-        // send over threshold
+        treasury.setDistributionThreshold(30);
         taxToken.transfer(address(treasury), 10 ether);
-        treasury.updateTaxesAccrued(0, 10 ether);
-
-        treasury.distributeAllTaxes();
+        treasury.updateTaxesAccrued(0, 10 ether); // sends contract over threshold thus distributing
 
         // post state check
         assertEq(treasury.taxTokenAccruedForTaxType(0), 0);
+        assertEq(treasury.taxTokenAccruedForTaxType(1), 0);
+        assertEq(treasury.taxTokenAccruedForTaxType(2), 0);
+
+        assertEq(IERC20(WETH).balanceOf(address(11))-preBal, treasury.royaltiesDistributed_WETH(address(11)));
+        assertEq(IERC20(WETH).balanceOf(address(12))-preBal2, treasury.royaltiesDistributed_WETH(address(12)));
+        assertEq(IERC20(address(taxToken)).balanceOf(address(13))-preBal3, treasury.royaltiesDistributed_TaxToken(address(13)));
+        assertEq(IERC20(address(taxToken)).balanceOf(address(14))-preBal4, treasury.royaltiesDistributed_TaxToken(address(14)));
+
+        // sequence 2
+
+        preBal = IERC20(WETH).balanceOf(address(11));
+        preBal2 = IERC20(WETH).balanceOf(address(12));
+        preBal3 = IERC20(address(taxToken)).balanceOf(address(13));
+        preBal4 = IERC20(address(taxToken)).balanceOf(address(14));
+
+        // load treasury up with tokens
+        taxToken.transfer(address(treasury), 31 ether);
+        treasury.updateTaxesAccrued(0, 31 ether); // distribute
+
+        // post state check
+        assertEq(treasury.taxTokenAccruedForTaxType(0), 0);
+        assertEq(treasury.taxTokenAccruedForTaxType(1), 0);
+        assertEq(treasury.taxTokenAccruedForTaxType(2), 0);
+
+        assertEq(IERC20(WETH).balanceOf(address(11)), treasury.royaltiesDistributed_WETH(address(11)));
+        assertEq(IERC20(WETH).balanceOf(address(12)), treasury.royaltiesDistributed_WETH(address(12)));
+        assertEq(IERC20(address(taxToken)).balanceOf(address(13)), treasury.royaltiesDistributed_TaxToken(address(13)));
+        assertEq(IERC20(address(taxToken)).balanceOf(address(14)), treasury.royaltiesDistributed_TaxToken(address(14)));
     }
 
     function treasury_setDistribution() public {
@@ -330,10 +353,10 @@ contract TreasuryNullTest is Utility {
         address[] memory convertToAsset = new address[](4);
         uint[] memory percentDistribution = new uint[](4);
 
-        wallets[0] = address(1);
-        wallets[1] = address(2);
-        wallets[2] = address(3);
-        wallets[3] = address(4);
+        wallets[0] = address(11);
+        wallets[1] = address(12);
+        wallets[2] = address(13);
+        wallets[3] = address(14);
         convertToAsset[0] = WETH;
         convertToAsset[1] = WETH;
         convertToAsset[2] = address(taxToken);

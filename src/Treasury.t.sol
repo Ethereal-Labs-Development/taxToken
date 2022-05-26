@@ -589,11 +589,13 @@ contract TreasuryTest is Utility {
         // transfer taxTokens to treasury which updates taxes accrued to trigger distribution
         xfer_generateFees();
 
+        uint bal = treasury.royaltiesDistributed_WETH(address(12));
+
         // check balance of treasury for a 0 balance of tokens
         //emit LogUint("treasury_balance_postTaxThreshold", taxToken.balanceOf(address(treasury)));
 
         // ensure that the appropriate amounts have been distributed to the wallets based upon their distributions
-        assertEq(taxToken.balanceOf(address(12)), (taxType1*percentDist_12)/100);
+        assertEq(IERC20(WETH).balanceOf(address(12)), bal);
         assertEq(taxToken.balanceOf(address(13)), (taxType1*percentDist_13)/100);
     }
 
