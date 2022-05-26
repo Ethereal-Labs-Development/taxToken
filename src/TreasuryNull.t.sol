@@ -306,8 +306,8 @@ contract TreasuryNullTest is Utility {
 
         uint preBal = IERC20(WETH).balanceOf(address(11));
         uint preBal2 = IERC20(WETH).balanceOf(address(12));
-        uint preBal3 = IERC20(address(taxToken)).balanceOf(address(13));
-        uint preBal4 = IERC20(address(taxToken)).balanceOf(address(14));
+        uint preBal3 = IERC20(WETH).balanceOf(address(13));
+        uint preBal4 = IERC20(WETH).balanceOf(address(14));
 
         // load treasury up with tokens
         taxToken.transfer(address(treasury), 30 ether);
@@ -323,15 +323,15 @@ contract TreasuryNullTest is Utility {
 
         assertEq(IERC20(WETH).balanceOf(address(11))-preBal, treasury.royaltiesDistributed_WETH(address(11)));
         assertEq(IERC20(WETH).balanceOf(address(12))-preBal2, treasury.royaltiesDistributed_WETH(address(12)));
-        assertEq(IERC20(address(taxToken)).balanceOf(address(13))-preBal3, treasury.royaltiesDistributed_TaxToken(address(13)));
-        assertEq(IERC20(address(taxToken)).balanceOf(address(14))-preBal4, treasury.royaltiesDistributed_TaxToken(address(14)));
+        assertEq(IERC20(WETH).balanceOf(address(13))-preBal3, treasury.royaltiesDistributed_WETH(address(13)));
+        assertEq(IERC20(WETH).balanceOf(address(14))-preBal4, treasury.royaltiesDistributed_WETH(address(14)));
 
         // sequence 2
 
         preBal = IERC20(WETH).balanceOf(address(11));
         preBal2 = IERC20(WETH).balanceOf(address(12));
-        preBal3 = IERC20(address(taxToken)).balanceOf(address(13));
-        preBal4 = IERC20(address(taxToken)).balanceOf(address(14));
+        preBal3 = IERC20(WETH).balanceOf(address(13));
+        preBal4 = IERC20(WETH).balanceOf(address(14));
 
         // load treasury up with tokens
         taxToken.transfer(address(treasury), 31 ether);
@@ -344,8 +344,8 @@ contract TreasuryNullTest is Utility {
 
         assertEq(IERC20(WETH).balanceOf(address(11)), treasury.royaltiesDistributed_WETH(address(11)));
         assertEq(IERC20(WETH).balanceOf(address(12)), treasury.royaltiesDistributed_WETH(address(12)));
-        assertEq(IERC20(address(taxToken)).balanceOf(address(13)), treasury.royaltiesDistributed_TaxToken(address(13)));
-        assertEq(IERC20(address(taxToken)).balanceOf(address(14)), treasury.royaltiesDistributed_TaxToken(address(14)));
+        assertEq(IERC20(WETH).balanceOf(address(13)), treasury.royaltiesDistributed_WETH(address(13)));
+        assertEq(IERC20(WETH).balanceOf(address(14)), treasury.royaltiesDistributed_WETH(address(14)));
     }
 
     function treasury_setDistribution() public {
@@ -359,8 +359,8 @@ contract TreasuryNullTest is Utility {
         wallets[3] = address(14);
         convertToAsset[0] = WETH;
         convertToAsset[1] = WETH;
-        convertToAsset[2] = address(taxToken);
-        convertToAsset[3] = address(taxToken);
+        convertToAsset[2] = WETH;
+        convertToAsset[3] = WETH;
         percentDistribution[0] = 40;
         percentDistribution[1] = 30;
         percentDistribution[2] = 20;
