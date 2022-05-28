@@ -3,7 +3,7 @@ pragma solidity ^0.8.6;
 
 import "../lib/ds-test/src/test.sol";
 
-import "./Utility.sol";
+import "./Utility/Utility.sol";
 
 import "./TaxToken.sol";
 import "./Treasury.sol";
@@ -20,6 +20,8 @@ contract TreasuryNullTest is Utility {
 
     function setUp() public {
 
+        createActors();
+
         taxToken = new TaxToken(
             100000000000,           // totalSupply
             'ANDROMETA',            // name
@@ -29,12 +31,13 @@ contract TreasuryNullTest is Utility {
             100000000000             // maxTxAmount (* 10**18) - 10000000000
         );
 
+        taxToken.transferOwnership(address(admin));
+
         treasury = new Treasury(
-            address(this), address(taxToken), 2000000
+            address(admin), address(taxToken), 2000000
         );
 
-        taxToken.setTreasury(address(treasury));
-
+        assert(admin.try_setTreasury(address(taxToken), address(treasury)));
 
         // Set basisPointsTax for taxType 0 / 1 / 2
         // taxType 0 => Xfer Tax (10%)  => 10% (1wallets, marketing)

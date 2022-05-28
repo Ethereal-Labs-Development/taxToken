@@ -2,7 +2,7 @@
 pragma solidity ^0.8.6;
 
 import "../lib/ds-test/src/test.sol";
-import "./Utility.sol";
+import "./Utility/Utility.sol";
 import "./TaxToken.sol";
 import "./Treasury.sol";
 
