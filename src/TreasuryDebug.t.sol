@@ -145,7 +145,8 @@ contract TreasuryNullTest is Utility {
 
         // (14, 15, 16) Update TaxType 0, 1, 2.
         treasury.setTaxDistribution(
-            0,            4, 
+            0,
+            4, 
             wallets, 
             convertToAsset, 
             percentDistribution

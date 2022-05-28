@@ -192,11 +192,11 @@ contract TaxToken {
             if (!whitelist[_to] && !whitelist[msg.sender] && _amount <= maxTxAmount) {
 
                 // Determine, if not the default 0, tax type of transfer.
-                if (senderTaxType[msg.sender] != 0) {
+                if (senderTaxType[msg.sender] != 0) { // buy
                     _taxType = senderTaxType[msg.sender];
                 }
 
-                if (receiverTaxType[_to] != 0) {
+                if (receiverTaxType[_to] != 0) { // sell
                     _taxType = receiverTaxType[_to];
                 }
 

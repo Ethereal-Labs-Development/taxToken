@@ -107,8 +107,12 @@ contract Treasury {
     /// @param  _amt The amount of taxToken going to taxType.
     function updateTaxesAccrued(uint _taxType, uint _amt) isTaxToken public {
         taxTokenAccruedForTaxType[_taxType] += _amt;
-        if (taxDistributionThreshold != 0 && IERC20(taxToken).balanceOf(address(this)) >= taxDistributionThreshold) {
-            distributeAllTaxes();
+        // if (taxDistributionThreshold != 0 && IERC20(taxToken).balanceOf(address(this)) >= taxDistributionThreshold) {
+        //     distributeAllTaxes();
+        //     emit distributionThresholdHit(_taxType, _amt);
+        // }
+        if (taxDistributionThreshold != 0 && taxTokenAccruedForTaxType[_taxType] >= taxDistributionThreshold) {
+            distributeTaxes(_taxType);
             emit distributionThresholdHit(_taxType, _amt);
         }
     }
@@ -210,9 +214,10 @@ contract Treasury {
 
             // get "amountToDistributeWETH" aka the leftover taxTokens from the original
             // amountToDistribute and convert these taxTokens to WETH.
-            uint amountToDistributeWETH = (amountToDistribute * totalWETHPercentDist) / 100;
+            uint amountToDistributeWETH = (amountToDistribute / 100) * totalWETHPercentDist;
 
             if (amountToDistributeWETH > 0) {
+
                 IERC20(address(taxToken)).approve(address(UNIV2_ROUTER), amountToDistributeWETH);
 
                 address[] memory path_uni_v2 = new address[](2);
