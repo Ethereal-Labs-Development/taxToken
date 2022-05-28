@@ -22,5 +22,10 @@ contract Trader {
         string memory sig = "transfer(address,uint256)";
         (ok,) = address(token).call(abi.encodeWithSignature(sig, to, amt));
     }
-    
+
+    function try_approveToken(address token, address to, uint256 amt) external returns (bool ok) {
+        string memory sig = "approve(address,uint256)";
+        (ok,) = address(token).call(abi.encodeWithSignature(sig, to, amt));
+    }    
+
 }
