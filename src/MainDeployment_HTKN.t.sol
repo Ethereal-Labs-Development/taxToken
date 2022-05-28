@@ -11,7 +11,7 @@ import "./Treasury.sol";
 // Import interface.
 import { IERC20, IUniswapV2Router01, IWETH } from "./interfaces/ERC20.sol";
 
-contract MainDeployment_ADMT is Utility {
+contract MainDeployment_HTKN is Utility {
 
     // State variable for contract.
     TaxToken taxToken;
@@ -23,19 +23,19 @@ contract MainDeployment_ADMT is Utility {
     event LogUint(string s, uint u);
     event LogArrUint(string s, uint[] u);
 
-    // This setUp() function describes the steps to deploy TaxToken for Royal Riches (RX2) in live.
+    // This setUp() function describes the steps to deploy TaxToken for hello Riches (RX2) in live.
     function setUp() public {
 
         // ENSURE ROUTER IS CORRECT
 
         // (1) Deploy the TaxToken.
         taxToken = new TaxToken(
-            100000000000,          // Initial liquidity (300mm)
-            'ANDROMETA',     // Name of token.
-            'ADMT',              // Symbol of token.
-            18,                 // Precision of decimals.
-            2000000000,           // Max wallet (10mm)
-            300000000           // Max transaction (300mm)
+            100000000000,          // Total Supply (300mm)
+            'ANDROMETA',           // Name of token.
+            'ADMT',                // Symbol of token.
+            18,                    // Precision of decimals.
+            2000000000,            // Max wallet (10mm)
+            300000000              // Max transaction (300mm)
         );
 
         // (2) Deploy the Treasury.
@@ -146,19 +146,19 @@ contract MainDeployment_ADMT is Utility {
     }
 
     // Initial state check.
-    function test_royal_riches_init_state() public {
-        assertEq(300000000 ether, taxToken.totalSupply());
+    function test_helloToken_init_state() public {
+        assertEq(100000000000 ether, taxToken.totalSupply());
         assertEq('ANDROMETA', taxToken.name());
         assertEq('ADMT', taxToken.symbol());
         assertEq(18, taxToken.decimals());
-        assertEq(10000000 ether, taxToken.maxWalletSize());
+        assertEq(2000000000 ether, taxToken.maxWalletSize());
         assertEq(6000000 ether, taxToken.maxTxAmount());
         assertEq(taxToken.balanceOf(address(this)), taxToken.totalSupply() - 100000000 ether);
         assertEq(taxToken.treasury(), address(treasury));
     }
 
     // Test a post deployment buy
-    function test_royal_riches_buy() public {
+    function test_helloToken_buy() public {
         uint tradeAmt = 1 ether;
 
         IWETH(WETH).deposit{value: tradeAmt}();
@@ -194,7 +194,7 @@ contract MainDeployment_ADMT is Utility {
     }
 
     // Test a post deployment sell
-    function test_royal_riches_sell() public {
+    function test_helloToken_sell() public {
         uint tradeAmt = 1 ether;
         taxToken.transfer(address(32), 2 ether);
 
@@ -223,7 +223,7 @@ contract MainDeployment_ADMT is Utility {
     }
 
     // Test a post deployment buy after pausing the contract
-    function testFail_royal_riches_pause_then_buy() public {
+    function testFail_helloToken_pause_then_buy() public {
         uint tradeAmt = 1 ether;
 
         IERC20(WETH).approve(
@@ -258,7 +258,7 @@ contract MainDeployment_ADMT is Utility {
     }
 
     // Test a post deployment sell atfer pausing the contract
-    function testFail_royal_riches_pause_then_sell() public {
+    function testFail_helloToken_pause_then_sell() public {
         uint tradeAmt = 1 ether;
         taxToken.transfer(address(32), 2 ether);
 
@@ -287,7 +287,7 @@ contract MainDeployment_ADMT is Utility {
     }
 
     // Test a post deployment whitelisted buy after pausing the contract
-    function test_royal_riches_pause_then_WL_buy() public {
+    function test_helloToken_pause_then_WL_buy() public {
         uint tradeAmt = 1 ether;
         
         taxToken.modifyWhitelist(address(32), true);
@@ -325,7 +325,7 @@ contract MainDeployment_ADMT is Utility {
     }
 
     // Test a post deployment whitelisted sell after pausing the contract
-    function test_royal_riches_pause_then_WL_sell() public {
+    function test_helloToken_pause_then_WL_sell() public {
         uint tradeAmt = 1 ether;
         taxToken.transfer(address(32), 2 ether);
 
