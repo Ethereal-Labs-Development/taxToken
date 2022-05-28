@@ -21,7 +21,7 @@ contract Treasury {
 
     address public UNI_VAR = IUniswapV2Router01(UNIV2_ROUTER).WETH();
 
-    uint public taxTokenDistributionThreshold;      /// @dev The threshold for distributing taxes automatically.
+    uint public taxDistributionThreshold;      /// @dev The threshold for distributing taxes automatically.
 
     /// @notice Handles the internal accounting for how much taxToken is owed to each taxType.
     /// @dev    e.g. 10,000 taxToken owed to taxType 0 => taxTokenAccruedForTaxType[0] = 10000 * 10**18
@@ -62,9 +62,11 @@ contract Treasury {
     /// @notice Initializes the Treasury.
     /// @param  _admin      The administrator of the contract.
     /// @param  _taxToken   The taxToken (ERC-20 asset) which accumulates in this Treasury.
-    constructor(address _admin, address _taxToken) {
+    /// @param  _threshold   The threshold that is reached when royalties are distributed.
+    constructor(address _admin, address _taxToken, uint _threshold) {
         admin = _admin;
         taxToken = _taxToken;
+        setDistributionThreshold(_threshold);
     }
 
 
@@ -73,6 +75,8 @@ contract Treasury {
     // ------
 
     event LogUint(string s, uint u);
+
+    event distributionThresholdHit(uint taxType, uint amount);
 
 
  
@@ -103,16 +107,17 @@ contract Treasury {
     /// @param  _amt The amount of taxToken going to taxType.
     function updateTaxesAccrued(uint _taxType, uint _amt) isTaxToken public {
         taxTokenAccruedForTaxType[_taxType] += _amt;
-        if (taxTokenDistributionThreshold != 0 && IERC20(taxToken).balanceOf(address(this)) >= taxTokenDistributionThreshold) {
+        if (taxDistributionThreshold != 0 && IERC20(taxToken).balanceOf(address(this)) >= taxDistributionThreshold) {
             distributeAllTaxes();
+            emit distributionThresholdHit(_taxType, _amt);
         }
     }
 
-    /// @notice Set taxTokenDistributionThreshold to new value.
+    /// @notice Set taxDistributionThreshold to new value.
     /// @dev    Only callable by Admin.
-    /// @param  _threshold The new value for taxTokenDistributionThreshold. 
+    /// @param  _threshold The new value for taxDistributionThreshold. 
     function setDistributionThreshold(uint _threshold) isAdmin public {
-        taxTokenDistributionThreshold = _threshold * 10**IERC20(taxToken).decimals();
+        taxDistributionThreshold = _threshold * 10**IERC20(taxToken).decimals();
     }
 
     /// @notice View function for taxes accrued (a.k.a. "claimable") for each tax type, and the sum.

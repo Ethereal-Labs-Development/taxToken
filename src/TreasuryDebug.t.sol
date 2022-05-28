@@ -22,15 +22,15 @@ contract TreasuryNullTest is Utility {
 
         taxToken = new TaxToken(
             100000000000,           // totalSupply
-            'ProveZero',            // name
-            'PROZ',                 // symbol
+            'ANDROMETA',            // name
+            'ADMT',                 // symbol
             18,                     // decimals
-            150000000,              // maxWalletSize (* 10**18)
-            10000000000             // maxTxAmount (* 10**18)
+            100000000000,              // maxWalletSize (* 10**18) - 150000000
+            100000000000             // maxTxAmount (* 10**18) - 10000000000
         );
 
         treasury = new Treasury(
-            address(this), address(taxToken)
+            address(this), address(taxToken), 2000000
         );
 
         taxToken.setTreasury(address(treasury));
@@ -44,10 +44,27 @@ contract TreasuryNullTest is Utility {
         taxToken.adjustBasisPointsTax(1, 1200);   // 1200 = 12.00 %
         taxToken.adjustBasisPointsTax(2, 1500);   // 1500 = 15.00 %
 
-        taxToken.modifyWhitelist(address(treasury), true);
+        // Setup Treasury.sol, initialize liquidity pool.
+        treasury_setDistribution();
+        create_lp();
 
+        // taxToken.updateMaxWalletSize(150000000);
+        // taxToken.updateMaxTxAmount(10000000000);
 
+        taxToken.modifyWhitelist(address(this), false);
+
+        // Simulate trades.
+        buy_generateFees();
+        sell_generateFees();
+        xfer_generateFees();
+
+        taxToken.modifyWhitelist(address(this), true);
     }
+
+
+    // -----------------
+    // Utility Functions
+    // -----------------
 
     function buy_generateFees() public {
 
@@ -108,25 +125,6 @@ contract TreasuryNullTest is Utility {
         taxToken.transfer(address(0), 200000000 ether);
     }
 
-    function test_treasuryDebug() public {
-        
-        // Setup Treasury.sol, initialize liquidity pool.
-        treasury_setDistribution();
-        create_lp();
-
-        // Simulate trades.
-        buy_generateFees();
-        sell_generateFees();
-        xfer_generateFees();
-
-        // Log treasury holdings.
-        (uint _taxType0, uint _taxType1, uint _taxType2, uint _sum) = treasury.viewTaxesAccrued();
-        emit Debug('_taxType0', _taxType0);
-        emit Debug('_taxType1', _taxType1);
-        emit Debug('_taxType2', _taxType2);
-        emit Debug('_sum', _sum);
-    }
-
     function treasury_setDistribution() public {
         address[] memory wallets = new address[](4);
         address[] memory convertToAsset = new address[](4);
@@ -147,8 +145,7 @@ contract TreasuryNullTest is Utility {
 
         // (14, 15, 16) Update TaxType 0, 1, 2.
         treasury.setTaxDistribution(
-            0, 
-            4, 
+            0,            4, 
             wallets, 
             convertToAsset, 
             percentDistribution
@@ -198,5 +195,35 @@ contract TreasuryNullTest is Utility {
             block.timestamp + 300
         );
     }
+
     
+    // ----------
+    // Test Cases
+    // ----------
+
+    function test_treasuryDebug_init_state() public {
+        // Log treasury holdings.
+        (uint _taxType0, uint _taxType1, uint _taxType2, uint _sum) = treasury.viewTaxesAccrued();
+        emit Debug('_taxType0', _taxType0);
+        emit Debug('_taxType1', _taxType1);
+        emit Debug('_taxType2', _taxType2);
+        emit Debug('_sum', _sum);
+
+        emit Debug('is_owner_WL', taxToken.whitelist(address(this)));
+        emit Debug('is_bulkSender_WL', taxToken.whitelist(taxToken.bulkSender()));
+        emit Debug('is_address(0)_WL', taxToken.whitelist(address(0)));
+
+        emit Debug('threshold', treasury.taxDistributionThreshold());
+    }
+
+    // Ensure wallet cannot be added to blacklist if already in whitelist
+    function testFail_treasuryDebug_blackListFail() public {
+        taxToken.modifyWhitelist(address(69), true);
+        taxToken.modifyBlacklist(address(69), true);
+    }
+
+    // Ensure we cannot blacklist treasury
+    function testFail_treasuryDebug_blacklistTreasury() public {
+        taxToken.modifyBlacklist(address(treasury), true);
+    }
 }

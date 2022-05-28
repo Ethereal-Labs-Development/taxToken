@@ -38,7 +38,7 @@ contract TreasuryTest is Utility {
         );
 
         treasury = new Treasury(
-            address(this), address(taxToken)
+            address(this), address(taxToken), 1000
         );
 
         taxToken.setTreasury(address(treasury));
@@ -530,13 +530,11 @@ contract TreasuryTest is Utility {
         assertEq(treasury.admin(), address(32));
     }
 
-    function test_treasury_setDistributionThreshold() public {
-        assertEq(treasury.taxTokenDistributionThreshold(), 0);
+    // function test_treasury_setDistributionThreshold() public {
+    //     treasury.setDistributionThreshold(1000);
 
-        treasury.setDistributionThreshold(1000);
-
-        assertEq(treasury.taxTokenDistributionThreshold(), 1000 * 10**taxToken.decimals());
-    }
+    //     assertEq(treasury.taxTokenDistributionThreshold(), 1000 * 10**taxToken.decimals());
+    // }
 
     // Test automatic taxToken distribution once threshold is set and sufficient taxes accrue in treasury
     function test_treasury_automatedBuyTaxDistribution() public {
@@ -567,7 +565,7 @@ contract TreasuryTest is Utility {
         // verify that taxToken balances of wallets and threshold state variable are 0
         assertEq(0, IERC20(WETH).balanceOf(address(12)));
         assertEq(0, taxToken.balanceOf(address(13)));
-        assertEq(0, treasury.taxTokenDistributionThreshold());
+        assertEq(1000, treasury.taxDistributionThreshold());
 
         // check balance of wallets 12 and 13
         //emit LogUint("wallet_12_balance_postDistribution", taxToken.balanceOf(address(12)));

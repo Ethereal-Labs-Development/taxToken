@@ -11,7 +11,7 @@ import "./Treasury.sol";
 // Import interface.
 import { IERC20, IUniswapV2Router01, IWETH } from "./interfaces/ERC20.sol";
 
-contract MainDeployment_RX2 is Utility {
+contract MainDeployment_ADMT is Utility {
 
     // State variable for contract.
     TaxToken taxToken;
@@ -26,13 +26,15 @@ contract MainDeployment_RX2 is Utility {
     // This setUp() function describes the steps to deploy TaxToken for Royal Riches (RX2) in live.
     function setUp() public {
 
+        // ENSURE ROUTER IS CORRECT
+
         // (1) Deploy the TaxToken.
         taxToken = new TaxToken(
-            300000000,          // Initial liquidity (300mm)
-            'Royal Riches',     // Name of token.
-            'RX2',              // Symbol of token.
+            100000000000,          // Initial liquidity (300mm)
+            'ANDROMETA',     // Name of token.
+            'ADMT',              // Symbol of token.
             18,                 // Precision of decimals.
-            10000000,           // Max wallet (10mm)
+            2000000000,           // Max wallet (10mm)
             300000000           // Max transaction (300mm)
         );
 
@@ -40,16 +42,18 @@ contract MainDeployment_RX2 is Utility {
         treasury = new Treasury(
             address(this),
             address(taxToken),
-            10000000
+            100000000
         );
 
         // (3) Update the TaxToken "treasury" state variable.
         taxToken.setTreasury(address(treasury));
 
+        // set distributionThreshold
+
         // (4, 5, 6) Update basisPointsTax in TaxToken.
-        taxToken.adjustBasisPointsTax(0, 1500);   // 1500 = 15.00 %
-        taxToken.adjustBasisPointsTax(1, 1500);   // 1500 = 15.00 %
-        taxToken.adjustBasisPointsTax(2, 1500);   // 1500 = 15.00 %
+        taxToken.adjustBasisPointsTax(0, 1200);   // 1500 = 15.00 %
+        taxToken.adjustBasisPointsTax(1, 1000);   // 1500 = 15.00 %
+        taxToken.adjustBasisPointsTax(2, 1200);   // 1500 = 15.00 %
 
         // (7, 8, 9, 10, 11) Add wallets to whitelist.
         taxToken.modifyWhitelist(0xD964a3866BCc967E55768db65a47C9069AD2f2a4, true);
@@ -57,6 +61,8 @@ contract MainDeployment_RX2 is Utility {
         taxToken.modifyWhitelist(0xf3e9dC29cA7487DFE7924cAf7A48755cf6752438, true);
         taxToken.modifyWhitelist(0x4B5fa78b52b3488cB3326e7188dfDf315fD0D392, true);
         taxToken.modifyWhitelist(address(0), true);
+
+        // whitelist bulksender?
 
         // (12, 13) Add Treasury, Admin to whitelist.
         taxToken.modifyWhitelist(address(treasury), true);

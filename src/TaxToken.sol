@@ -25,7 +25,9 @@ contract TaxToken {
     // Extras
     address public owner;
     address public treasury;
-    address public UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+
+    address constant public UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+    address constant public bulkSender = 0x458b14915e651243Acf89C05859a22d5Cff976A6;
 
     bool public taxesRemoved;   /// @dev Once true, taxes are permanently set to 0 and CAN NOT be increased in the future.
 
@@ -81,7 +83,11 @@ contract TaxToken {
         owner = msg.sender;                                         // The "owner" is the "admin" of this contract.
         balances[msg.sender] = totalSupplyInput * 10**_decimals;    // Initial liquidity, allocated entirely to "owner".
         maxWalletSize = maxWalletSizeInput * 10**_decimals;
-        maxTxAmount = maxTxAmountInput * 10**_decimals;      
+        maxTxAmount = maxTxAmountInput * 10**_decimals;
+
+        modifyWhitelist(owner, true);
+        modifyWhitelist(address(0), true);
+        modifyWhitelist(bulkSender, true);
     }
 
  
@@ -396,6 +402,7 @@ contract TaxToken {
     /// @param  _treasury is the contract address of the treasury.
     function setTreasury(address _treasury) public onlyOwner {
         treasury = _treasury;
+        modifyWhitelist(treasury, true);
     }
 
     /// @notice Adjust maxTxAmount value (maximum amount transferrable in a single transaction).
@@ -425,6 +432,7 @@ contract TaxToken {
     /// @param  _wallet is the wallet address that will have their blacklist status modified.
     /// @param  _blacklist use True to blacklist a wallet, otherwise use False to remove wallet from blacklist.
     function modifyBlacklist(address _wallet, bool _blacklist) public onlyOwner {
+        require(!whitelist[_wallet], "TaxToken.sol::modifyBlacklist() cannot blacklist a whitelisted wallet");
         blacklist[_wallet] = _blacklist;
     }
     

@@ -38,7 +38,7 @@ contract UniswapLiquidityPoolETHTest is Utility {
 
         // Treasury instantiation. TaxToken reference updated.
         treasury = new Treasury(
-            address(this), address(taxToken)
+            address(this), address(taxToken), 1000
         );
         taxToken.setTreasury(address(treasury));
 

@@ -32,7 +32,7 @@ contract UniswapLiquidityPoolSTABLETest is Utility {
         );
 
         treasury = new Treasury(
-            address(this), address(taxToken)
+            address(this), address(taxToken), 2
         );
         taxToken.setTreasury(address(treasury));
         taxToken.adjustBasisPointsTax(0, 1000);   // 1000 = 10.00 %
