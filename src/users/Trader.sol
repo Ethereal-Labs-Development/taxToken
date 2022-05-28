@@ -10,7 +10,7 @@ contract Trader {
     /*** DIRECT FUNCTIONS ***/
     /************************/
 
-    function transferByTrader(address token, address from, address to, uint256 amt) external {
+    function transferToken(address token, address to, uint256 amt) external {
         IERC20(token).transfer(to, amt);
     }
 
@@ -18,7 +18,7 @@ contract Trader {
     /*** TRY FUNCTIONS ***/
     /*********************/
 
-    function try_transferByTrader(address token, address from, address to, uint256 amt) external returns (bool ok) {
+    function try_transferToken(address token, address to, uint256 amt) external returns (bool ok) {
         string memory sig = "transfer(address,uint256)";
         (ok,) = address(token).call(abi.encodeWithSignature(sig, to, amt));
     }

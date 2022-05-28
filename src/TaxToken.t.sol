@@ -19,6 +19,8 @@ contract TaxTokenTest is Utility {
     // Each test case uses a new/initial state each time based on actions here.
     function setUp() public {
 
+        createActors();
+
         // taxToken constructor
         taxToken = new TaxToken(
             1000,       // Initial liquidity
@@ -99,6 +101,7 @@ contract TaxTokenTest is Utility {
 
     // This tests is it's not possible to call transfer() when the contract is "paused".
     function testFail_pause_transfer() public {
+        taxToken.modifyWhitelist(address(this), false);
         taxToken.pause();
         taxToken.transfer(address(42), 1 ether);
     }
@@ -126,6 +129,7 @@ contract TaxTokenTest is Utility {
 
     // This tests blacklisting of the sender
     function test_blacklist_sender() public {
+        taxToken.modifyWhitelist(address(this), false);
         taxToken.transfer(address(32), 1 ether);
         taxToken.modifyBlacklist(address(this), true);
         assert(!taxToken.transfer(address(32), 1 ether));
@@ -162,13 +166,14 @@ contract TaxTokenTest is Utility {
 
     // Test a transfer amount greater than the maxTxAmount NON Whitelisted
     function testFail_MaxTxAmount_sender() public {
+        taxToken.modifyWhitelist(address(this), false);
         taxToken.modifyWhitelist(address(70), false);
         assert(taxToken.transfer(address(70), 11 ether));
     }
 
     // Test adding an amount greater than the maxWalletAmount
     function testFail_MaxWalletAmount_sender() public {
-        taxToken.modifyWhitelist(address(70), false);
+        taxToken.modifyWhitelist(address(this), false);
         taxToken.transfer(address(70), 10 ether);
         taxToken.transfer(address(70), 10 ether);
         taxToken.transfer(address(70), 10 ether);
@@ -212,7 +217,8 @@ contract TaxTokenTest is Utility {
 
     // Test taking a tax of type 0 from a transfer
     function test_TaxOnTransfer() public {
-        taxToken.transfer(address(15), 10 ether);
+        taxToken.transfer(address(chad), 10 ether);
+        assert(chad.try_transferToken(address(taxToken), address(15), 10 ether));
         assertEq(taxToken.balanceOf(address(15)), 9 ether);
     }
 
