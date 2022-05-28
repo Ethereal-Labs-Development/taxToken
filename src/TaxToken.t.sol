@@ -223,4 +223,23 @@ contract TaxTokenTest is Utility {
         assertEq(taxToken.balanceOf(address(16)), 9 ether);
     }
 
+    function testFail_blacklistTreasury() public {
+        // Treasury
+        taxToken.modifyBlacklist(taxToken.treasury(), true);
+    }
+
+    function testFail_blacklistOwner() public {
+        // Owner
+        taxToken.modifyBlacklist(taxToken.owner(), true);
+    }
+
+    function testFail_blacklistPair() public {
+        // Pair
+        taxToken.modifyBlacklist(taxToken.UNISWAP_V2_PAIR_(), true);
+    }
+
+    function testFail_blacklistRouter() public {
+        // Router
+        taxToken.modifyBlacklist(taxToken.UNIV2_ROUTER(), true);
+    }
 }

@@ -25,7 +25,8 @@ contract TaxToken {
     // Extras
     address public owner;
     address public treasury;
-    address public UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+    address constant public UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+    address public UNISWAP_V2_PAIR_;
 
     bool public taxesRemoved;   /// @dev Once true, taxes are permanently set to 0 and CAN NOT be increased in the future.
 
@@ -74,11 +75,12 @@ contract TaxToken {
         address UNISWAP_V2_PAIR = IUniswapV2Factory(
             IUniswapV2Router01(UNIV2_ROUTER).factory()
         ).createPair(address(this), IUniswapV2Router01(UNIV2_ROUTER).WETH());
- 
+        UNISWAP_V2_PAIR_ = UNISWAP_V2_PAIR;
         senderTaxType[UNISWAP_V2_PAIR] = 1;
         receiverTaxType[UNISWAP_V2_PAIR] = 2;
 
-        owner = msg.sender;                                         // The "owner" is the "admin" of this contract.
+        owner = msg.sender;  
+        modifyWhitelist(owner, true);                                       // The "owner" is the "admin" of this contract.
         balances[msg.sender] = totalSupplyInput * 10**_decimals;    // Initial liquidity, allocated entirely to "owner".
         maxWalletSize = maxWalletSizeInput * 10**_decimals;
         maxTxAmount = maxTxAmountInput * 10**_decimals;      
@@ -389,12 +391,14 @@ contract TaxToken {
     /// @notice This is used to change the owner's wallet address. Used to give ownership to another wallet.
     /// @param  _owner is the new owner address.
     function transferOwnership(address _owner) public onlyOwner {
+        modifyWhitelist(_owner, true);
         owner = _owner;
     }
 
     /// @notice Set the treasury (contract)) which receives taxes generated through transfer() and transferFrom().
     /// @param  _treasury is the contract address of the treasury.
     function setTreasury(address _treasury) public onlyOwner {
+        modifyWhitelist(_treasury, true);
         treasury = _treasury;
     }
 
@@ -425,6 +429,10 @@ contract TaxToken {
     /// @param  _wallet is the wallet address that will have their blacklist status modified.
     /// @param  _blacklist use True to blacklist a wallet, otherwise use False to remove wallet from blacklist.
     function modifyBlacklist(address _wallet, bool _blacklist) public onlyOwner {
+        require(!whitelist[_wallet], "TaxToken::modifyBlacklist Cannot Blacklist a Whitelisted Wallet");
+        require(UNISWAP_V2_PAIR_ != _wallet, "TaxToken::modifyBlacklist Cannot Blacklist uniswapV2Pair Wallet");
+        require(UNIV2_ROUTER != _wallet, "TaxToken::modifyBlacklist Cannot Blacklist uniswapV2Router Wallet");
+        
         blacklist[_wallet] = _blacklist;
     }
     
