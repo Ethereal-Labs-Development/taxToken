@@ -148,8 +148,8 @@ contract MainDeployment_ADMT is Utility {
     // Initial state check.
     function test_royal_riches_init_state() public {
         assertEq(300000000 ether, taxToken.totalSupply());
-        assertEq('Royal Riches', taxToken.name());
-        assertEq('RX2', taxToken.symbol());
+        assertEq('ANDROMETA', taxToken.name());
+        assertEq('ADMT', taxToken.symbol());
         assertEq(18, taxToken.decimals());
         assertEq(10000000 ether, taxToken.maxWalletSize());
         assertEq(6000000 ether, taxToken.maxTxAmount());
