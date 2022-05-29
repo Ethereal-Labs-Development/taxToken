@@ -17,8 +17,6 @@ contract Treasury {
     address public taxToken;   /// @dev The token that fees are taken from, and what is held in escrow here.
     address public admin;      /// @dev The administrator of accounting and distribution settings.
 
-    bool inSwap = false;
-
     address public UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
 
     address public UNI_VAR = IUniswapV2Router01(UNIV2_ROUTER).WETH();
@@ -98,12 +96,6 @@ contract Treasury {
         _;
     }
 
-    modifier lockTheSwap {
-        inSwap = true;
-        _;
-        inSwap = false;
-    }
-
 
     // ---------
     // Functions
@@ -120,10 +112,8 @@ contract Treasury {
         //     emit distributionThresholdHit(_taxType, _amt);
         // }
         if (taxDistributionThreshold != 0 && taxTokenAccruedForTaxType[_taxType] >= taxDistributionThreshold) {
-            if (!inSwap) {
-                distributeTaxes(_taxType);
-                emit distributionThresholdHit(_taxType, _amt);
-            }
+            distributeTaxes(_taxType);
+            emit distributionThresholdHit(_taxType, _amt);
         }
     }
 
@@ -187,7 +177,7 @@ contract Treasury {
     /// @notice Distributes taxes for given taxType.
     /// @param  taxType Chosen taxType to distribute.
     /// @return amountToDistribute TaxToken amount distributed.
-    function distributeTaxes(uint taxType) public lockTheSwap returns(uint) {
+    function distributeTaxes(uint taxType) public returns(uint) {
         
         uint amountToDistribute = taxTokenAccruedForTaxType[taxType];
 
