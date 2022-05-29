@@ -11,7 +11,7 @@ import "./Treasury.sol";
 // Import interface.
 import { IERC20, IUniswapV2Router01, IWETH } from "./interfaces/ERC20.sol";
 
-contract MainDeployment_RX2 is Utility {
+contract MainDeployment_ADMT is Utility {
 
     // State variable for contract.
     TaxToken taxToken;
@@ -28,7 +28,7 @@ contract MainDeployment_RX2 is Utility {
 
         // (1) VERIFY ROUTER IS CORRECT.
 
-        //NOTE: May have to flatten contract upon deployment
+        // NOTE: May have to flatten contract upon deployment
 
         // (2) Deploy the TaxToken.
         taxToken = new TaxToken(
@@ -50,9 +50,9 @@ contract MainDeployment_RX2 is Utility {
         taxToken.setTreasury(address(treasury));
 
         // (5) Update basisPointsTax in TaxToken.
-        taxToken.adjustBasisPointsTax(0, 1500);   // 1500 = 15.00 %
-        taxToken.adjustBasisPointsTax(1, 1500);   // 1500 = 15.00 %
-        taxToken.adjustBasisPointsTax(2, 1500);   // 1500 = 15.00 %
+        taxToken.adjustBasisPointsTax(0, 1200);   // 1200 = 12.00 %
+        taxToken.adjustBasisPointsTax(1, 1000);   // 1000 = 10.00 %
+        taxToken.adjustBasisPointsTax(2, 1200);   // 1200 = 12.00 %
 
         // (6) Add royalty wallets to whitelist.
         taxToken.modifyWhitelist(0x7f6d45dE87cAB7D2D42bF2709B6b1E2AF994B069, true); // marketing wallet
@@ -169,14 +169,14 @@ contract MainDeployment_RX2 is Utility {
 
         // (14) AIRDROP SNAPSHOT
         // TODO: VERIFY BULKSENDER IS WHITELISTED
-        // NOTE: No need to airdrop private sales again, should be included in snapshot 
+        // NOTE: No need to airdrop private sales again, should be included in snapshot
         // 0x458b14915e651243Acf89C05859a22d5Cff976A6
         // https://bulksender.app/
 
-        // (15) Reduce MaxTxAmount.
-        taxToken.updateMaxTxAmount(400000000);
+        // (15) Reduce MaxWalletAmount.
+        taxToken.updateMaxWalletSize(400000000);
 
-        // (16) Reduce MaxWalletAmount.
+        // (16) Reduce MaxTxAmount.
         taxToken.updateMaxTxAmount(200000000);
 
         // (15) Unpause TaxToken.
@@ -186,19 +186,19 @@ contract MainDeployment_RX2 is Utility {
     }
 
     // Initial state check.
-    function test_royal_riches_init_state() public {
-        assertEq(300000000 ether, taxToken.totalSupply());
-        assertEq('Royal Riches', taxToken.name());
-        assertEq('RX2', taxToken.symbol());
-        assertEq(18, taxToken.decimals());
-        assertEq(10000000 ether, taxToken.maxWalletSize());
-        assertEq(6000000 ether, taxToken.maxTxAmount());
-        assertEq(taxToken.balanceOf(address(this)), taxToken.totalSupply() - 100000000 ether);
+    function test_andrometa_init_state() public {
+        assertEq(taxToken.totalSupply(), 100000000000 ether);
+        assertEq(taxToken.name(), 'ANDROMETA');
+        assertEq(taxToken.symbol(), 'ADMT');
+        assertEq(taxToken.decimals(), 18);
+        assertEq(taxToken.maxWalletSize(), 400000000 ether);
+        assertEq(taxToken.maxTxAmount(), 200000000 ether);
+        assertEq(taxToken.balanceOf(address(this)), taxToken.totalSupply() - 5000000000 ether);
         assertEq(taxToken.treasury(), address(treasury));
     }
 
     // Test a post deployment buy
-    function test_royal_riches_buy() public {
+    function test_andrometa_buy() public {
         uint tradeAmt = 1 ether;
 
         IWETH(WETH).deposit{value: tradeAmt}();
@@ -234,7 +234,7 @@ contract MainDeployment_RX2 is Utility {
     }
 
     // Test a post deployment sell
-    function test_royal_riches_sell() public {
+    function test_andrometa_sell() public {
         uint tradeAmt = 1 ether;
         taxToken.transfer(address(32), 2 ether);
 
@@ -263,7 +263,7 @@ contract MainDeployment_RX2 is Utility {
     }
 
     // Test a post deployment buy after pausing the contract
-    function testFail_royal_riches_pause_then_buy() public {
+    function testFail_andrometa_pause_then_buy() public {
         uint tradeAmt = 1 ether;
 
         IERC20(WETH).approve(
@@ -298,7 +298,7 @@ contract MainDeployment_RX2 is Utility {
     }
 
     // Test a post deployment sell atfer pausing the contract
-    function testFail_royal_riches_pause_then_sell() public {
+    function testFail_andrometa_pause_then_sell() public {
         uint tradeAmt = 1 ether;
         taxToken.transfer(address(32), 2 ether);
 
@@ -327,7 +327,7 @@ contract MainDeployment_RX2 is Utility {
     }
 
     // Test a post deployment whitelisted buy after pausing the contract
-    function test_royal_riches_pause_then_WL_buy() public {
+    function test_andrometa_pause_then_WL_buy() public {
         uint tradeAmt = 1 ether;
         
         taxToken.modifyWhitelist(address(32), true);
@@ -365,7 +365,7 @@ contract MainDeployment_RX2 is Utility {
     }
 
     // Test a post deployment whitelisted sell after pausing the contract
-    function test_royal_riches_pause_then_WL_sell() public {
+    function test_andrometa_pause_then_WL_sell() public {
         uint tradeAmt = 1 ether;
         taxToken.transfer(address(32), 2 ether);
 
