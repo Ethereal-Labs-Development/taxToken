@@ -88,6 +88,8 @@ contract TreasuryTest is Utility {
         buy_generateFees();
         sell_generateFees();
         xfer_generateFees();
+
+        setProperTaxDistribution();
     }
 
     function buy_generateFees() public {
@@ -598,53 +600,103 @@ contract TreasuryTest is Utility {
     // Verify new distributeTaxes() function.
 
     function test_treasury_distributeTaxes_new() public {
-
-        address[] memory path_uni_v2 = new address[](3);
-
-        path_uni_v2[0] = address(taxToken);
-        path_uni_v2[1] = WETH;
-        path_uni_v2[2] = DAI;
-
-        (uint taxType0, uint taxType1, uint taxType2) = treasury.exchangeRateTotal(path_uni_v2);
-
-        emit Debug('taxType0', taxType0);
-        emit Debug('taxType1', taxType1);
-        emit Debug('taxType2', taxType2);
-
-        address[] memory path_uni_v2_NONUSD = new address[](2);
-
-        path_uni_v2_NONUSD[0] = address(taxToken);
-        path_uni_v2_NONUSD[1] = WETH;
-
-        (taxType0, taxType1, taxType2) = treasury.exchangeRateTotal(path_uni_v2_NONUSD);
-
-        emit Debug('taxType0', taxType0);
-        emit Debug('taxType1', taxType1);
-        emit Debug('taxType2', taxType2);
-
         treasury.distributeTaxes(0);
         treasury.distributeTaxes(1);
         treasury.distributeTaxes(2);
+    }
 
-        // ├╴Debug("taxType0", 1015257981674760) (src/Treasury.t.sol:621)
-        // ├╴Debug("taxType1", 120124455956717323) (src/Treasury.t.sol:622)
-        // ├╴Debug("taxType2", 15226725051879086) (src/Treasury.t.sol:623)
-        // ├╴call Treasury::distributeTaxes(uint256)(0) (src/Treasury.t.sol:625)
-        // │  └╴← (100000000000000000)
-        // ├╴call Treasury::distributeTaxes(uint256)(1) (src/Treasury.t.sol:626)
-        // │  └╴← (11845896412764735586)
-        // └╴call Treasury::distributeTaxes(uint256)(2) (src/Treasury.t.sol:627)
-        //     └╴← (1500000000000000000)
+    function setProperTaxDistribution() public {
 
-        //     1015257981674760
-        //     100000000000000000
+        // Update distribution settings (for sells and transfers).
+        address[] memory wallets = new address[](5);
+        address[] memory convertToAsset = new address[](5);
+        uint[] memory percentDistribution = new uint[](5);
+        
+        wallets[0] = address(1);
+        wallets[1] = address(2);
+        wallets[2] = address(3);
+        wallets[3] = address(4);
+        wallets[4] = address(5);
+        convertToAsset[0] = WETH;
+        convertToAsset[1] = WETH;
+        convertToAsset[2] = WETH;
+        convertToAsset[3] = WETH;
+        convertToAsset[4] = WETH;
+        percentDistribution[0] = 33;
+        percentDistribution[1] = 17;
+        percentDistribution[2] = 8;
+        percentDistribution[3] = 25;
+        percentDistribution[4] = 17;
+        
+        treasury.setTaxDistribution(
+            0,
+            5,
+            wallets, 
+            convertToAsset, 
+            percentDistribution
+        );
+        
+        treasury.setTaxDistribution(
+            2,
+            5,
+            wallets, 
+            convertToAsset, 
+            percentDistribution
+        );
 
-        //     120124455956717323
-        //     11845896412764735586
+        // (
+        //     uint256 _walletCount, 
+        //     address[] memory _wallets, 
+        //     address[] memory _convertToAsset, 
+        //     uint[] memory _percentDistribution
+        // ) = treasury.viewTaxSettings(0);
 
-        //     1500000000000000000
-        //     15226725051879086
+        // assertEq(_walletCount, 2);
+        // assertEq(_wallets[0], address(0));
+        // assertEq(_wallets[1], address(1));
+        // assertEq(_convertToAsset[0], address(taxToken));
+        // assertEq(_convertToAsset[1], address(taxToken));
+        // assertEq(_percentDistribution[0], 50);
+        // assertEq(_percentDistribution[1], 50);
 
+        // Update distribution settings (for buys).
+        wallets = new address[](4);
+        convertToAsset = new address[](4);
+        percentDistribution = new uint[](4);
+        
+        wallets[0] = address(6);
+        wallets[1] = address(7);
+        wallets[2] = address(8);
+        wallets[3] = address(9);
+        convertToAsset[0] = WETH;
+        convertToAsset[1] = WETH;
+        convertToAsset[2] = WETH;
+        convertToAsset[3] = WETH;
+        percentDistribution[0] = 40;
+        percentDistribution[1] = 20;
+        percentDistribution[2] = 20;
+        percentDistribution[3] = 20;
+        
+        treasury.setTaxDistribution(
+            1, 
+            4, 
+            wallets, 
+            convertToAsset, 
+            percentDistribution
+        );
+
+    }
+
+    function test_treasury_distributeTaxes_new_0() public {
+        treasury.distributeTaxes(0);
+    }
+
+    function test_treasury_distributeTaxes_new_1() public {
+        treasury.distributeTaxes(1);
+    }
+
+    function test_treasury_distributeTaxes_new_2() public {
+        treasury.distributeTaxes(2);
     }
 
 }
