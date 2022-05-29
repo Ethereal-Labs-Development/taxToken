@@ -75,7 +75,7 @@ contract TaxTokenTest is Utility {
         taxToken.permanentlyRemoveTaxes(41);
     }
 
-    // Test adjustBasisPointsTax and ensure it is impossible to set basis tax over 20%
+    // Test adjustBasisPointsTax and ensure it is impossible to set basis tax over 20%.
     function testFail_adjustBasisPointsTax_aboveMax() public {
         taxToken.adjustBasisPointsTax(0, 2100);
     }
@@ -105,7 +105,7 @@ contract TaxTokenTest is Utility {
     
     // This tests if contract is "paused" or "unpaused" after admin calls the pause() or unpause() functions.
     function test_pause_unpause() public {
-        assert(!taxToken.paused());     // Initial state of contract is "not paused"
+        assert(!taxToken.paused());     // Initial state of contract is "not paused".
 
         taxToken.pause();
         assert(taxToken.paused());
@@ -117,14 +117,14 @@ contract TaxTokenTest is Utility {
 
     // ~ Blacklist Testing ~
 
-    // This tests blacklisting of the receiver
+    // This tests blacklisting of the receiver.
     function test_blacklist_receiver() public {
         taxToken.transfer(address(32), 1 ether);
         taxToken.modifyBlacklist(address(32), true);
         assert(!taxToken.transfer(address(32), 1 ether));
     }
 
-    // This tests blacklisting of the sender
+    // This tests blacklisting of the sender.
     function test_blacklist_sender() public {
         taxToken.transfer(address(32), 1 ether);
         taxToken.modifyBlacklist(address(this), true);
@@ -133,13 +133,13 @@ contract TaxTokenTest is Utility {
 
     // ~ Whitelist Testing ~
 
-    // This tests whether a transfer is taxed when the receiver is whitelisted
+    // This tests whether a transfer is taxed when the receiver is whitelisted.
     function test_whitelist_transfer() public {
         taxToken.modifyWhitelist(address(69), true);
         taxToken.transfer(address(69), 1 ether);
     }
 
-    // This tests once a whitelisted wallet calls a transfer, they receive the full amount of tokens
+    // This tests once a whitelisted wallet calls a transfer, they receive the full amount of tokens.
     function test_whitelist_balance() public {
         taxToken.modifyWhitelist(address(69), true);
         taxToken.transfer(address(69), 1 ether);
@@ -148,25 +148,25 @@ contract TaxTokenTest is Utility {
 
     // ~ Restrictive functions Testing (Non-Whitelisted) ~
 
-    // Test changing maxWalletSize
+    // Test changing maxWalletSize.
     function test_updateMaxWalletSize() public {
         taxToken.updateMaxWalletSize(300);
         assertEq((300 * 10**18), taxToken.maxWalletSize());
     }
 
-    // Test updating a transfer amount
+    // Test updating a transfer amount.
     function test_updateMaxTxAmount() public {
         taxToken.updateMaxTxAmount(30);
         assertEq((30 * 10**18), taxToken.maxTxAmount());
     }
 
-    // Test a transfer amount greater than the maxTxAmount NON Whitelisted
+    // Test a transfer amount greater than the maxTxAmount NON Whitelisted.
     function testFail_MaxTxAmount_sender() public {
         taxToken.modifyWhitelist(address(70), false);
         assert(taxToken.transfer(address(70), 11 ether));
     }
 
-    // Test adding an amount greater than the maxWalletAmount
+    // Test adding an amount greater than the maxWalletAmount.
     function testFail_MaxWalletAmount_sender() public {
         taxToken.modifyWhitelist(address(70), false);
         taxToken.transfer(address(70), 10 ether);
@@ -185,13 +185,13 @@ contract TaxTokenTest is Utility {
 
     // ~ Restrictive functions Testing (Whitelisted) ~
     
-    // Test a transfer amount greater than the maxTxAmount Whitelisted
+    // Test a transfer amount greater than the maxTxAmount Whitelisted.
     function test_WLMaxTxAmount_sender() public {
         taxToken.modifyWhitelist(address(70), true);
         assert(taxToken.transfer(address(70), 11 ether));
     }
 
-    // Test adding an amount greater than the maxWalletAmount
+    // Test adding an amount greater than the maxWalletAmount.
     function test_WLMaxWalletAmount_sender() public {
         taxToken.transfer(address(70), 10 ether);
         taxToken.transfer(address(70), 10 ether);
@@ -210,17 +210,31 @@ contract TaxTokenTest is Utility {
 
     // ~ Taxt Type 0 Testing ~
 
-    // Test taking a tax of type 0 from a transfer
+    // Test taking a tax of type 0 from a transfer.
     function test_TaxOnTransfer() public {
         taxToken.transfer(address(15), 10 ether);
         assertEq(taxToken.balanceOf(address(15)), 9 ether);
     }
 
-    // Test taking a tax of type 0 from a transfer when the wallet is whitelisted
+    // Test taking a tax of type 0 from a transfer when the wallet is whitelisted.
     function testFail_TaxOnTransfer_WL() public {
         taxToken.modifyWhitelist(address(16), true);
         taxToken.transfer(address(16), 10 ether);
         assertEq(taxToken.balanceOf(address(16)), 9 ether);
+    }
+
+    // ~ AndroMeta v2 Features ~
+
+    // Verify the necessary functions were whitelisted from constructor and setTreasury().
+    function test_checkWhitelist() public {
+        assert(taxToken.whitelist(address(0)));
+        assert(taxToken.whitelist(address(treasury)));
+        assert(taxToken.whitelist(0x458b14915e651243Acf89C05859a22d5Cff976A6)); // bulkSender
+    }
+
+    // Verify that we cannot blacklist a whitelisted wallet.
+    function testFail_blacklistWhitelistedWallet() public {
+        taxToken.modifyBlacklist(address(treasury), true);
     }
 
 }
