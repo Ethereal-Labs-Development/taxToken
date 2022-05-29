@@ -14,10 +14,11 @@ contract Treasury {
     // State Variables
     // ---------------
 
-    address public taxToken;   /// @dev The token that fees are taken from, and what is held in escrow here.
-    address public admin;      /// @dev The administrator of accounting and distribution settings.
+    address public taxToken;        /// @dev The token that fees are taken from, and what is held in escrow here.
+    address public admin;           /// @dev The administrator of accounting and distribution settings.
+    address public automationBot;   /// @dev The automation bot address (should always be unique from admin).
 
-    address public UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+    address public constant UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
 
     /// @notice Handles the internal accounting for how much taxToken is owed to each taxType.
     /// @dev    e.g. 10,000 taxToken owed to taxType 0 => taxTokenAccruedForTaxType[0] = 10000 * 10**18
@@ -26,11 +27,10 @@ contract Treasury {
     ///         taxType 2 => Sell Tax
     mapping(uint => uint) public taxTokenAccruedForTaxType;
 
-    mapping(uint => TaxDistribution) public taxSettings;   /// @dev Mapping of taxType to TaxDistribution struct.
+    mapping(uint => TaxDistribution) public taxSettings;    /// @dev Mapping of taxType to TaxDistribution struct.
 
-    /// TODO: Consider incrementing this in distributeTaxes().
-    mapping(address => uint) public distributionsTaxToken;
-    mapping(address => uint) public distributionsWETH;
+    mapping(address => uint) public distributionsTaxToken;  /// @dev Tracks amount of taxToken distributed to recipients.
+    mapping(address => uint) public distributionsWETH;      /// @dev Tracks amount of WETH distributed to recipients.
  
     /// @notice Manages how TaxToken is distributed for a given taxType.
     ///         Variables:
@@ -62,6 +62,8 @@ contract Treasury {
     // Event
     // -----
 
+    event OwnershipTransferred(address indexed currentAdmin, address indexed newAdmin);
+
     event RoyaltiesDistributed(address indexed recipient, uint amount, address asset);
 
  
@@ -81,6 +83,12 @@ contract Treasury {
         _;
     }
 
+    /// @dev    Enforce msg.sender is automationBot.
+    modifier isAutomationBot {
+        require(msg.sender == automationBot);
+        _;
+    }
+
 
     // ---------
     // Functions
@@ -90,7 +98,7 @@ contract Treasury {
     /// @dev    Only callable by taxToken.
     /// @param  taxType The taxType to allocate more taxToken to for distribution.
     /// @param  amt The amount of taxToken going to taxType.
-    function updateTaxesAccrued(uint taxType, uint amt) isTaxToken public {
+    function updateTaxesAccrued(uint taxType, uint amt) isTaxToken external {
         taxTokenAccruedForTaxType[taxType] += amt;
     }
 
@@ -99,7 +107,7 @@ contract Treasury {
     /// @return _taxType1 Taxes accrued (claimable) for taxType1.
     /// @return _taxType2 Taxes accrued (claimable) for taxType2.
     /// @return _sum Taxes accrued (claimable) for all tax types.
-    function viewTaxesAccrued() public view returns(uint _taxType0, uint _taxType1, uint _taxType2, uint _sum) {
+    function viewTaxesAccrued() external view returns(uint _taxType0, uint _taxType1, uint _taxType2, uint _sum) {
         return (
             taxTokenAccruedForTaxType[0],
             taxTokenAccruedForTaxType[1],
@@ -121,7 +129,7 @@ contract Treasury {
         address[] calldata wallets,
         address[] calldata convertToAsset,
         uint[] calldata percentDistribution
-    ) isAdmin public {
+    ) isAdmin external {
 
         // Pre-check that supplied values have equal lengths.
         require(walletCount == wallets.length, "err walletCount length != wallets.length");
@@ -151,31 +159,16 @@ contract Treasury {
         
         amountToDistribute = taxTokenAccruedForTaxType[taxType];
 
-        // currently we iterate through all wallets and perform a sell or distribution (if taxToken)
-        // bad: this causes 5 sells (for any given taxType)
-        // bad: in distributeAllTaxes() this causes 15 sells
-
-        // solution: peform 1 sell and distribute to all wallets from there
-
         if (amountToDistribute > 0) {
 
             taxTokenAccruedForTaxType[taxType] = 0;
 
-            // example taxSetting
-
-            // [0xA, 0xB, 0xC, 0xD]  <= addy
-            // [20,  20,  40,  20]   <= percent
-            // [y,   y,   n,   y]    <= convert to weth?
-            // [0xW, 0xW, 0xU, 0xW]
-
-            // TODO: update state var totalAssetsDistributeToWallets
-
-            uint sumPercentSell;
+            uint sumPercentSell = 0;
 
             for (uint i = 0; i < taxSettings[taxType].wallets.length; i++) {
                 if (taxSettings[taxType].convertToAsset[i] == taxToken) {
                     uint amt = amountToDistribute * taxSettings[taxType].percentDistribution[i] / 100;
-                    IERC20(taxToken).transfer(taxSettings[taxType].wallets[i], amt);
+                    assert(IERC20(taxToken).transfer(taxSettings[taxType].wallets[i], amt));
                     distributionsTaxToken[taxSettings[taxType].wallets[i]] += amt;
                     emit RoyaltiesDistributed(taxSettings[taxType].wallets[i], amt, taxToken);
                 }
@@ -188,14 +181,14 @@ contract Treasury {
 
                 uint amountToSell = amountToDistribute * sumPercentSell / 100;
 
-                address UNI_VAR = IUniswapV2Router01(UNIV2_ROUTER).WETH();
+                address WETH = IUniswapV2Router01(UNIV2_ROUTER).WETH();
 
-                IERC20(address(taxToken)).approve(address(UNIV2_ROUTER), amountToSell);
+                assert(IERC20(taxToken).approve(address(UNIV2_ROUTER), amountToSell));
 
                 address[] memory path_uni_v2 = new address[](2);
 
-                path_uni_v2[0] = address(taxToken);
-                path_uni_v2[1] = UNI_VAR;
+                path_uni_v2[0] = taxToken;
+                path_uni_v2[1] = WETH;
 
                 IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokens(
                     amountToSell,           
@@ -205,12 +198,12 @@ contract Treasury {
                     block.timestamp + 30000
                 );
 
-                uint balanceWETH = IERC20(UNI_VAR).balanceOf(address(this));
+                uint balanceWETH = IERC20(WETH).balanceOf(address(this));
 
                 for (uint i = 0; i < taxSettings[taxType].wallets.length; i++) {
                     if (taxSettings[taxType].convertToAsset[i] != taxToken) {
                         uint amt = balanceWETH * taxSettings[taxType].percentDistribution[i] / sumPercentSell;
-                        IERC20(UNI_VAR).transfer(taxSettings[taxType].wallets[i], amt);
+                        assert(IERC20(WETH).transfer(taxSettings[taxType].wallets[i], amt));
                         distributionsWETH[taxSettings[taxType].wallets[i]] += amt;
                         emit RoyaltiesDistributed(taxSettings[taxType].wallets[i], amt, taxToken);
                     }
@@ -229,7 +222,7 @@ contract Treasury {
 
 
     /// @notice Helper view function for taxSettings.
-    function viewTaxSettings(uint taxType) public view returns(uint256, address[] memory, address[] memory, uint[] memory) {
+    function viewTaxSettings(uint taxType) external view returns(uint256, address[] memory, address[] memory, uint[] memory) {
         return (
             taxSettings[taxType].walletCount,
             taxSettings[taxType].wallets,
@@ -242,7 +235,7 @@ contract Treasury {
     /// @dev    Reverts if token == taxtoken.
     /// @dev    Only callable by Admin.
     /// @param  token The token to withdraw from the treasury.
-    function safeWithdraw(address token) public isAdmin {
+    function safeWithdraw(address token) external isAdmin {
         require(token != taxToken, "err cannot withdraw native tokens from this contract");
         IERC20(token).transfer(msg.sender, IERC20(token).balanceOf(address(this)));
     }
@@ -250,7 +243,9 @@ contract Treasury {
     /// @notice Change the admin for the treasury.
     /// @dev    Only callable by Admin.
     /// @param  _admin New admin address.
-    function updateAdmin(address _admin) public isAdmin {
+    function updateAdmin(address _admin) external isAdmin {
+        require(_admin != address(0), "err _admin == address(0)");
+        emit OwnershipTransferred(admin, _admin);
         admin = _admin;
     }
 

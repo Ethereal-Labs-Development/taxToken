@@ -25,8 +25,7 @@ contract TaxToken {
     // Extras
     address public owner;
     address public treasury;
-    address constant public UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
-    address constant public bulkSender = 0x458b14915e651243Acf89C05859a22d5Cff976A6;
+    address public constant UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
 
     bool public taxesRemoved;   /// @dev Once true, taxes are permanently set to 0 and CAN NOT be increased in the future.
 
@@ -84,8 +83,9 @@ contract TaxToken {
         maxWalletSize = maxWalletSizeInput * 10**_decimals;
         maxTxAmount = maxTxAmountInput * 10**_decimals;
 
-        modifyWhitelist(bulkSender, true);
-        modifyWhitelist(address(0), true);
+        // TODO: Add to main-net deployment.
+        // modifyWhitelist(owner, true);
+        // modifyWhitelist(address(0), true);
     }
 
  
@@ -140,6 +140,8 @@ contract TaxToken {
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
     event TransferTax(address indexed _from, address indexed _to, uint256 _value, uint256 _taxType);
 
+    event OwnershipTransferred(address indexed currentAdmin, address indexed newAdmin);
+
 
 
     // ---------
@@ -149,35 +151,35 @@ contract TaxToken {
 
     // ~ ERC20 View ~
     
-    function name() public view returns (string memory) {
+    function name() external view returns (string memory) {
         return _name;
     }
 
-    function symbol() public view returns (string memory) {
+    function symbol() external view returns (string memory) {
         return _symbol;
     }
 
-    function decimals() public view returns (uint8) {
+    function decimals() external view returns (uint8) {
         return _decimals;
     }
 
-    function totalSupply() public view returns (uint256) {
+    function totalSupply() external view returns (uint256) {
         return _totalSupply;
     }
 
-    function balanceOf(address _owner) public view returns (uint256 balance) {
+    function balanceOf(address _owner) external view returns (uint256 balance) {
         return balances[_owner];
     }
  
     // ~ ERC20 transfer(), transferFrom(), approve() ~
 
-    function approve(address _spender, uint256 _amount) public returns (bool success) {
+    function approve(address _spender, uint256 _amount) external returns (bool success) {
         allowed[msg.sender][_spender] = _amount;
         emit Approval(msg.sender, _spender, _amount);
         return true;
     }
  
-    function transfer(address _to, uint256 _amount) public whenNotPausedDual(msg.sender, _to) returns (bool success) {  
+    function transfer(address _to, uint256 _amount) external whenNotPausedDual(msg.sender, _to) returns (bool success) {  
 
         // taxType 0 => Xfer Tax
         // taxType 1 => Buy Tax
@@ -243,7 +245,7 @@ contract TaxToken {
         }
     }
  
-    function transferFrom(address _from, address _to, uint256 _amount) public whenNotPausedTri(_from, _to, msg.sender) returns (bool success) {
+    function transferFrom(address _from, address _to, uint256 _amount) external whenNotPausedTri(_from, _to, msg.sender) returns (bool success) {
 
         // taxType 0 => Xfer Tax
         // taxType 1 => Buy Tax
@@ -319,7 +321,7 @@ contract TaxToken {
         }
     }
     
-    function allowance(address _owner, address _spender) public view returns (uint256 remaining) {
+    function allowance(address _owner, address _spender) external view returns (uint256 remaining) {
         return allowed[_owner][_spender];
     }
 
@@ -328,14 +330,14 @@ contract TaxToken {
 
     /// @notice Pause the contract, blocks transfer() and transferFrom().
     /// @dev    Contract MUST NOT be paused to call this, caller must be "owner".
-    function pause() public onlyOwner whenNotPausedUni(msg.sender) {
+    function pause() external onlyOwner whenNotPausedUni(msg.sender) {
         _paused = true;
         emit Paused(msg.sender);
     }
 
     /// @notice Unpause the contract.
     /// @dev    Contract MUST be puased to call this, caller must be "owner".
-    function unpause() public onlyOwner whenPaused {
+    function unpause() external onlyOwner whenPaused {
         _paused = false;
         emit Unpaused(msg.sender);
     }
@@ -352,7 +354,7 @@ contract TaxToken {
     /// @dev        _taxType must be lower than 3 because there can only be 3 tax types; buy, sell, & send.
     /// @param      _sender This value is the PAIR address.
     /// @param      _taxType This value must be be 0, 1, or 2. Best to correspond value with the BUY tax type.
-    function updateSenderTaxType(address _sender, uint _taxType) public onlyOwner {
+    function updateSenderTaxType(address _sender, uint _taxType) external onlyOwner {
         require(_taxType < 3, "err _taxType must be less than 3");
         senderTaxType[_sender] = _taxType;
     }
@@ -361,7 +363,7 @@ contract TaxToken {
     /// @dev        _taxType must be lower than 3 because there can only be 3 tax types; buy, sell, & send.
     /// @param      _receiver This value is the PAIR address.
     /// @param      _taxType This value must be be 0, 1, or 2. Best to correspond value with the SELL tax type.
-    function updateReceiverTaxType(address _receiver, uint _taxType) public onlyOwner {
+    function updateReceiverTaxType(address _receiver, uint _taxType) external onlyOwner {
         require(_taxType < 3, "err _taxType must be less than 3");
         receiverTaxType[_receiver] = _taxType;
     }
@@ -370,7 +372,7 @@ contract TaxToken {
     /// @dev        Must be lower than 2000 which is equivalent to 20%.
     /// @param      _taxType This value is the tax type. Has to be 0, 1, or 2.
     /// @param      _bpt This is the corresponding percentage that is taken for royalties. 1200 = 12%.
-    function adjustBasisPointsTax(uint _taxType, uint _bpt) public onlyOwner {
+    function adjustBasisPointsTax(uint _taxType, uint _bpt) external onlyOwner {
         require(_bpt <= 2000, "err TaxToken.sol _bpt > 2000 (20%)");
         require(!taxesRemoved, "err TaxToken.sol taxation has been removed");
         basisPointsTax[_taxType] = _bpt;
@@ -379,7 +381,7 @@ contract TaxToken {
     /// @notice Permanently remove taxes from this contract.
     /// @dev    An input is required here for sanity-check, given importance of this function call (and irreversible nature).
     /// @param  _key This value MUST equal 42 for function to execute.
-    function permanentlyRemoveTaxes(uint _key) public onlyOwner {
+    function permanentlyRemoveTaxes(uint _key) external onlyOwner {
         require(_key == 42, "err TaxToken.sol _key != 42");
         basisPointsTax[0] = 0;
         basisPointsTax[1] = 0;
@@ -392,13 +394,15 @@ contract TaxToken {
 
     /// @notice This is used to change the owner's wallet address. Used to give ownership to another wallet.
     /// @param  _owner is the new owner address.
-    function transferOwnership(address _owner) public onlyOwner {
+    function transferOwnership(address _owner) external onlyOwner {
+        require(_owner != address(0), "err TaxToken.sol _owner == 0");
+        emit OwnershipTransferred(owner, _owner);
         owner = _owner;
     }
 
-    /// @notice Set the treasury (contract)) which receives taxes generated through transfer() and transferFrom().
+    /// @notice Set the treasury (contract) which receives taxes generated through transfer() and transferFrom().
     /// @param  _treasury is the contract address of the treasury.
-    function setTreasury(address _treasury) public onlyOwner {
+    function setTreasury(address _treasury) external onlyOwner {
         treasury = _treasury;
         modifyWhitelist(treasury, true);
     }
@@ -406,14 +410,14 @@ contract TaxToken {
     /// @notice Adjust maxTxAmount value (maximum amount transferrable in a single transaction).
     /// @dev    Does not affect whitelisted wallets.
     /// @param  _maxTxAmount is the max amount of tokens that can be transacted at one time for a non-whitelisted wallet.
-    function updateMaxTxAmount(uint256 _maxTxAmount) public onlyOwner {
+    function updateMaxTxAmount(uint256 _maxTxAmount) external onlyOwner {
         maxTxAmount = (_maxTxAmount * 10**_decimals);
     }
 
     /// @notice This function is used to set the max amount of tokens a wallet can hold.
     /// @dev    Does not affect whitelisted wallets.
     /// @param  _maxWalletSize is the max amount of tokens that can be held on a non-whitelisted wallet.
-    function updateMaxWalletSize(uint256 _maxWalletSize) public onlyOwner {
+    function updateMaxWalletSize(uint256 _maxWalletSize) external onlyOwner {
         maxWalletSize = (_maxWalletSize * 10**_decimals);
     }
 
@@ -429,8 +433,8 @@ contract TaxToken {
     /// @dev    Blacklisted wallets cannot perform transfer() or transferFrom().
     /// @param  _wallet is the wallet address that will have their blacklist status modified.
     /// @param  _blacklist use True to blacklist a wallet, otherwise use False to remove wallet from blacklist.
-    function modifyBlacklist(address _wallet, bool _blacklist) public onlyOwner {
-        require(!whitelist[_wallet], "taxToken.sol::modifyBlacklist() cannot blacklist a whitelisted wallet");
+    function modifyBlacklist(address _wallet, bool _blacklist) external onlyOwner {
+        require(!whitelist[_wallet], "TaxToken.sol::modifyBlacklist() cannot blacklist a whitelisted wallet");
         blacklist[_wallet] = _blacklist;
     }
     
