@@ -83,12 +83,6 @@ contract Treasury {
         _;
     }
 
-    /// @dev    Enforce msg.sender is automationBot.
-    modifier isAutomationBot {
-        require(msg.sender == automationBot);
-        _;
-    }
-
 
     // ---------
     // Functions
