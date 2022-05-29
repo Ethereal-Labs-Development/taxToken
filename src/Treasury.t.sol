@@ -529,4 +529,24 @@ contract TreasuryTest is Utility {
         assertEq(treasury.admin(), address(32));
     }
 
+
+
+    // Experiment with exchangeRateTotal() view function.
+
+    function test_treasury_exchangeRateTotal() public {
+
+        address[] memory path_uni_v2 = new address[](3);
+
+        path_uni_v2[0] = address(taxToken);
+        path_uni_v2[1] = WETH;
+        path_uni_v2[2] = DAI;
+
+        (uint taxType0, uint taxType1, uint taxType2) = treasury.exchangeRateTotal(path_uni_v2);
+
+        emit Debug('taxType0', taxType0);
+        emit Debug('taxType1', taxType1);
+        emit Debug('taxType2', taxType2);
+
+    }
+
 }

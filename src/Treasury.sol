@@ -19,6 +19,8 @@ contract Treasury {
 
     address public UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
 
+    // TODO: Consider calling this directly within functions.
+    address public UNI_VAR = IUniswapV2Router01(UNIV2_ROUTER).WETH();
 
     /// @notice Handles the internal accounting for how much taxToken is owed to each taxType.
     /// @dev    e.g. 10,000 taxToken owed to taxType 0 => taxTokenAccruedForTaxType[0] = 10000 * 10**18
@@ -28,6 +30,9 @@ contract Treasury {
     mapping(uint => uint) public taxTokenAccruedForTaxType;
 
     mapping(uint => TaxDistribution) public taxSettings;   /// @dev Mapping of taxType to TaxDistribution struct.
+
+    /// TODO: Consider incrementing this in distributeTaxes().
+    mapping(address => mapping(address => uint)) public totalAssetsDistributeToWallets;
  
     /// @notice Manages how TaxToken is distributed for a given taxType.
     ///         Variables:
@@ -55,6 +60,11 @@ contract Treasury {
         taxToken = _taxToken;
     }
 
+    // -----
+    // Event
+    // -----
+
+    event RoyaltiesDistributed(address indexed recipient, uint amount, address asset);
 
  
     // ---------
@@ -143,41 +153,134 @@ contract Treasury {
         
         amountToDistribute = taxTokenAccruedForTaxType[taxType];
 
+        // currently we iterate through all wallets and perform a sell or distribution (if taxToken)
+        // bad: this causes 5 sells (for any given taxType)
+        // bad: in distributeAllTaxes() this causes 15 sells
+
+        // solution: peform 1 sell and distribute to all wallets from there
+
         if (amountToDistribute > 0) {
 
             taxTokenAccruedForTaxType[taxType] = 0;
-            uint walletCount = taxSettings[taxType].walletCount;
 
-            for (uint i = 0; i < walletCount; i++) {
-                uint amountForWallet = (amountToDistribute * taxSettings[taxType].percentDistribution[i]) / 100;
+            uint totalWETHPercentDist = 0;
+            uint totalWETHWallets = 0;
+
+            // example taxSetting
+
+            // [0xA, 0xB, 0xC, 0xD]  <= addy
+            // [20,  20,  40,  20]   <= percent
+            // [y,   y,   n,   y]    <= convert to weth?
+
+            // TODO: update state var totalAssetsDistributeToWallets
+
+            for (uint i = 0; i < taxSettings[taxType].wallets.length; i++) {
+
                 address walletToAirdrop = taxSettings[taxType].wallets[i];
+
+                uint percentDistribution = taxSettings[taxType].percentDistribution[i];
+                uint amountForWallet = (amountToDistribute * percentDistribution) / 100;
 
                 if (taxSettings[taxType].convertToAsset[i] == taxToken) {
                     IERC20(taxToken).transfer(walletToAirdrop, amountForWallet);
                 }
-                else {
-                    IERC20(address(taxToken)).approve(address(UNIV2_ROUTER), amountForWallet);
-
-                    address[] memory path_uni_v2 = new address[](2);
-
-                    path_uni_v2[0] = address(taxToken);
-                    path_uni_v2[1] = taxSettings[taxType].convertToAsset[i];
-
-                    IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokens(
-                        amountForWallet,           
-                        0,
-                        path_uni_v2,
+                
+                else if (taxSettings[taxType].convertToAsset[i] != taxToken) {
+                    WETHWallets[totalWETHWallets] = WETHWallet(
                         walletToAirdrop,
-                        block.timestamp + 30000
+                        taxSettings[taxType].convertToAsset[i],
+                        percentDistribution
                     );
+                    totalWETHPercentDist += taxSettings[taxType].percentDistribution[i];
+                    totalWETHWallets += 1;
+                }
+            }
+
+
+            // get "amountToDistributeWETH" aka the leftover taxTokens from the original
+            // amountToDistribute and convert these taxTokens to WETH.
+
+            uint amountToDistributeWETH = (amountToDistribute / 100) * totalWETHPercentDist;
+
+
+            // NOTE: Will not reach below if block if only taxToken is present in convertToAsset[]
+
+            if (amountToDistributeWETH > 0) {
+
+                // ~
+                // performing uniswap sell
+                // ~
+
+                IERC20(address(taxToken)).approve(address(UNIV2_ROUTER), amountToDistributeWETH);
+
+                address[] memory path_uni_v2 = new address[](2);
+
+                path_uni_v2[0] = address(taxToken);
+                path_uni_v2[1] = UNI_VAR;
+
+                IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokens(
+                    amountToDistributeWETH,           
+                    0,
+                    path_uni_v2,
+                    address(this),
+                    block.timestamp + 30000
+                );
+
+
+                // ~
+                // distributing weth
+                // ~
+
+                uint totalWETH = IERC20(UNI_VAR).balanceOf(address(this));
+
+                for (uint i = 0; i < totalWETHWallets; i++) {
+                    address walletToAirdrop = WETHWallets[i].walletAddress;
+                    uint proportionalDistribution = (WETHWallets[i].percentDistribution * 10000) / totalWETHPercentDist;
+                    uint amountForWallet = (totalWETH * proportionalDistribution) / 10000;
+                    IERC20(UNI_VAR).transfer(walletToAirdrop, amountForWallet);
                 }
             }
         }
 
+        // TODO: emit event RoyaltiesDistributed()
+
+        // return amountToDistribute;
+
+        // if (amountToDistribute > 0) {
+
+        //     taxTokenAccruedForTaxType[taxType] = 0;
+        //     uint walletCount = taxSettings[taxType].walletCount;
+
+        //     for (uint i = 0; i < walletCount; i++) {
+        //         uint amountForWallet = (amountToDistribute * taxSettings[taxType].percentDistribution[i]) / 100;
+        //         address walletToAirdrop = taxSettings[taxType].wallets[i];
+
+        //         if (taxSettings[taxType].convertToAsset[i] == taxToken) {
+        //             IERC20(taxToken).transfer(walletToAirdrop, amountForWallet);
+        //         }
+        //         else {
+        //             IERC20(address(taxToken)).approve(address(UNIV2_ROUTER), amountForWallet);
+
+        //             address[] memory path_uni_v2 = new address[](2);
+
+        //             path_uni_v2[0] = address(taxToken);
+        //             path_uni_v2[1] = taxSettings[taxType].convertToAsset[i];
+
+        //             IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokens(
+        //                 amountForWallet,           
+        //                 0,
+        //                 path_uni_v2,
+        //                 walletToAirdrop,
+        //                 block.timestamp + 30000
+        //             );
+        //         }
+        //     }
+        // }
+
     }
 
     /// @notice Distributes taxes for all taxTypes.
-    function distributeAllTaxes() public {
+    function distributeAllTaxes() external {
         distributeTaxes(0);
         distributeTaxes(1);
         distributeTaxes(2);
@@ -208,6 +311,32 @@ contract Treasury {
     /// @param  _admin New admin address.
     function updateAdmin(address _admin) public isAdmin {
         admin = _admin;
+    }
+
+    
+    /// @notice View function for liquidating all tax types (0, 1, and 2).
+    /// @param  path The path by which taxToken is converted into a given asset (i.e. taxToken => DAI => LINK).
+    function exchangeRateTotal(address[] memory path) external view returns(uint256, uint256, uint256) {
+        /*
+            function getAmountsOut(
+                uint amountIn, 
+                address[] calldata path
+            ) external view returns (uint[] memory amounts);
+        */
+        return (
+            IUniswapV2Router01(UNIV2_ROUTER).getAmountsOut(
+                taxTokenAccruedForTaxType[0],
+                path
+            )[path.length - 1],
+            IUniswapV2Router01(UNIV2_ROUTER).getAmountsOut(
+                taxTokenAccruedForTaxType[1],
+                path
+            )[path.length - 1],
+            IUniswapV2Router01(UNIV2_ROUTER).getAmountsOut(
+                taxTokenAccruedForTaxType[2],
+                path
+            )[path.length - 1]
+        );
     }
 
 }
