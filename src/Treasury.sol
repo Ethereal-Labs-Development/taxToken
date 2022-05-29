@@ -159,24 +159,9 @@ contract Treasury {
         
         amountToDistribute = taxTokenAccruedForTaxType[taxType];
 
-        // currently we iterate through all wallets and perform a sell or distribution (if taxToken)
-        // bad: this causes 5 sells (for any given taxType)
-        // bad: in distributeAllTaxes() this causes 15 sells
-
-        // solution: peform 1 sell and distribute to all wallets from there
-
         if (amountToDistribute > 0) {
 
             taxTokenAccruedForTaxType[taxType] = 0;
-
-            // example taxSetting
-
-            // [0xA, 0xB, 0xC, 0xD]  <= addy
-            // [20,  20,  40,  20]   <= percent
-            // [y,   y,   n,   y]    <= convert to weth?
-            // [0xW, 0xW, 0xU, 0xW]
-
-            // TODO: update state var totalAssetsDistributeToWallets
 
             uint sumPercentSell = 0;
 
