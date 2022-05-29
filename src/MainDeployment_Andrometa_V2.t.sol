@@ -167,8 +167,9 @@ contract MainDeployment_RX2 is Utility {
             block.timestamp + 300       // Unix timestamp after which the transaction will revert.
         );
 
-        // (14) AIRDROP PRIVATE SALE 1 AND PRIVATE SALE 2 TOKENS
-        // NOTE: VERIFY BULKSENDER IS WHITELISTED
+        // (14) AIRDROP SNAPSHOT
+        // TODO: VERIFY BULKSENDER IS WHITELISTED
+        // NOTE: No need to airdrop private sales again, should be included in snapshot 
         // 0x458b14915e651243Acf89C05859a22d5Cff976A6
         // https://bulksender.app/
 
