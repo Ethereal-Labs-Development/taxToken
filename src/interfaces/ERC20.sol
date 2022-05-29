@@ -19,7 +19,7 @@ interface IERC20 {
         address sender,
         address recipient,
         uint256 amount
-    ) external;
+    ) external returns(bool);
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
 }
