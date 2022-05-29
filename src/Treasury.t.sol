@@ -547,6 +547,104 @@ contract TreasuryTest is Utility {
         emit Debug('taxType1', taxType1);
         emit Debug('taxType2', taxType2);
 
+        // ├╴Debug("taxType0", 1796310537150394376) (src/Treasury.t.sol:546)
+        // ├╴Debug("taxType1", 212532665568400683822) (src/Treasury.t.sol:547)
+        // ├╴Debug("taxType2", 26940783891853202311) (src/Treasury.t.sol:548)
+
+        buy_generateFees();
+        buy_generateFees();
+        buy_generateFees();
+
+        (taxType0, taxType1, taxType2) = treasury.exchangeRateTotal(path_uni_v2);
+
+        emit Debug('taxType0', taxType0);
+        emit Debug('taxType1', taxType1);
+        emit Debug('taxType2', taxType2);
+
+        // ├╴Debug("taxType0", 1904533759476995397) (src/Treasury.t.sol:556)
+        // ├╴Debug("taxType1", 873293553192437130107) (src/Treasury.t.sol:557)
+        // ├╴Debug("taxType2", 28563774513486153680) (src/Treasury.t.sol:558)
+
+        sell_generateFees();
+        sell_generateFees();
+        sell_generateFees();
+
+        (taxType0, taxType1, taxType2) = treasury.exchangeRateTotal(path_uni_v2);
+
+        emit Debug('taxType0', taxType0);
+        emit Debug('taxType1', taxType1);
+        emit Debug('taxType2', taxType2);
+
+        // ├╴Debug("taxType0", 1894496762882612346) (src/Treasury.t.sol:566)
+        // ├╴Debug("taxType1", 868702596890567721328) (src/Treasury.t.sol:567)
+        // ├╴Debug("taxType2", 113599069356538056284) (src/Treasury.t.sol:568)
+
+        xfer_generateFees();
+        xfer_generateFees();
+        xfer_generateFees();
+
+        (taxType0, taxType1, taxType2) = treasury.exchangeRateTotal(path_uni_v2);
+
+        emit Debug('taxType0', taxType0);
+        emit Debug('taxType1', taxType1);
+        emit Debug('taxType2', taxType2);
+
+        // ├╴Debug("taxType0", 7577747125354401523) (src/Treasury.t.sol:576)
+        // ├╴Debug("taxType1", 868702596890567721328) (src/Treasury.t.sol:577)
+        // └╴Debug("taxType2", 113599069356538056284) (src/Treasury.t.sol:578)
+
+    }
+
+    // Verify new distributeTaxes() function.
+
+    function test_treasury_distributeTaxes_new() public {
+
+        address[] memory path_uni_v2 = new address[](3);
+
+        path_uni_v2[0] = address(taxToken);
+        path_uni_v2[1] = WETH;
+        path_uni_v2[2] = DAI;
+
+        (uint taxType0, uint taxType1, uint taxType2) = treasury.exchangeRateTotal(path_uni_v2);
+
+        emit Debug('taxType0', taxType0);
+        emit Debug('taxType1', taxType1);
+        emit Debug('taxType2', taxType2);
+
+        address[] memory path_uni_v2_NONUSD = new address[](2);
+
+        path_uni_v2_NONUSD[0] = address(taxToken);
+        path_uni_v2_NONUSD[1] = WETH;
+
+        (taxType0, taxType1, taxType2) = treasury.exchangeRateTotal(path_uni_v2_NONUSD);
+
+        emit Debug('taxType0', taxType0);
+        emit Debug('taxType1', taxType1);
+        emit Debug('taxType2', taxType2);
+
+        treasury.distributeTaxes(0);
+        treasury.distributeTaxes(1);
+        treasury.distributeTaxes(2);
+
+        // ├╴Debug("taxType0", 1015257981674760) (src/Treasury.t.sol:621)
+        // ├╴Debug("taxType1", 120124455956717323) (src/Treasury.t.sol:622)
+        // ├╴Debug("taxType2", 15226725051879086) (src/Treasury.t.sol:623)
+        // ├╴call Treasury::distributeTaxes(uint256)(0) (src/Treasury.t.sol:625)
+        // │  └╴← (100000000000000000)
+        // ├╴call Treasury::distributeTaxes(uint256)(1) (src/Treasury.t.sol:626)
+        // │  └╴← (11845896412764735586)
+        // └╴call Treasury::distributeTaxes(uint256)(2) (src/Treasury.t.sol:627)
+        //     └╴← (1500000000000000000)
+
+        //     1015257981674760
+        //     100000000000000000
+
+        //     120124455956717323
+        //     11845896412764735586
+
+        //     1500000000000000000
+        //     15226725051879086
+
     }
 
 }
