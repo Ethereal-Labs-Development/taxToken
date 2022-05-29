@@ -16,7 +16,6 @@ contract Treasury {
 
     address public taxToken;        /// @dev The token that fees are taken from, and what is held in escrow here.
     address public admin;           /// @dev The administrator of accounting and distribution settings.
-    address public automationBot;   /// @dev The automation bot address (should always be unique from admin).
 
     address public constant UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
 
@@ -244,29 +243,20 @@ contract Treasury {
     }
 
     
-    /// @notice View function for liquidating all tax types (0, 1, and 2).
+    /// @notice View function for exchanging fees collected for given taxType.
     /// @param  path The path by which taxToken is converted into a given asset (i.e. taxToken => DAI => LINK).
-    function exchangeRateTotal(address[] memory path) external view returns(uint256, uint256, uint256) {
+    /// @param  taxType The taxType to be exchanged.
+    function exchangeRateForTaxType(address[] memory path, uint taxType) external view returns(uint256) {
         /*
             function getAmountsOut(
                 uint amountIn, 
                 address[] calldata path
             ) external view returns (uint[] memory amounts);
         */
-        return (
-            IUniswapV2Router01(UNIV2_ROUTER).getAmountsOut(
-                taxTokenAccruedForTaxType[0],
-                path
-            )[path.length - 1],
-            IUniswapV2Router01(UNIV2_ROUTER).getAmountsOut(
-                taxTokenAccruedForTaxType[1],
-                path
-            )[path.length - 1],
-            IUniswapV2Router01(UNIV2_ROUTER).getAmountsOut(
-                taxTokenAccruedForTaxType[2],
-                path
-            )[path.length - 1]
-        );
+        return IUniswapV2Router01(UNIV2_ROUTER).getAmountsOut(
+            taxTokenAccruedForTaxType[taxType], 
+            path
+        )[path.length - 1];
     }
 
 }

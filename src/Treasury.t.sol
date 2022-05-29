@@ -543,7 +543,9 @@ contract TreasuryTest is Utility {
         path_uni_v2[1] = WETH;
         path_uni_v2[2] = DAI;
 
-        (uint taxType0, uint taxType1, uint taxType2) = treasury.exchangeRateTotal(path_uni_v2);
+        uint taxType0 = treasury.exchangeRateForTaxType(path_uni_v2, 0);
+        uint taxType1 = treasury.exchangeRateForTaxType(path_uni_v2, 1);
+        uint taxType2 = treasury.exchangeRateForTaxType(path_uni_v2, 2);
 
         emit Debug('taxType0', taxType0);
         emit Debug('taxType1', taxType1);
@@ -557,7 +559,9 @@ contract TreasuryTest is Utility {
         buy_generateFees();
         buy_generateFees();
 
-        (taxType0, taxType1, taxType2) = treasury.exchangeRateTotal(path_uni_v2);
+        taxType0 = treasury.exchangeRateForTaxType(path_uni_v2, 0);
+        taxType1 = treasury.exchangeRateForTaxType(path_uni_v2, 1);
+        taxType2 = treasury.exchangeRateForTaxType(path_uni_v2, 2);
 
         emit Debug('taxType0', taxType0);
         emit Debug('taxType1', taxType1);
@@ -571,7 +575,9 @@ contract TreasuryTest is Utility {
         sell_generateFees();
         sell_generateFees();
 
-        (taxType0, taxType1, taxType2) = treasury.exchangeRateTotal(path_uni_v2);
+        taxType0 = treasury.exchangeRateForTaxType(path_uni_v2, 0);
+        taxType1 = treasury.exchangeRateForTaxType(path_uni_v2, 1);
+        taxType2 = treasury.exchangeRateForTaxType(path_uni_v2, 2);
 
         emit Debug('taxType0', taxType0);
         emit Debug('taxType1', taxType1);
@@ -585,7 +591,9 @@ contract TreasuryTest is Utility {
         xfer_generateFees();
         xfer_generateFees();
 
-        (taxType0, taxType1, taxType2) = treasury.exchangeRateTotal(path_uni_v2);
+        taxType0 = treasury.exchangeRateForTaxType(path_uni_v2, 0);
+        taxType1 = treasury.exchangeRateForTaxType(path_uni_v2, 1);
+        taxType2 = treasury.exchangeRateForTaxType(path_uni_v2, 2);
 
         emit Debug('taxType0', taxType0);
         emit Debug('taxType1', taxType1);
