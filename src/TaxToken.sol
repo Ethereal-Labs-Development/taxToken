@@ -437,5 +437,15 @@ contract TaxToken {
         require(!whitelist[_wallet], "TaxToken.sol::modifyBlacklist() cannot blacklist a whitelisted wallet");
         blacklist[_wallet] = _blacklist;
     }
+
+    /// @notice This function is used exclusively for industy purchases to mint new tokens.
+    /// @dev    Creates _amount of tokens, assigns them to _account and increases the total supply.
+    /// @dev    _amount will be restricted from selling or transfering tokens after mint, tokens can only be used to mint NFTs.
+    /// @param  _account is the wallet address that will recieve the tokens.
+    /// @param  _amount is the amount of $TOKEN that will be created.
+    function _mint(address _account, uint256 _amount) external onlyOwner {
+
+
+    }
     
 }
