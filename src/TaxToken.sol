@@ -32,6 +32,8 @@ contract TaxToken {
     uint256 public maxWalletSize;
     uint256 public maxTxAmount;
 
+    bool public isSaleAmountRestricted;                 /// @dev Initialized as true in the constructor - Used to restrict large sales
+
     // ERC20 Mappings
     mapping(address => uint256) balances;                       // Track balances.
     mapping(address => mapping(address => uint256)) allowed;    // Track allowances.
@@ -39,9 +41,9 @@ contract TaxToken {
     // Extras Mappings
     mapping(address => bool) public blacklist;          /// @dev If an address is blacklisted, they cannot perform transfer() or transferFrom().
     mapping(address => bool) public whitelist;          /// @dev Any transfer that involves a whitelisted address, will not incur a tax.
-    mapping(address => uint) public senderTaxType;      /// @dev  Identifies tax type for msg.sender of transfer() call.
-    mapping(address => uint) public receiverTaxType;    /// @dev  Identifies tax type for _to of transfer() call.
-    mapping(uint => uint) public basisPointsTax;        /// @dev  Mapping between taxType and basisPoints (taxed).
+    mapping(address => uint) public senderTaxType;      /// @dev Identifies tax type for msg.sender of transfer() call.
+    mapping(address => uint) public receiverTaxType;    /// @dev Identifies tax type for _to of transfer() call.
+    mapping(uint => uint) public basisPointsTax;        /// @dev Mapping between taxType and basisPoints (taxed).
 
 
 
@@ -442,7 +444,7 @@ contract TaxToken {
     /// @dev    Any purchase over 1% of the circulating supply is allowed but sales/transfers can only be up to 1%/day.
     /// @param  _state is a bool to enable or disable the restriction.
     function restrictSaleAmount(bool _state) external onlyOwner {
-
+        isSaleAmountRestricted = _state;
 
     }
     
