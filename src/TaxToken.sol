@@ -437,5 +437,13 @@ contract TaxToken {
         require(!whitelist[_wallet], "TaxToken.sol::modifyBlacklist() cannot blacklist a whitelisted wallet");
         blacklist[_wallet] = _blacklist;
     }
+
+    /// @notice This function is used to restrict sales/transfers over 1% of circulating supply per day.
+    /// @dev    Any purchase over 1% of the circulating supply is allowed but sales/transfers can only be up to 1%/day.
+    /// @param  _state is a bool to enable or disable the restriction.
+    function restrictSaleAmount(bool _state) external onlyOwner {
+
+
+    }
     
 }
