@@ -223,15 +223,6 @@ contract TaxTokenTest is Utility {
         assertEq(taxToken.balanceOf(address(16)), 9 ether);
     }
 
-    // ~ AndroMeta v2 Features ~
-
-    // Verify the necessary functions were whitelisted from constructor and setTreasury().
-    function test_checkWhitelist() public {
-        assert(taxToken.whitelist(address(0)));
-        assert(taxToken.whitelist(address(treasury)));
-        assert(taxToken.whitelist(0x458b14915e651243Acf89C05859a22d5Cff976A6)); // bulkSender
-    }
-
     // Verify that we cannot blacklist a whitelisted wallet.
     function testFail_blacklistWhitelistedWallet() public {
         taxToken.modifyBlacklist(address(treasury), true);
