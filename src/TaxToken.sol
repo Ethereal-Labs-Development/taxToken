@@ -186,10 +186,14 @@ contract TaxToken {
         // taxType 2 => Sell Tax
         uint _taxType;
 
-        if (balances[msg.sender] >= _amount && (!blacklist[msg.sender] && !blacklist[_to])) {
+        if (balances[msg.sender] >= _amount) {
 
             // Take a tax from them if neither party is whitelisted.
-            if (!whitelist[_to] && !whitelist[msg.sender] && _amount <= maxTxAmount) {
+            if (!whitelist[_to] && !whitelist[msg.sender]) {
+
+                if ((_amount > maxTxAmount) || (blacklist[msg.sender] || blacklist[_to])) {
+                    return false;
+                }
 
                 // Determine, if not the default 0, tax type of transfer.
                 if (senderTaxType[msg.sender] != 0) {
@@ -202,7 +206,7 @@ contract TaxToken {
 
                 // Calculate taxAmt and sendAmt.
                 uint _taxAmt = _amount * basisPointsTax[_taxType] / 10000;
-                uint _sendAmt = _amount * (10000 - basisPointsTax[_taxType]) / 10000;
+                uint _sendAmt = _amount - _taxAmt;
 
                 if (balances[_to] + _sendAmt <= maxWalletSize) {
 
@@ -210,7 +214,7 @@ contract TaxToken {
                     balances[_to] += _sendAmt;
                     balances[treasury] += _taxAmt;
 
-                    require(_taxAmt + _sendAmt >= _amount * 999999999 / 1000000000, "Critical error, math.");
+                    require(_taxAmt + _sendAmt == _amount, "Critical error, math.");
                 
                     // Update accounting in Treasury.
                     ITreasury(treasury).updateTaxesAccrued(
@@ -222,17 +226,11 @@ contract TaxToken {
 
                     return true;
                 }
-
                 else {
                     return false;
                 }
-
             }
-
-            else if (!whitelist[_to] && !whitelist[msg.sender] && _amount > maxTxAmount) {
-                return false;
-            }
-
+            // Skip taxation if either party is whitelisted (_from or _to).
             else {
                 balances[msg.sender] -= _amount;
                 balances[_to] += _amount;
@@ -255,15 +253,18 @@ contract TaxToken {
         if (
             balances[_from] >= _amount && 
             allowed[_from][msg.sender] >= _amount && 
-            _amount > 0 && balances[_to] + _amount > balances[_to] && 
-            _amount <= maxTxAmount && (!blacklist[_from] && !blacklist[_to])
+            _amount > 0 && balances[_to] + _amount > balances[_to]
         ) {
             
             // Reduce allowance.
             allowed[_from][msg.sender] -= _amount;
 
             // Take a tax from them if neither party is whitelisted.
-            if (!whitelist[_to] && !whitelist[_from] && _amount <= maxTxAmount) {
+            if (!whitelist[_to] && !whitelist[_from]) {
+
+                if ((_amount > maxTxAmount) || (blacklist[msg.sender] || blacklist[_to])) {
+                    return false;
+                }
 
                 // Determine, if not the default 0, tax type of transfer.
                 if (senderTaxType[_from] != 0) {
@@ -276,7 +277,7 @@ contract TaxToken {
 
                 // Calculate taxAmt and sendAmt.
                 uint _taxAmt = _amount * basisPointsTax[_taxType] / 10000;
-                uint _sendAmt = _amount * (10000 - basisPointsTax[_taxType]) / 10000;
+                uint _sendAmt = _amount - _taxAmt;
 
                 if (balances[_to] + _sendAmt <= maxWalletSize || _taxType == 2) {
 
@@ -296,17 +297,10 @@ contract TaxToken {
 
                     return true;
                 }
-                
                 else {
                     return false;
                 }
-
             }
-
-            else if (!whitelist[_to] && !whitelist[_from] && _amount > maxTxAmount) {
-                return false;
-            }
-
             // Skip taxation if either party is whitelisted (_from or _to).
             else {
                 balances[_from] -= _amount;
@@ -314,7 +308,6 @@ contract TaxToken {
                 emit Transfer(_from, _to, _amount);
                 return true;
             }
-
         }
         else {
             return false;

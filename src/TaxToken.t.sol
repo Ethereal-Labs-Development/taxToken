@@ -131,6 +131,24 @@ contract TaxTokenTest is Utility {
         assert(!taxToken.transfer(address(32), 1 ether));
     }
 
+    // This tests that a blacklisted wallet can only make transfers to a whitelisted wallet
+    function test_blacklist_whitelist() public {
+        // this contract can successfully send assets to address(32)
+        assert(taxToken.transfer(address(32), 1 ether));
+
+        // blacklist this contract
+        taxToken.modifyBlacklist(address(this), true);
+
+        // This contract can no longer send tokens to address(32)
+        assert(!taxToken.transfer(address(32), 1 ether));
+
+        // Whitelist address(32)
+        taxToken.modifyWhitelist(address(32), true);
+
+        // this contract can successfully send assets to whitelisted address(32)
+        assert(taxToken.transfer(address(32), 1 ether));
+    }
+
     // ~ Whitelist Testing ~
 
     // This tests whether a transfer is taxed when the receiver is whitelisted.
@@ -221,15 +239,6 @@ contract TaxTokenTest is Utility {
         taxToken.modifyWhitelist(address(16), true);
         taxToken.transfer(address(16), 10 ether);
         assertEq(taxToken.balanceOf(address(16)), 9 ether);
-    }
-
-    // ~ AndroMeta v2 Features ~
-
-    // Verify the necessary functions were whitelisted from constructor and setTreasury().
-    function test_checkWhitelist() public {
-        assert(taxToken.whitelist(address(0)));
-        assert(taxToken.whitelist(address(treasury)));
-        assert(taxToken.whitelist(0x458b14915e651243Acf89C05859a22d5Cff976A6)); // bulkSender
     }
 
     // Verify that we cannot blacklist a whitelisted wallet.
