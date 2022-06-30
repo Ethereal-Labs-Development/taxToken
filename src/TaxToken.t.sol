@@ -131,6 +131,24 @@ contract TaxTokenTest is Utility {
         assert(!taxToken.transfer(address(32), 1 ether));
     }
 
+    // This tests that a blacklisted wallet can only make transfers to a whitelisted wallet
+    function test_blacklist_whitelist() public {
+        // this contract can successfully send assets to address(32)
+        assert(taxToken.transfer(address(32), 1 ether));
+
+        // blacklist this contract
+        taxToken.modifyBlacklist(address(this), true);
+
+        // This contract can no longer send tokens to address(32)
+        assert(!taxToken.transfer(address(32), 1 ether));
+
+        // Whitelist address(32)
+        taxToken.modifyWhitelist(address(32), true);
+
+        // this contract can successfully send assets to whitelisted address(32)
+        assert(taxToken.transfer(address(32), 1 ether));
+    }
+
     // ~ Whitelist Testing ~
 
     // This tests whether a transfer is taxed when the receiver is whitelisted.

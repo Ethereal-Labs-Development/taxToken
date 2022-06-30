@@ -214,7 +214,7 @@ contract TaxToken {
                     balances[_to] += _sendAmt;
                     balances[treasury] += _taxAmt;
 
-                    require(_taxAmt + _sendAmt >= _amount * 999999999 / 1000000000, "Critical error, math.");
+                    require(_taxAmt + _sendAmt == _amount, "Critical error, math.");
                 
                     // Update accounting in Treasury.
                     ITreasury(treasury).updateTaxesAccrued(
