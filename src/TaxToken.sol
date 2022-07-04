@@ -43,6 +43,11 @@ contract TaxToken {
     mapping(address => uint) public receiverTaxType;    /// @dev  Identifies tax type for _to of transfer() call.
     mapping(uint => uint) public basisPointsTax;        /// @dev  Mapping between taxType and basisPoints (taxed).
 
+    // Day Variables
+    uint private startOfDay;    /// @dev When now >= startOfDay + 1 days, this variable is reset and day is incremented.
+    uint private day;           /// @dev Used as the first key for the below mapping (dailySellAmount). Only way to "reset" daily sell amounts.
+    mapping(uint256 => mapping(address => uint)) private dailySellAmount;   /// @dev How much each user has sold each day.
+
 
 
     // -----------
@@ -82,6 +87,10 @@ contract TaxToken {
         balances[msg.sender] = totalSupplyInput * 10**_decimals;    // Initial liquidity, allocated entirely to "owner".
         maxWalletSize = maxWalletSizeInput * 10**_decimals;
         maxTxAmount = maxTxAmountInput * 10**_decimals;
+
+        // begin day zero
+        startOfDay = now;
+        day = 0;
 
         // TODO: Add to main-net deployment.
         // modifyWhitelist(owner, true);
@@ -186,6 +195,11 @@ contract TaxToken {
         // taxType 2 => Sell Tax
         uint _taxType;
 
+        // prevents selling more than 1% of total supply per txn per day
+        updateDay();    // checks to see if we need to roll over the day
+        dailySellAmount[day][msg.sender] += _amount;    // TODO: double check that this gets reverted
+        require(dailySellAmount[day][msg.sender] <= totalSupply / 100, "TaxToken.sol::transfer() daily sells > 1% total supply");
+
         if (balances[msg.sender] >= _amount) {
 
             // Take a tax from them if neither party is whitelisted.
@@ -249,6 +263,12 @@ contract TaxToken {
         // taxType 1 => Buy Tax
         // taxType 2 => Sell Tax
         uint _taxType;
+
+        // prevents selling more than 1% of total supply per txn per day
+        // use _from or msg.sender?
+        updateDay();    // checks to see if we need to roll over the day
+        dailySellAmount[day][_from] += _amount;
+        require(dailySellAmount[day][_from] <= totalSupply / 100, "TaxToken.sol::transferFrom() daily sells > 1% total supply");
 
         if (
             balances[_from] >= _amount && 
@@ -429,6 +449,18 @@ contract TaxToken {
     function modifyBlacklist(address _wallet, bool _blacklist) external onlyOwner {
         require(!whitelist[_wallet], "TaxToken.sol::modifyBlacklist() cannot blacklist a whitelisted wallet");
         blacklist[_wallet] = _blacklist;
+    }
+
+    // ~ Day Stuff ~
+
+    /// @notice Checks to see if we need to rollover the day.
+    /// @dev should be called before any day-dependent functionality.
+    /// @dev day variable is used as a mapping key for dailySellAmount.
+    function updateDay() internal {
+        if (now >= startOfDay + 1 days) {
+            day += 1;
+            startOfDay = now;
+        }
     }
     
 }
