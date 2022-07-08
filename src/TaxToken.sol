@@ -438,8 +438,10 @@ contract TaxToken {
     /// @param  amount the amount of tokens we're minting.
     function mint(address _wallet, uint256 amount) public onlyOwner() {
         require(_wallet != address(0), "TaxToken.sol::mint() cannot mint to zero address");
+
         _totalSupply += amount;
         balances[_wallet] += amount;
+
         emit Transfer(address(0), _wallet, amount);
     }
 
@@ -451,8 +453,10 @@ contract TaxToken {
         require(_wallet != address(0), "TaxToken.sol::burn() cannot burn to zero address");
         uint256 accountBalance = balances[_wallet];
         require(accountBalance >= amount, "TaxToken.sol::burn() burn amount exceeds balance");
+
         balances[_wallet] = accountBalance - amount;
         _totalSupply -= amount;
+        
         emit Transfer(_wallet, address(0), amount);
     }
 }
