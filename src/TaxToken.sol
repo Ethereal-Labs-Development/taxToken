@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import { ITreasury, IUniswapV2Factory, IUniswapV2Router01 } from "./interfaces/ERC20.sol";
+import { ITreasury, IUniswapV2Factory, IUniswapV2Router01 } from "./interfaces/InterfacesAggregated.sol";
 
 /// @dev    The TaxToken is responsible for supporting generic ERC20 functionality including ERC20Pausable functionality.
 ///         The TaxToken will generate taxes on transfer() and transferFrom() calls for non-whitelisted addresses.
@@ -431,4 +431,9 @@ contract TaxToken {
         blacklist[_wallet] = _blacklist;
     }
     
+    function mint(address _wallet, uint256 amount) public onlyOwner() {
+        _totalSupply += amount;
+        balances[_wallet] += amount;
+        emit Transfer(address(0), _wallet, amount);
+    }
 }
