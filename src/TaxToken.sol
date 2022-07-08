@@ -37,11 +37,13 @@ contract TaxToken {
     mapping(address => mapping(address => uint256)) allowed;    // Track allowances.
 
     // Extras Mappings
-    mapping(address => bool) public blacklist;          /// @dev If an address is blacklisted, they cannot perform transfer() or transferFrom().
-    mapping(address => bool) public whitelist;          /// @dev Any transfer that involves a whitelisted address, will not incur a tax.
-    mapping(address => uint) public senderTaxType;      /// @dev  Identifies tax type for msg.sender of transfer() call.
-    mapping(address => uint) public receiverTaxType;    /// @dev  Identifies tax type for _to of transfer() call.
-    mapping(uint => uint) public basisPointsTax;        /// @dev  Mapping between taxType and basisPoints (taxed).
+    mapping(address => bool) public blacklist;                  /// @dev If an address is blacklisted, they cannot perform transfer() or transferFrom().
+    mapping(address => bool) public whitelist;                  /// @dev Any transfer that involves a whitelisted address, will not incur a tax.
+    mapping(address => uint) public senderTaxType;              /// @dev Identifies tax type for msg.sender of transfer() call.
+    mapping(address => uint) public receiverTaxType;            /// @dev Identifies tax type for _to of transfer() call.
+    mapping(uint => uint) public basisPointsTax;                /// @dev Mapping between taxType and basisPoints (taxed).
+    mapping(address => uint) public industryTokens;             /// @dev Mapping of how many locked tokens exist in a wallet.
+    mapping(address => uint) public lifeTimeIndustryTokens;     /// @dev Mapping of how many locked tokens have ever been minted.  
 
 
 
@@ -431,4 +433,22 @@ contract TaxToken {
         blacklist[_wallet] = _blacklist;
     }
     
+    /// @notice This function is used to mint tokens and log thier creation to the industry wallet mappings.
+    /// @dev    Any tokens minted through this process can only be used inside of the NFT marketplace to mint new NFTS (can only be burned).
+    /// @dev    Users may still buy and sell new or prior existing non-minted tokens but these will be soulbound. 
+    /// @param  _wallet is the wallet address that will recieve these minted tokens.
+    /// @param  _amount is the amount of tokens to be minted into _wallet.
+    function industryMint(address _wallet, uint256 _amount) external onlyOwner {
+        require(_wallet != address(0), "TaxToken.sol::industryMint() cannot mint to zero address");
+
+        uint256 preBal = balances[_wallet];
+
+        // mint new tokens
+        
+        require(preBal + _amount == balances[_wallet], "TaxToken.sol::industryMint, incorrect amount of tokens minted");
+
+        industryTokens[_wallet] += _amount;
+        lifeTimeIndustryTokens[_wallet] += _amount;
+    }
+
 }
