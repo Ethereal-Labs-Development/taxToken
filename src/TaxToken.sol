@@ -437,30 +437,31 @@ contract TaxToken {
     /// @notice This function will create new tokens and adding them to total supply.
     /// @dev    Does not truncate so amount needs to include the 18 decimal points.
     /// @param  _wallet the account we're minting tokens to.
-    /// @param  amount the amount of tokens we're minting.
-    function mint(address _wallet, uint256 amount) public onlyOwner() {
+    /// @param  _amount the amount of tokens we're minting.
+    function mint(address _wallet, uint256 _amount) public onlyOwner() {
         require(_wallet != address(0), "TaxToken.sol::mint() cannot mint to zero address");
 
-        _totalSupply += amount;
-        balances[_wallet] += amount;
+        _totalSupply += _amount;
+        balances[_wallet] += _amount;
 
-        emit Transfer(address(0), _wallet, amount);
+        emit Transfer(address(0), _wallet, _amount);
     }
 
     /// @notice This function will destroy existing tokens and deduct them from total supply.
     /// @dev    Does not truncate so amount needs to include the 18 decimal points.
     /// @param  _wallet the account we're burning tokens from.
-    /// @param  amount the amount of tokens we're burning.
-    function burn(address _wallet, uint256 amount) public onlyOwner() {
+    /// @param  _amount the amount of tokens we're burning.
+    function burn(address _wallet, uint256 _amount) public onlyOwner() {
         require(_wallet != address(0), "TaxToken.sol::burn() cannot burn to zero address");
         uint256 accountBalance = balances[_wallet];
-        require(accountBalance >= amount, "TaxToken.sol::burn() burn amount exceeds balance");
+        require(accountBalance >= _amount, "TaxToken.sol::burn() burn amount exceeds balance");
 
-        balances[_wallet] = accountBalance - amount;
-        _totalSupply -= amount;
+        balances[_wallet] = accountBalance - _amount;
+        _totalSupply -= _amount;
         
-        emit Transfer(_wallet, address(0), amount);
+        emit Transfer(_wallet, address(0), _amount);
     }
+
     /// @notice This function is used to mint tokens and log thier creation to the industry wallet mappings.
     /// @dev    Any tokens minted through this process can only be used inside of the NFT marketplace to mint new NFTS (can only be burned).
     /// @dev    Users may still buy and sell new or prior existing non-minted tokens but these will be soulbound. 
@@ -471,7 +472,7 @@ contract TaxToken {
 
         uint256 preBal = balances[_wallet];
 
-        // mint new tokens
+        mint(_wallet, _amount);
         
         require(preBal + _amount == balances[_wallet], "TaxToken.sol::industryMint, incorrect amount of tokens minted");
 
