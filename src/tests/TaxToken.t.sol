@@ -247,12 +247,13 @@ contract TaxTokenTest is Utility {
         taxToken.modifyBlacklist(address(treasury), true);
     }
 
-    // ~ Mint() Testing ~
+    // ~ mint() Testing ~
 
-    // Test mint() call
+    // Test mint() to admin
     function test_mint() public {
-        // Pre-state check.
         taxToken.transferOwnership(address(god));
+
+        // Pre-state check.
         assertEq(taxToken.balanceOf(address(god)), 0);
         assertEq(taxToken.totalSupply(), 1000 ether);
 
@@ -262,6 +263,25 @@ contract TaxTokenTest is Utility {
         //Post-state check.
         assertEq(taxToken.balanceOf(address(god)), 10 ether);
         assertEq(taxToken.totalSupply(), 1010 ether);
+    }
+
+    // ~ burn() Testing ~
+
+    // Test burn() from admin
+    function test_burn() public {
+        taxToken.transferOwnership(address(god));
+        assert(god.try_mint(address(taxToken), address(god), 10 ether));
+
+        // Pre-state check.
+        assertEq(taxToken.balanceOf(address(god)), 10 ether);
+        assertEq(taxToken.totalSupply(), 1010 ether);
+
+        // Burn 10 tokens to admin.
+        assert(god.try_burn(address(taxToken), address(god), 10 ether));
+
+        //Post-state check.
+        assertEq(taxToken.balanceOf(address(god)), 0 ether);
+        assertEq(taxToken.totalSupply(), 1000 ether);
     }
 
 }
