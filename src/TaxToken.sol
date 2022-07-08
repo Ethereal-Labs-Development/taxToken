@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import { ITreasury, IUniswapV2Factory, IUniswapV2Router01 } from "./interfaces/ERC20.sol";
+import { ITreasury, IUniswapV2Factory, IUniswapV2Router01 } from "./interfaces/InterfacesAggregated.sol";
 
 /// @dev    The TaxToken is responsible for supporting generic ERC20 functionality including ERC20Pausable functionality.
 ///         The TaxToken will generate taxes on transfer() and transferFrom() calls for non-whitelisted addresses.
@@ -424,6 +424,7 @@ contract TaxToken {
 
     /// @notice This function is used to add or remove wallets from the blacklist.
     /// @dev    Blacklisted wallets cannot perform transfer() or transferFrom().
+    ///         unless it's to or from a whitelisted wallet.
     /// @param  _wallet is the wallet address that will have their blacklist status modified.
     /// @param  _blacklist use True to blacklist a wallet, otherwise use False to remove wallet from blacklist.
     function modifyBlacklist(address _wallet, bool _blacklist) external onlyOwner {
@@ -431,4 +432,31 @@ contract TaxToken {
         blacklist[_wallet] = _blacklist;
     }
     
+    /// @notice This function will create new tokens and adding them to total supply.
+    /// @dev    Does not truncate so amount needs to include the 18 decimal points.
+    /// @param  _wallet the account we're minting tokens to.
+    /// @param  amount the amount of tokens we're minting.
+    function mint(address _wallet, uint256 amount) public onlyOwner() {
+        require(_wallet != address(0), "TaxToken.sol::mint() cannot mint to zero address");
+
+        _totalSupply += amount;
+        balances[_wallet] += amount;
+
+        emit Transfer(address(0), _wallet, amount);
+    }
+
+    /// @notice This function will destroy existing tokens and deduct them from total supply.
+    /// @dev    Does not truncate so amount needs to include the 18 decimal points.
+    /// @param  _wallet the account we're burning tokens from.
+    /// @param  amount the amount of tokens we're burning.
+    function burn(address _wallet, uint256 amount) public onlyOwner() {
+        require(_wallet != address(0), "TaxToken.sol::burn() cannot burn to zero address");
+        uint256 accountBalance = balances[_wallet];
+        require(accountBalance >= amount, "TaxToken.sol::burn() burn amount exceeds balance");
+
+        balances[_wallet] = accountBalance - amount;
+        _totalSupply -= amount;
+        
+        emit Transfer(_wallet, address(0), amount);
+    }
 }

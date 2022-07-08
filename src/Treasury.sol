@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import { IERC20, IUniswapV2Router01, IWETH } from "./interfaces/ERC20.sol";
+import { IERC20, IUniswapV2Router01, IWETH } from "./interfaces/InterfacesAggregated.sol";
 
 
 /// @notice The treasury is responsible for escrow of TaxToken fee's.

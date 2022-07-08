@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.6;
 
-import "../lib/ds-test/src/test.sol";
+import "../../lib/ds-test/src/test.sol";
 import "./Utility.sol";
 
 // Import sol file
-import "./TaxToken.sol";
-import "./Treasury.sol";
+import "../TaxToken.sol";
+import "../Treasury.sol";
 
 // Import interface.
-import { IERC20, IUniswapV2Router01, IWETH } from "./interfaces/ERC20.sol";
+import { IERC20, IUniswapV2Router01, IWETH } from "../interfaces/InterfacesAggregated.sol";
 
 contract UniswapLiquidityPoolSTABLETest is Utility {
 
