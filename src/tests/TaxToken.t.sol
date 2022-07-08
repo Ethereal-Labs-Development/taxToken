@@ -247,4 +247,21 @@ contract TaxTokenTest is Utility {
         taxToken.modifyBlacklist(address(treasury), true);
     }
 
+    // ~ Mint() Testing ~
+
+    // Test mint() call
+    function test_mint() public {
+        // Pre-state check.
+        taxToken.transferOwnership(address(god));
+        assertEq(taxToken.balanceOf(address(god)), 0);
+        assertEq(taxToken.totalSupply(), 1000 ether);
+
+        // Mint 10 tokens to admin.
+        assert(god.try_mint(address(taxToken), address(god), 10 ether));
+
+        //Post-state check.
+        assertEq(taxToken.balanceOf(address(god)), 10 ether);
+        assertEq(taxToken.totalSupply(), 1010 ether);
+    }
+
 }

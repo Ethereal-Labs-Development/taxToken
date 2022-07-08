@@ -84,7 +84,7 @@ contract Utility is DSTest {
     /**************************************/
     /*** Actor/Multisig Setup Functions ***/
     /**************************************/
-    function createTrader() public {
+    function createActors() public {
         joe = new Actor();
         god = new Actor();
     }

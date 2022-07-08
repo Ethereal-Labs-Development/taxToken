@@ -44,5 +44,4 @@ contract Actor {
         string memory sig = "decreaseAllowance(address,uint256)";
         (ok,) = address(token).call(abi.encodeWithSignature(sig, account, amt));
     }
-
 }
