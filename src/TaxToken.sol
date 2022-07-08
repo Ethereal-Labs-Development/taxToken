@@ -433,8 +433,9 @@ contract TaxToken {
     }
     
     /// @notice This function will create new tokens and adding them to total supply.
-    /// @param _wallet the account we're minting tokens to.
-    /// @param amount the amount of tokens we're minting.
+    /// @dev    Does not truncate so amount needs to include the 18 decimal points.
+    /// @param  _wallet the account we're minting tokens to.
+    /// @param  amount the amount of tokens we're minting.
     function mint(address _wallet, uint256 amount) public onlyOwner() {
         require(_wallet != address(0), "TaxToken.sol::mint() cannot mint to zero address");
         _totalSupply += amount;
@@ -443,8 +444,9 @@ contract TaxToken {
     }
 
     /// @notice This function will destroy existing tokens and deduct them from total supply.
-    /// @param _wallet the account we're burning tokens from.
-    /// @param amount the amount of tokens we're burning.
+    /// @dev    Does not truncate so amount needs to include the 18 decimal points.
+    /// @param  _wallet the account we're burning tokens from.
+    /// @param  amount the amount of tokens we're burning.
     function burn(address _wallet, uint256 amount) public onlyOwner() {
         require(_wallet != address(0), "TaxToken.sol::burn() cannot burn to zero address");
         uint256 accountBalance = balances[_wallet];
