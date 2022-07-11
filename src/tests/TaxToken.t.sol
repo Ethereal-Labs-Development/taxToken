@@ -265,6 +265,39 @@ contract TaxTokenTest is Utility {
         assertEq(taxToken.totalSupply(), 1010 ether);
     }
 
+    function test_industryMint() public {
+        taxToken.transferOwnership(address(god));
+
+        // Pre-state check.
+        assertEq(taxToken.balanceOf(address(god)), 0);
+        assertEq(taxToken.totalSupply(), 1000 ether);
+
+        // Mint 10 tokens to joe.
+        assert(god.try_mint(address(taxToken), address(joe), 10 ether));
+
+        // Mint 10 tokens to joe.
+        assert(god.try_industryMint(address(taxToken), address(joe), 10 ether));
+
+        //Post-state check.
+        assertEq(taxToken.balanceOf(address(joe)), 20 ether);
+        assertEq(taxToken.industryTokens(address(joe)),10 ether);
+        assertEq(taxToken.lifeTimeIndustryTokens(address(joe)),10 ether);
+        assertEq(taxToken.totalSupply(), 1020 ether);
+
+        // Mint 10 tokens to joe.
+        assert(god.try_industryMint(address(taxToken), address(joe), 10 ether));
+
+    }
+
+    // Test mint() by a non-admin
+    function test_malicousMint() public {
+        // Joe attempts to mint himself tokens
+        assert(!joe.try_mint(address(taxToken), address(joe), 10 ether));
+    }
+
+    //TODO: Test sending restrictions
+    //TODO: Test burning restrictions
+
     // ~ burn() Testing ~
 
     // Test burn() from admin
@@ -283,5 +316,61 @@ contract TaxTokenTest is Utility {
         assertEq(taxToken.balanceOf(address(god)), 0 ether);
         assertEq(taxToken.totalSupply(), 1000 ether);
     }
+
+    function test_industryBurn_noLocked() public {
+        taxToken.transferOwnership(address(god));
+        assert(god.try_mint(address(taxToken), address(god), 10 ether));
+
+        // Pre-state check.
+        assertEq(taxToken.balanceOf(address(god)), 10 ether);
+        assertEq(taxToken.totalSupply(), 1010 ether);
+
+        // Burn 10 tokens to admin.
+        assert(god.try_industryBurn(address(taxToken), address(god), 10 ether));
+
+        //Post-state check.
+        assertEq(taxToken.balanceOf(address(god)), 0 ether);
+        assertEq(taxToken.totalSupply(), 1000 ether);
+    }
+
+    function test_industryBurn_someLocked() public {
+        taxToken.transferOwnership(address(god));
+        assert(god.try_mint(address(taxToken), address(god), 10 ether));
+        assert(god.try_industryMint(address(taxToken), address(god), 10 ether));
+
+        // Pre-state check.
+        assertEq(taxToken.balanceOf(address(god)), 20 ether);
+        assertEq(taxToken.totalSupply(), 1020 ether);
+
+        // Burn 10 tokens to admin.
+        assert(god.try_industryBurn(address(taxToken), address(god), 15 ether));
+
+        //Post-state check.
+        assertEq(taxToken.balanceOf(address(god)), 5 ether);
+        assertEq(taxToken.totalSupply(), 1005 ether);
+    }
+
+    function test_industryBurn_allLocked() public {
+        taxToken.transferOwnership(address(god));
+        assert(god.try_industryMint(address(taxToken), address(god), 10 ether));
+
+        // Pre-state check.
+        assertEq(taxToken.balanceOf(address(god)), 10 ether);
+        assertEq(taxToken.totalSupply(), 1010 ether);
+
+        // Burn 10 tokens to admin.
+        assert(god.try_industryBurn(address(taxToken), address(god), 10 ether));
+
+        //Post-state check.
+        assertEq(taxToken.balanceOf(address(god)), 0 ether);
+        assertEq(taxToken.totalSupply(), 1000 ether);
+    }
+
+    // Test burn() by a non-admin
+    function test_malicousBurn() public {
+        // Joe attempts to mint himself tokens
+        assert(!joe.try_burn(address(taxToken), address(joe), 10 ether));
+    }
+
 
 }

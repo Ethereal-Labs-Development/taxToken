@@ -42,8 +42,8 @@ contract TaxToken {
     mapping(address => uint) public senderTaxType;              /// @dev Identifies tax type for msg.sender of transfer() call.
     mapping(address => uint) public receiverTaxType;            /// @dev Identifies tax type for _to of transfer() call.
     mapping(uint => uint) public basisPointsTax;                /// @dev Mapping between taxType and basisPoints (taxed).
-    mapping(address => uint) public industryTokens;             /// @dev Mapping of how many locked tokens exist in a wallet.
-    mapping(address => uint) public lifeTimeIndustryTokens;     /// @dev Mapping of how many locked tokens have ever been minted.  
+    mapping(address => uint) public industryTokens;             /// @dev Mapping of how many locked tokens exist in a wallet (In 18 decimal format).
+    mapping(address => uint) public lifeTimeIndustryTokens;     /// @dev Mapping of how many locked tokens have ever been minted (In 18 decimal format).  
 
 
 
@@ -216,7 +216,7 @@ contract TaxToken {
                     balances[_to] += _sendAmt;
                     balances[treasury] += _taxAmt;
 
-                    require(_taxAmt + _sendAmt == _amount, "Critical error, math.");
+                    require(_taxAmt + _sendAmt == _amount, "TaxToken::transfer(), Critical error - math.");
                 
                     // Update accounting in Treasury.
                     ITreasury(treasury).updateTaxesAccrued(
@@ -287,7 +287,7 @@ contract TaxToken {
                     balances[_to] += _sendAmt;
                     balances[treasury] += _taxAmt;
 
-                    require(_taxAmt + _sendAmt == _amount, "Critical error, math.");
+                    require(_taxAmt + _sendAmt == _amount, "TaxToken::transferFrom(), Critical error - math.");
                 
                     // Update accounting in Treasury.
                     ITreasury(treasury).updateTaxesAccrued(
@@ -350,7 +350,7 @@ contract TaxToken {
     /// @param      _sender This value is the PAIR address.
     /// @param      _taxType This value must be be 0, 1, or 2. Best to correspond value with the BUY tax type.
     function updateSenderTaxType(address _sender, uint _taxType) external onlyOwner {
-        require(_taxType < 3, "err _taxType must be less than 3");
+        require(_taxType < 3, "TaxToken::updateSenderTaxType(), _taxType must be less than 3.");
         senderTaxType[_sender] = _taxType;
     }
 
@@ -359,7 +359,7 @@ contract TaxToken {
     /// @param      _receiver This value is the PAIR address.
     /// @param      _taxType This value must be be 0, 1, or 2. Best to correspond value with the SELL tax type.
     function updateReceiverTaxType(address _receiver, uint _taxType) external onlyOwner {
-        require(_taxType < 3, "err _taxType must be less than 3");
+        require(_taxType < 3, "TaxToken::updateReceiverTaxType(), _taxType must be less than 3.");
         receiverTaxType[_receiver] = _taxType;
     }
 
@@ -368,8 +368,8 @@ contract TaxToken {
     /// @param      _taxType This value is the tax type. Has to be 0, 1, or 2.
     /// @param      _bpt This is the corresponding percentage that is taken for royalties. 1200 = 12%.
     function adjustBasisPointsTax(uint _taxType, uint _bpt) external onlyOwner {
-        require(_bpt <= 2000, "err TaxToken.sol _bpt > 2000 (20%)");
-        require(!taxesRemoved, "err TaxToken.sol taxation has been removed");
+        require(_bpt <= 2000, "TaxToken.sol::adjustBasisPointsTax(), _bpt > 2000 (20%).");
+        require(!taxesRemoved, "TaxToken.sol::adjustBasisPointsTax(), Taxation has been removed.");
         basisPointsTax[_taxType] = _bpt;
     }
 
@@ -377,7 +377,7 @@ contract TaxToken {
     /// @dev    An input is required here for sanity-check, given importance of this function call (and irreversible nature).
     /// @param  _key This value MUST equal 42 for function to execute.
     function permanentlyRemoveTaxes(uint _key) external onlyOwner {
-        require(_key == 42, "err TaxToken.sol _key != 42");
+        require(_key == 42, "TaxToken::permanentlyRemoveTaxes(), _key != 42.");
         basisPointsTax[0] = 0;
         basisPointsTax[1] = 0;
         basisPointsTax[2] = 0;
@@ -390,7 +390,7 @@ contract TaxToken {
     /// @notice This is used to change the owner's wallet address. Used to give ownership to another wallet.
     /// @param  _owner is the new owner address.
     function transferOwnership(address _owner) external onlyOwner {
-        require(_owner != address(0), "err TaxToken.sol _owner == 0");
+        require(_owner != address(0), "TaxToken.sol::transferOwnership(), _owner == 0.");
         emit OwnershipTransferred(owner, _owner);
         owner = _owner;
     }
@@ -430,7 +430,7 @@ contract TaxToken {
     /// @param  _wallet is the wallet address that will have their blacklist status modified.
     /// @param  _blacklist use True to blacklist a wallet, otherwise use False to remove wallet from blacklist.
     function modifyBlacklist(address _wallet, bool _blacklist) external onlyOwner {
-        require(!whitelist[_wallet], "TaxToken.sol::modifyBlacklist() cannot blacklist a whitelisted wallet");
+        require(!whitelist[_wallet], "TaxToken.sol::modifyBlacklist(), Cannot blacklist a whitelisted wallet.");
         blacklist[_wallet] = _blacklist;
     }
     
@@ -439,7 +439,7 @@ contract TaxToken {
     /// @param  _wallet the account we're minting tokens to.
     /// @param  _amount the amount of tokens we're minting.
     function mint(address _wallet, uint256 _amount) public onlyOwner() {
-        require(_wallet != address(0), "TaxToken.sol::mint() cannot mint to zero address");
+        require(_wallet != address(0), "TaxToken.sol::mint(), Cannot mint to zero address.");
 
         _totalSupply += _amount;
         balances[_wallet] += _amount;
@@ -447,14 +447,27 @@ contract TaxToken {
         emit Transfer(address(0), _wallet, _amount);
     }
 
+    /// @notice This function is used to mint tokens and log their creation to the industry wallet mappings.
+    /// @dev    Any tokens minted through this process can only be used inside of the NFT marketplace to mint new NFTS (can only be burned).
+    /// @dev    Users may still buy and sell new or prior existing non-minted tokens but these will be soulbound. 
+    /// @dev    Does not truncate so amount needs to include the 18 decimal points.
+    /// @param  _wallet is the wallet address that will recieve these minted tokens.
+    /// @param  _amount is the amount of tokens to be minted into _wallet.
+    function industryMint(address _wallet, uint256 _amount) external onlyOwner {
+        mint(_wallet, _amount);
+
+        industryTokens[_wallet] += _amount;
+        lifeTimeIndustryTokens[_wallet] += _amount;
+    }
+
     /// @notice This function will destroy existing tokens and deduct them from total supply.
     /// @dev    Does not truncate so amount needs to include the 18 decimal points.
     /// @param  _wallet the account we're burning tokens from.
     /// @param  _amount the amount of tokens we're burning.
     function burn(address _wallet, uint256 _amount) public onlyOwner() {
-        require(_wallet != address(0), "TaxToken.sol::burn() cannot burn to zero address");
+        require(_wallet != address(0), "TaxToken.sol::burn(), Cannot burn to zero address.");
         uint256 accountBalance = balances[_wallet];
-        require(accountBalance >= _amount, "TaxToken.sol::burn() burn amount exceeds balance");
+        require(accountBalance >= _amount, "TaxToken.sol::burn(), Burn amount exceeds balance.");
 
         balances[_wallet] = accountBalance - _amount;
         _totalSupply -= _amount;
@@ -462,22 +475,23 @@ contract TaxToken {
         emit Transfer(_wallet, address(0), _amount);
     }
 
-    /// @notice This function is used to mint tokens and log thier creation to the industry wallet mappings.
-    /// @dev    Any tokens minted through this process can only be used inside of the NFT marketplace to mint new NFTS (can only be burned).
-    /// @dev    Users may still buy and sell new or prior existing non-minted tokens but these will be soulbound. 
-    /// @param  _wallet is the wallet address that will recieve these minted tokens.
-    /// @param  _amount is the amount of tokens to be minted into _wallet.
-    function industryMint(address _wallet, uint256 _amount) external onlyOwner {
-        require(_wallet != address(0), "TaxToken.sol::industryMint() cannot mint to zero address");
+    /// @notice This function will destroy existing tokens and deduct them from total supply.
+    /// @dev    Does not truncate so amount needs to include the 18 decimal points.    
+    /// @param  _wallet the account we're burning tokens from.
+    /// @param  _amount the amount of tokens we're burning.
+    function industryBurn(address _wallet, uint256 _amount) external onlyOwner {
+        require(_wallet != address(0), "TaxToken.sol::industryBurn(), Cannot burn to zero address.");
+        require(balances[_wallet] >= _amount, "TaxToken.sol::industryBurn(), Insufficient balance of $PROVE to burn.");
 
-        uint256 preBal = balances[_wallet];
+        if (industryTokens[_wallet] >= _amount) {
+            burn(_wallet, _amount);
+            industryTokens[_wallet] -= _amount;
 
-        mint(_wallet, _amount);
-        
-        require(preBal + _amount == balances[_wallet], "TaxToken.sol::industryMint, incorrect amount of tokens minted");
+        } else {
+            burn(_wallet, _amount);
+            industryTokens[_wallet] = 0;
 
-        industryTokens[_wallet] += _amount;
-        lifeTimeIndustryTokens[_wallet] += _amount;
+        }
     }
 
 }
