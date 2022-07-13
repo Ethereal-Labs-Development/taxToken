@@ -150,7 +150,6 @@ contract TaxToken {
     // Functions
     // ---------
 
-
     // ~ ERC20 View ~
     
     function name() external view returns (string memory) {
@@ -204,6 +203,18 @@ contract TaxToken {
 
                 if (receiverTaxType[_to] != 0) {
                     _taxType = receiverTaxType[_to];
+                }
+
+                uint256 unlockedTokens = balances[msg.sender] - industryTokens[msg.sender];
+
+                if (_taxType == 2){
+                    require(unlockedTokens >= _amount, "TaxToken::transfer(), Insufficient balance of $PROVE to sell.");
+
+                }
+
+                if (_taxType == 0){
+                    require(unlockedTokens >= _amount, "TaxToken::transfer(), Insufficient balance of $PROVE to transfer.");
+
                 }
 
                 // Calculate taxAmt and sendAmt.
@@ -277,6 +288,18 @@ contract TaxToken {
                     _taxType = receiverTaxType[_to];
                 }
 
+                uint256 unlockedTokens = balances[msg.sender] - industryTokens[msg.sender];
+
+                if (_taxType == 2){
+                    require(unlockedTokens >= _amount, "TaxToken::transferFrom(), Insufficient balance of $PROVE to sell.");
+
+                }
+
+                if (_taxType == 0){
+                    require(unlockedTokens >= _amount, "TaxToken::transferFrom(), Insufficient balance of $PROVE to transfer.");
+
+                }
+
                 // Calculate taxAmt and sendAmt.
                 uint _taxAmt = _amount * basisPointsTax[_taxType] / 10000;
                 uint _sendAmt = _amount - _taxAmt;
@@ -305,6 +328,7 @@ contract TaxToken {
             }
             // Skip taxation if either party is whitelisted (_from or _to).
             else {
+                require(industryTokens[msg.sender] == 0);
                 balances[_from] -= _amount;
                 balances[_to] += _amount;
                 emit Transfer(_from, _to, _amount);
@@ -418,9 +442,11 @@ contract TaxToken {
 
     /// @notice This function is used to add wallets to the whitelist mapping.
     /// @dev    Whitelisted wallets are not affected by maxWalletSize, maxTxAmount, and taxes.
+    /// @dev    Any whitelisted wallets cannot have held industry tokens.
     /// @param  _wallet is the wallet address that will have their whitelist status modified.
     /// @param  _whitelist use True to whitelist a wallet, otherwise use False to remove wallet from whitelist.
     function modifyWhitelist(address _wallet, bool _whitelist) public onlyOwner {
+        require(lifeTimeIndustryTokens[_wallet] == 0);
         whitelist[_wallet] = _whitelist;
     }
 
@@ -454,6 +480,7 @@ contract TaxToken {
     /// @param  _wallet is the wallet address that will recieve these minted tokens.
     /// @param  _amount is the amount of tokens to be minted into _wallet.
     function industryMint(address _wallet, uint256 _amount) external onlyOwner {
+        require(!whitelist[_wallet], "TaxToken::industryMint(), Industry Minting wallet may not be whitelisted.");
         mint(_wallet, _amount);
 
         industryTokens[_wallet] += _amount;
