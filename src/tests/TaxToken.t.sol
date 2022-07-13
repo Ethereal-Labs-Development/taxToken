@@ -158,6 +158,21 @@ contract TaxTokenTest is Utility {
         taxToken.transfer(address(69), 1 ether);
     }
 
+    // Verifies you cannot whitelist industry wallets.
+    function test_industryWhitelist() public {
+        taxToken.transferOwnership(address(god));
+
+        // IndustryMint 10 tokens to joe.
+        assert(god.try_industryMint(address(taxToken), address(joe), 10 ether));
+
+        assert(!god.try_modifyWhitelist(address(taxToken), address(joe), true));
+
+        // Mint 10 tokens to bob.
+        assert(god.try_mint(address(taxToken), address(bob), 10 ether));    
+
+        assert(god.try_modifyWhitelist(address(taxToken), address(bob), true));
+    }
+
     // This tests once a whitelisted wallet calls a transfer, they receive the full amount of tokens.
     function test_whitelist_balance() public {
         taxToken.modifyWhitelist(address(69), true);

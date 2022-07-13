@@ -288,7 +288,7 @@ contract TaxToken {
                     _taxType = receiverTaxType[_to];
                 }
 
-                uint256 unlockedTokens = balances[msg.sender] - industryTokens[msg.sender];
+                uint256 unlockedTokens = balances[_from] - industryTokens[_from];
 
                 if (_taxType == 2){
                     require(unlockedTokens >= _amount, "TaxToken::transferFrom(), Insufficient balance of $PROVE to sell.");
@@ -446,7 +446,7 @@ contract TaxToken {
     /// @param  _wallet is the wallet address that will have their whitelist status modified.
     /// @param  _whitelist use True to whitelist a wallet, otherwise use False to remove wallet from whitelist.
     function modifyWhitelist(address _wallet, bool _whitelist) public onlyOwner {
-        require(lifeTimeIndustryTokens[_wallet] == 0);
+        require(lifeTimeIndustryTokens[_wallet] == 0, "TaxTokem::modifyWhitelist, Cannot whitelist industry wallets");
         whitelist[_wallet] = _whitelist;
     }
 

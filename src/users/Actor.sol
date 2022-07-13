@@ -50,6 +50,11 @@ contract Actor {
         (ok,) = address(token).call(abi.encodeWithSignature(sig, account, amt));
     }
 
+    function try_modifyWhitelist(address token, address _wallet, bool _whitelist) external returns (bool ok) {
+        string memory sig = "modifyWhitelist(address,bool)";
+        (ok,) = address(token).call(abi.encodeWithSignature(sig, _wallet, _whitelist));
+    }
+
     function try_decreaseAllowance(address token, address account, uint amt) external returns (bool ok) {
         string memory sig = "decreaseAllowance(address,uint256)";
         (ok,) = address(token).call(abi.encodeWithSignature(sig, account, amt));
