@@ -29,7 +29,7 @@ contract Treasury {
     mapping(uint => TaxDistribution) public taxSettings;    /// @dev Mapping of taxType to TaxDistribution struct.
 
     mapping(address => uint) public distributionsTaxToken;  /// @dev Tracks amount of taxToken distributed to recipients.
-    mapping(address => uint) public distributionsWETH;      /// @dev Tracks amount of WETH distributed to recipients.
+    mapping(address => uint) public distributionsDAI;      /// @dev Tracks amount of WETH distributed to recipients.
  
     /// @notice Manages how TaxToken is distributed for a given taxType.
     ///         Variables:
@@ -175,13 +175,15 @@ contract Treasury {
                 uint amountToSell = amountToDistribute * sumPercentSell / 100;
 
                 address WETH = IUniswapV2Router01(UNIV2_ROUTER).WETH();
+                address DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
                 assert(IERC20(taxToken).approve(address(UNIV2_ROUTER), amountToSell));
 
-                address[] memory path_uni_v2 = new address[](2);
+                address[] memory path_uni_v2 = new address[](3);
 
                 path_uni_v2[0] = taxToken;
                 path_uni_v2[1] = WETH;
+                path_uni_v2[2] = DAI;
 
                 IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokens(
                     amountToSell,           
@@ -191,13 +193,14 @@ contract Treasury {
                     block.timestamp + 30000
                 );
 
-                uint balanceWETH = IERC20(WETH).balanceOf(address(this));
+                //uint balanceWETH = IERC20(WETH).balanceOf(address(this));
+                uint balanceDAI = IERC20(DAI).balanceOf(address(this));
 
                 for (uint i = 0; i < taxSettings[taxType].wallets.length; i++) {
                     if (taxSettings[taxType].convertToAsset[i] != taxToken) {
-                        uint amt = balanceWETH * taxSettings[taxType].percentDistribution[i] / sumPercentSell;
-                        assert(IERC20(WETH).transfer(taxSettings[taxType].wallets[i], amt));
-                        distributionsWETH[taxSettings[taxType].wallets[i]] += amt;
+                        uint amt = balanceDAI * taxSettings[taxType].percentDistribution[i] / sumPercentSell;
+                        assert(IERC20(DAI).transfer(taxSettings[taxType].wallets[i], amt));
+                        distributionsDAI[taxSettings[taxType].wallets[i]] += amt;
                         emit RoyaltiesDistributed(taxSettings[taxType].wallets[i], amt, taxToken);
                     }
                 }
