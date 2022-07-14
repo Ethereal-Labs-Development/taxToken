@@ -46,7 +46,7 @@ contract TaxToken {
     mapping(address => uint256) public lifeTimeIndustryTokens;     /// @dev Mapping of how many locked tokens have ever been minted (In 18 decimal format).  
     mapping(address => uint256) public bigBuyLockedTokens;         /// @dev Mapping of how many locked tokens are still restricted (In 18 decimal format).
                                                                    /// TODO: Make it so every day this number is reduced by 1 maxTxAmount value.
-
+                                                                /// TODO: Put mappings into an array
     // -----------
     // Constructor
     // -----------
