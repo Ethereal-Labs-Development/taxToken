@@ -288,7 +288,7 @@ contract TaxToken {
             // Take a tax from them if neither party is whitelisted.
             if (!whitelist[_to] && !whitelist[_from]) {
 
-                if ((_amount > maxTxAmount) || (blacklist[msg.sender] || blacklist[_to])) {
+                if ((blacklist[msg.sender] || blacklist[_to])) {
                     return false;
                 }
 
@@ -303,7 +303,17 @@ contract TaxToken {
 
                 uint256 unlockedTokens = balances[_from] - industryTokens[_from];
 
+                if ((_taxType == 1) && (_amount >= maxTxAmount)){ //If buy and greater than maxTxAmount, allow buy and add to locked list.
+                    bigBuyLockedTokens[_from] += _amount;
+
+                }
+
                 if (_taxType == 2){
+                    if (_amount > maxTxAmount) {    //If sell and greater than maxTxAmount, revert.
+                        return false;
+
+                    }
+
                     require(unlockedTokens >= _amount, "TaxToken::transferFrom(), Insufficient balance of $PROVE to sell.");
 
                 }
