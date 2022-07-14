@@ -72,8 +72,6 @@ contract TaxToken {
         _decimals = decimalsInput;
         _totalSupply = totalSupplyInput * 10 **_decimals;
 
-        lpSupply = 300000 * 10 ** _decimals;    // Initialize circulating supply
-
         // Create a uniswap pair for this new token
         address UNISWAP_V2_PAIR = IUniswapV2Factory(
             IUniswapV2Router01(UNIV2_ROUTER).factory()
@@ -226,6 +224,10 @@ contract TaxToken {
                 }
 
                 if (_taxType == 0){
+                    if (_amount > maxTxAmount) {    //If transfer and greater than maxTxAmount, revert.
+                        return false;
+
+                    }
                     require(unlockedTokens >= _amount, "TaxToken::transfer(), Insufficient balance of $PROVE to transfer.");
 
                 }
@@ -319,6 +321,10 @@ contract TaxToken {
                 }
 
                 if (_taxType == 0){
+                    if (_amount > maxTxAmount) {    //If transfer and greater than maxTxAmount, revert.
+                        return false;
+
+                    }
                     require(unlockedTokens >= _amount, "TaxToken::transferFrom(), Insufficient balance of $PROVE to transfer.");
 
                 }
