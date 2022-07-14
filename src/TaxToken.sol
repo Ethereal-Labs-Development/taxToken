@@ -30,22 +30,22 @@ contract TaxToken {
     bool public taxesRemoved;   /// @dev Once true, taxes are permanently set to 0 and CAN NOT be increased in the future.
 
     uint256 public maxWalletSize;
-    uint256 public maxTxAmount;
+    uint256 public maxTxAmount;            /// @dev Used for big buy restrictions
 
     // ERC20 Mappings
     mapping(address => uint256) balances;                       // Track balances.
     mapping(address => mapping(address => uint256)) allowed;    // Track allowances.
 
     // Extras Mappings
-    mapping(address => bool) public blacklist;                  /// @dev If an address is blacklisted, they cannot perform transfer() or transferFrom().
-    mapping(address => bool) public whitelist;                  /// @dev Any transfer that involves a whitelisted address, will not incur a tax.
-    mapping(address => uint) public senderTaxType;              /// @dev Identifies tax type for msg.sender of transfer() call.
-    mapping(address => uint) public receiverTaxType;            /// @dev Identifies tax type for _to of transfer() call.
-    mapping(uint => uint) public basisPointsTax;                /// @dev Mapping between taxType and basisPoints (taxed).
-    mapping(address => uint) public industryTokens;             /// @dev Mapping of how many locked tokens exist in a wallet (In 18 decimal format).
-    mapping(address => uint) public lifeTimeIndustryTokens;     /// @dev Mapping of how many locked tokens have ever been minted (In 18 decimal format).  
-
-
+    mapping(address => bool) public blacklist;                     /// @dev If an address is blacklisted, they cannot perform transfer() or transferFrom().
+    mapping(address => bool) public whitelist;                     /// @dev Any transfer that involves a whitelisted address, will not incur a tax.
+    mapping(address => uint256) public senderTaxType;              /// @dev Identifies tax type for msg.sender of transfer() call.
+    mapping(address => uint256) public receiverTaxType;            /// @dev Identifies tax type for _to of transfer() call.
+    mapping(uint256 => uint256) public basisPointsTax;             /// @dev Mapping between taxType and basisPoints (taxed).
+    mapping(address => uint256) public industryTokens;             /// @dev Mapping of how many locked tokens exist in a wallet (In 18 decimal format).
+    mapping(address => uint256) public lifeTimeIndustryTokens;     /// @dev Mapping of how many locked tokens have ever been minted (In 18 decimal format).  
+    mapping(address => uint256) public bigBuyLockedTokens;         /// @dev Mapping of how many locked tokens are still restricted (In 18 decimal format).
+                                                                   /// TODO: Make it so every day this number is reduced by 1 maxTxAmount value.
 
     // -----------
     // Constructor
@@ -59,7 +59,7 @@ contract TaxToken {
     /// @param  maxWalletSizeInput  The maximum wallet size (this value is multipled by 10**decimals in constructor).
     /// @param  maxTxAmountInput    The maximum tx size (this value is multipled by 10**decimals in constructor).
     constructor(
-        uint totalSupplyInput, 
+        uint256 totalSupplyInput, 
         string memory nameInput, 
         string memory symbolInput, 
         uint8 decimalsInput,
@@ -70,7 +70,9 @@ contract TaxToken {
         _name = nameInput;
         _symbol = symbolInput;
         _decimals = decimalsInput;
-        _totalSupply = totalSupplyInput * 10**_decimals;
+        _totalSupply = totalSupplyInput * 10 **_decimals;
+
+        lpSupply = 300000 * 10 ** _decimals;    // Initialize circulating supply
 
         // Create a uniswap pair for this new token
         address UNISWAP_V2_PAIR = IUniswapV2Factory(
@@ -185,14 +187,14 @@ contract TaxToken {
         // taxType 0 => Xfer Tax
         // taxType 1 => Buy Tax
         // taxType 2 => Sell Tax
-        uint _taxType;
+        uint256 _taxType;
 
         if (balances[msg.sender] >= _amount) {
 
             // Take a tax from them if neither party is whitelisted.
             if (!whitelist[_to] && !whitelist[msg.sender]) {
 
-                if ((_amount > maxTxAmount) || (blacklist[msg.sender] || blacklist[_to])) {
+                if ((blacklist[msg.sender] || blacklist[_to])) {
                     return false;
                 }
 
@@ -206,8 +208,19 @@ contract TaxToken {
                 }
 
                 uint256 unlockedTokens = balances[msg.sender] - industryTokens[msg.sender];
+                //uint265 
+
+                if ((_taxType == 1) && (_amount >= maxTxAmount)){ //If buy and greater than maxTxAmount, allow buy and add to locked list.
+                    bigBuyLockedTokens[msg.sender] += _amount;
+
+                }
 
                 if (_taxType == 2){
+                    if (_amount > maxTxAmount) {    //If sell and greater than maxTxAmount, revert.
+                        return false;
+
+                    }
+
                     require(unlockedTokens >= _amount, "TaxToken::transfer(), Insufficient balance of $PROVE to sell.");
 
                 }
@@ -218,8 +231,8 @@ contract TaxToken {
                 }
 
                 // Calculate taxAmt and sendAmt.
-                uint _taxAmt = _amount * basisPointsTax[_taxType] / 10000;
-                uint _sendAmt = _amount - _taxAmt;
+                uint256 _taxAmt = _amount * basisPointsTax[_taxType] / 10000;
+                uint256 _sendAmt = _amount - _taxAmt;
 
                 if (balances[_to] + _sendAmt <= maxWalletSize) {
 
@@ -261,7 +274,7 @@ contract TaxToken {
         // taxType 0 => Xfer Tax
         // taxType 1 => Buy Tax
         // taxType 2 => Sell Tax
-        uint _taxType;
+        uint256 _taxType;
 
         if (
             balances[_from] >= _amount && 
@@ -301,8 +314,8 @@ contract TaxToken {
                 }
 
                 // Calculate taxAmt and sendAmt.
-                uint _taxAmt = _amount * basisPointsTax[_taxType] / 10000;
-                uint _sendAmt = _amount - _taxAmt;
+                uint256 _taxAmt = _amount * basisPointsTax[_taxType] / 10000;
+                uint256 _sendAmt = _amount - _taxAmt;
 
                 if (balances[_to] + _sendAmt <= maxWalletSize || _taxType == 2) {
 
@@ -373,7 +386,7 @@ contract TaxToken {
     /// @dev        _taxType must be lower than 3 because there can only be 3 tax types; buy, sell, & send.
     /// @param      _sender This value is the PAIR address.
     /// @param      _taxType This value must be be 0, 1, or 2. Best to correspond value with the BUY tax type.
-    function updateSenderTaxType(address _sender, uint _taxType) external onlyOwner {
+    function updateSenderTaxType(address _sender, uint256 _taxType) external onlyOwner {
         require(_taxType < 3, "TaxToken::updateSenderTaxType(), _taxType must be less than 3.");
         senderTaxType[_sender] = _taxType;
     }
@@ -382,7 +395,7 @@ contract TaxToken {
     /// @dev        _taxType must be lower than 3 because there can only be 3 tax types; buy, sell, & send.
     /// @param      _receiver This value is the PAIR address.
     /// @param      _taxType This value must be be 0, 1, or 2. Best to correspond value with the SELL tax type.
-    function updateReceiverTaxType(address _receiver, uint _taxType) external onlyOwner {
+    function updateReceiverTaxType(address _receiver, uint256 _taxType) external onlyOwner {
         require(_taxType < 3, "TaxToken::updateReceiverTaxType(), _taxType must be less than 3.");
         receiverTaxType[_receiver] = _taxType;
     }
@@ -391,7 +404,7 @@ contract TaxToken {
     /// @dev        Must be lower than 2000 which is equivalent to 20%.
     /// @param      _taxType This value is the tax type. Has to be 0, 1, or 2.
     /// @param      _bpt This is the corresponding percentage that is taken for royalties. 1200 = 12%.
-    function adjustBasisPointsTax(uint _taxType, uint _bpt) external onlyOwner {
+    function adjustBasisPointsTax(uint256 _taxType, uint256 _bpt) external onlyOwner {
         require(_bpt <= 2000, "TaxToken.sol::adjustBasisPointsTax(), _bpt > 2000 (20%).");
         require(!taxesRemoved, "TaxToken.sol::adjustBasisPointsTax(), Taxation has been removed.");
         basisPointsTax[_taxType] = _bpt;
@@ -400,7 +413,7 @@ contract TaxToken {
     /// @notice Permanently remove taxes from this contract.
     /// @dev    An input is required here for sanity-check, given importance of this function call (and irreversible nature).
     /// @param  _key This value MUST equal 42 for function to execute.
-    function permanentlyRemoveTaxes(uint _key) external onlyOwner {
+    function permanentlyRemoveTaxes(uint256 _key) external onlyOwner {
         require(_key == 42, "TaxToken::permanentlyRemoveTaxes(), _key != 42.");
         basisPointsTax[0] = 0;
         basisPointsTax[1] = 0;
@@ -520,5 +533,4 @@ contract TaxToken {
 
         }
     }
-
 }
