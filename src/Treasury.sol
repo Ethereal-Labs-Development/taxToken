@@ -177,7 +177,7 @@ contract Treasury {
                 uint amountToSell = amountToDistribute * sumPercentToSell / 100;
 
                 address WETH = IUniswapV2Router01(UNIV2_ROUTER).WETH();
-                address DAI  = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+                address DAI  = 0x6B175474E89094C44Da98b954EedeAC495271d0F; // change if on testnet
 
                 assert(IERC20(taxToken).approve(address(UNIV2_ROUTER), amountToSell));
 
@@ -203,7 +203,7 @@ contract Treasury {
                         uint amt = balanceDAI * taxSettings[taxType].percentDistribution[i] / sumPercentToSell;
 
                         assert(IERC20(DAI).transfer(taxSettings[taxType].wallets[i], amt));
-                        
+
                         distributionsDAI[taxSettings[taxType].wallets[i]] += amt;
                         emit RoyaltiesDistributed(taxSettings[taxType].wallets[i], amt, taxToken);
                     }
@@ -241,7 +241,7 @@ contract Treasury {
     /// @param  token The token to withdraw from the treasury.
     function safeWithdraw(address token) external isAdmin {
         require(token != taxToken, "err cannot withdraw native tokens from this contract");
-        IERC20(token).transfer(msg.sender, IERC20(token).balanceOf(address(this)));
+        assert(IERC20(token).transfer(msg.sender, IERC20(token).balanceOf(address(this))));
     }
 
     /// @notice Change the admin for the treasury.
