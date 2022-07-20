@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import { ITreasury, IUniswapV2Factory, IUniswapV2Router01 } from "./interfaces/InterfacesAggregated.sol";
+import { IERC20, ITreasury, IUniswapV2Factory, IUniswapV2Router01 } from "./interfaces/InterfacesAggregated.sol";
 
 /// @dev    The TaxToken is responsible for supporting generic ERC20 functionality including ERC20Pausable functionality.
 ///         The TaxToken will generate taxes on transfer() and transferFrom() calls for non-whitelisted addresses.
@@ -492,6 +492,20 @@ contract TaxToken {
             industryTokens[_wallet] = 0;
 
         }
+    }
+
+    /// @notice This function is a VIEW function that returns the amount of industry tokens,
+    ///         full balance, and normal tokens a wallet has.
+    /// @dev    This function is for the front end to pull industry data for a specific wallet.
+    /// @return numTokens the amount of taxTokens the _wallet holds.
+    /// @return numIndustryTokens the amount of tokens they hold that is industry tokens.
+    /// @return numDifference the amount of tokens they have that are NOT industry tokens.
+    function getIndustryTokens(address _wallet) external view returns (uint numTokens, uint numIndustryTokens, uint numDifference) {
+        uint fullBalance = IERC20(address(this)).balanceOf(_wallet);
+        uint industryBalance = industryTokens[_wallet];
+        uint difference = fullBalance - industryBalance;
+
+        return (fullBalance, industryBalance, difference);
     }
 
 }
