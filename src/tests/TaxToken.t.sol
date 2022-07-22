@@ -14,7 +14,6 @@ contract TaxTokenTest is Utility {
     TaxToken taxToken;
     Treasury treasury;
 
-
     // setUp() runs before every single test-case.
     // Each test case uses a new/initial state each time based on actions here.
     function setUp() public {
@@ -48,6 +47,7 @@ contract TaxTokenTest is Utility {
         assertEq(taxToken.treasury(), address(treasury));
     }
 
+    //TODO: Replace testFail functions with test cases.
     // Test onlyOwner() modifier and ensure old owners cannot call onlyOwner.
     function testFail_taxToken_simple_owner_modifer() public {
         assertEq(address(this), taxToken.owner());
@@ -291,22 +291,22 @@ contract TaxTokenTest is Utility {
     function test_taxToken_mint_restrictions() public {
         taxToken.transferOwnership(address(god));
 
-        // Joe attempts to mint himself tokens
+        // Joe cannot mint tokens for himself.
         assert(!joe.try_mint(address(taxToken), address(joe), 10 ether));
 
-        // Admin cannot perform a mint to address 0
+        // Admin cannot perform a mint to address 0.
         assert(!god.try_mint(address(taxToken), address(0), 10 ether));
 
-        // Admin can successfully perform a mint
+        // Admin can successfully perform a mint.
         assert(god.try_mint(address(taxToken), address(god), 10 ether));
 
-        // Joe attempts to perform an industryMint to himself
+        // Joe cannot industry mint tokens to himself.
         assert(!joe.try_industryMint(address(taxToken), address(joe), 10 ether));
 
-        // Admin cannot perform an industry mint to address 0
+        // Admin cannot perform an industry mint to address 0.
         assert(!god.try_industryMint(address(taxToken), address(0), 10 ether));
 
-        // Admin can successfully perform an industry mint
+        // Admin can successfully perform an industry mint.
         assert(god.try_industryMint(address(taxToken), address(god), 10 ether));
     }
 
@@ -404,10 +404,10 @@ contract TaxTokenTest is Utility {
         assert(!god.try_industryBurn(address(taxToken), address(god), 10 ether));
 
 
-        // god will mint tokens for burn.
+        // Admin will mint tokens for burn.
         assert(god.try_mint(address(taxToken), address(god), 20 ether));
 
-        // Joe attempts to mint himself tokens.
+        // Joe cannot burn his own tokens.
         assert(!joe.try_burn(address(taxToken), address(joe), 10 ether));
 
         // Admin cannot burn tokens from the dead wallet.
@@ -416,7 +416,7 @@ contract TaxTokenTest is Utility {
         // Admin can successfully perform a burn.
         assert(god.try_burn(address(taxToken), address(god), 10 ether));
 
-        // Joe attempts to perform an industryBurn.
+        // Joe cannot perform an industry burn.
         assert(!joe.try_industryBurn(address(taxToken), address(joe), 10 ether));
 
         // Admin cannot industry burn from the dead wallet.
@@ -425,6 +425,4 @@ contract TaxTokenTest is Utility {
         // Admin can successfully perform an industry burn.
         assert(god.try_industryBurn(address(taxToken), address(god), 10 ether));
     }
-
-
 }
