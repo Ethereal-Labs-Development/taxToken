@@ -19,8 +19,8 @@ contract TaxToken {
     string private _name;
     string private _symbol;
 
-    // ERC20 Pausable
-    bool private _paused;  // ERC20 Pausable state
+    // ERC20 Pausable state
+    bool private _paused;
 
     // Extras
     address public owner;
@@ -52,6 +52,9 @@ contract TaxToken {
     // -----------
 
     /// @notice Initializes the TaxToken.
+    /// @dev _paused - ERC20 Pausable global state variable, initial state is not paused ("unpaused").
+    /// @dev The "owner" is the "admin" of this contract.
+    /// @dev Initial liquidity, allocated entirely to "owner".
     /// @param  totalSupplyInput    The total supply of this token (this value is multipled by 10**decimals in constructor).
     /// @param  nameInput           The name of this token.
     /// @param  symbolInput         The symbol of this token.
@@ -66,13 +69,13 @@ contract TaxToken {
         uint256 maxWalletSizeInput,
         uint256 maxTxAmountInput
     ) {
-        _paused = false;    // ERC20 Pausable global state variable, initial state is not paused ("unpaused").
+        _paused = false;
         _name = nameInput;
         _symbol = symbolInput;
         _decimals = decimalsInput;
         _totalSupply = totalSupplyInput * 10**_decimals;
 
-        // Create a uniswap pair for this new token
+        // Create a uniswap pair for this new token.
         address UNISWAP_V2_PAIR = IUniswapV2Factory(
             IUniswapV2Router01(UNIV2_ROUTER).factory()
         ).createPair(address(this), IUniswapV2Router01(UNIV2_ROUTER).WETH());
@@ -80,12 +83,12 @@ contract TaxToken {
         senderTaxType[UNISWAP_V2_PAIR] = 1;
         receiverTaxType[UNISWAP_V2_PAIR] = 2;
 
-        owner = msg.sender;                                         // The "owner" is the "admin" of this contract.
-        balances[msg.sender] = totalSupplyInput * 10**_decimals;    // Initial liquidity, allocated entirely to "owner".
+        owner = msg.sender;                                         
+        balances[msg.sender] = totalSupplyInput * 10**_decimals;
         maxWalletSize = maxWalletSizeInput * 10**_decimals;
         maxTxAmount = maxTxAmountInput * 10**_decimals;
 
-        // TODO: Add to main-net deployment.
+        // TODO: Add before main-net deployment.
         // modifyWhitelist(owner, true);
         // modifyWhitelist(address(0), true);
     }
@@ -98,31 +101,31 @@ contract TaxToken {
 
     /// @dev whenNotPausedUni() is used if the contract MUST be paused ("paused").
     modifier whenNotPausedUni(address a) {
-        require(!paused() || whitelist[a], "ERR: Contract is currently paused.");
+        require(!paused() || whitelist[a], "TaxToken.sol::whenNotPausedUni, Contract is currently paused.");
         _;
     }
 
     /// @dev whenNotPausedDual() is used if the contract MUST be paused ("paused").
     modifier whenNotPausedDual(address from, address to) {
-        require(!paused() || whitelist[from] || whitelist[to], "ERR: Contract is currently paused.");
+        require(!paused() || whitelist[from] || whitelist[to], "TaxToken.sol::whenNotPausedDual, Contract is currently paused.");
         _;
     }
 
     /// @dev whenNotPausedTri() is used if the contract MUST be paused ("paused").
     modifier whenNotPausedTri(address from, address to, address sender) {
-        require(!paused() || whitelist[from] || whitelist[to] || whitelist[sender], "ERR: Contract is currently paused.");
+        require(!paused() || whitelist[from] || whitelist[to] || whitelist[sender], "TaxToken.sol::whenNotPausedTri, Contract is currently paused.");
         _;
     }
 
     /// @dev whenPaused() is used if the contract MUST NOT be paused ("unpaused").
     modifier whenPaused() {
-        require(paused(), "ERR: Contract is not currently paused.");
+        require(paused(), "TaxToken.sol::whenPaused, Contract is not currently paused.");
         _;
     }
     
     /// @dev onlyOwner() is used if msg.sender MUST be owner.
     modifier onlyOwner {
-       require(msg.sender == owner, "ERR: TaxToken.sol, onlyOwner()"); 
+       require(msg.sender == owner, "TaxToken.sol::onlyOwner(), msg.sender != owner."); 
        _;
     }
 
@@ -132,16 +135,22 @@ contract TaxToken {
     // Events
     // ------
 
-    event Paused(address account);          /// @dev Emitted when the pause is triggered by `account`.
-    event Unpaused(address account);        /// @dev Emitted when the pause is lifted by `account`.
+    /// @dev Emitted when the pause is triggered by `account`.
+    event Paused(address account);
+
+    /// @dev Emitted when the pause is lifted by `account`.
+    event Unpaused(address account);
 
     /// @dev Emitted when approve() is called.
     event Approval(address indexed _owner, address indexed _spender, uint256 _value);   
  
-    /// @dev Emitted during transfer() or transferFrom().
+    /// @dev Emitted during transfer().
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
+
+    /// @dev Emitted during transferFrom().
     event TransferTax(address indexed _from, address indexed _to, uint256 _value, uint256 _taxType);
 
+    /// @dev Emitted when transferOwnership() is completed.
     event OwnershipTransferred(address indexed currentAdmin, address indexed newAdmin);
 
 
@@ -206,7 +215,6 @@ contract TaxToken {
                     _taxType = receiverTaxType[_to];
                 }
 
-                // Calculate taxAmt and sendAmt.
                 uint _taxAmt = _amount * basisPointsTax[_taxType] / 10000;
                 uint _sendAmt = _amount - _taxAmt;
 
@@ -277,7 +285,6 @@ contract TaxToken {
                     _taxType = receiverTaxType[_to];
                 }
 
-                // Calculate taxAmt and sendAmt.
                 uint _taxAmt = _amount * basisPointsTax[_taxType] / 10000;
                 uint _sendAmt = _amount - _taxAmt;
 
