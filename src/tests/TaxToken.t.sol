@@ -37,7 +37,7 @@ contract TaxTokenTest is Utility {
     }
 
     // Test initial state of state variables.
-    function test_simple_stateVariables() public {
+    function test_taxToken_simple_stateVariables() public {
         assertEq(1000 ether, taxToken.totalSupply());
         assertEq('Darpa', taxToken.name());
         assertEq('DRPK', taxToken.symbol());
@@ -49,7 +49,7 @@ contract TaxTokenTest is Utility {
     }
 
     // Test onlyOwner() modifier, confirm one function fails when caller is not msg.sender.
-    function testFail_simple_owner_modifer() public {
+    function testFail_taxToken_simple_owner_modifer() public {
         assertEq(address(this), taxToken.owner());
         taxToken.transferOwnership(
             0xD533a949740bb3306d119CC777fa900bA034cd52
@@ -60,7 +60,7 @@ contract TaxTokenTest is Utility {
     }
 
     // Test transferOwnership().
-    function test_simple_ownership_change() public {
+    function test_taxToken_simple_ownership_change() public {
         assertEq(address(this), taxToken.owner());
         taxToken.transferOwnership(
             0xD533a949740bb3306d119CC777fa900bA034cd52
@@ -72,17 +72,17 @@ contract TaxTokenTest is Utility {
     }
 
     // Test permanentlyRemoveTaxes() fail case, where input != 42.
-    function testFail_remove_taxes_permanently() public {
+    function testFail_taxToken_remove_taxes_permanently() public {
         taxToken.permanentlyRemoveTaxes(41);
     }
 
     // Test adjustBasisPointsTax and ensure it is impossible to set basis tax over 20%.
-    function testFail_adjustBasisPointsTax_aboveMax() public {
+    function testFail_taxToken_adjustBasisPointsTax_aboveMax() public {
         taxToken.adjustBasisPointsTax(0, 2100);
     }
 
     // Test permanentlyRemoveTaxes() success case, taxes are 0 for the 3 explicit tax types (0, 1, 2).
-    function test_remove_taxes_permanently() public {
+    function test_taxToken_remove_taxes_permanently() public {
         taxToken.permanentlyRemoveTaxes(42);
         assertEq(taxToken.basisPointsTax(0), 0);
         assertEq(taxToken.basisPointsTax(1), 0);
@@ -90,7 +90,7 @@ contract TaxTokenTest is Utility {
     }
 
     // Test permanentlyRemoveTaxes() that it is impossible to call adjustBasisPoints() afterwards.
-    function testFail_remove_taxes_adjust() public {
+    function testFail_taxToken_remove_taxes_adjust() public {
         taxToken.permanentlyRemoveTaxes(42);
         taxToken.adjustBasisPointsTax(0, 1000);
     }
@@ -99,13 +99,13 @@ contract TaxTokenTest is Utility {
     // ~ ERC20 Pausable Tests ~
 
     // This tests is it's not possible to call transfer() when the contract is "paused".
-    function testFail_pause_transfer() public {
+    function testFail_taxToken_pause_transfer() public {
         taxToken.pause();
         taxToken.transfer(address(42), 1 ether);
     }
     
     // This tests if contract is "paused" or "unpaused" after admin calls the pause() or unpause() functions.
-    function test_pause_unpause() public {
+    function test_taxToken_pause_unpause() public {
         // Initial state of contract is "not paused".
         assert(!taxToken.paused());
 
@@ -120,21 +120,21 @@ contract TaxTokenTest is Utility {
     // ~ Blacklist Testing ~
 
     // This tests blacklisting of the receiver.
-    function test_blacklist_receiver() public {
+    function test_taxToken_blacklist_receiver() public {
         taxToken.transfer(address(32), 1 ether);
         taxToken.modifyBlacklist(address(32), true);
         assert(!taxToken.transfer(address(32), 1 ether));
     }
 
     // This tests blacklisting of the sender.
-    function test_blacklist_sender() public {
+    function test_taxToken_blacklist_sender() public {
         taxToken.transfer(address(32), 1 ether);
         taxToken.modifyBlacklist(address(this), true);
         assert(!taxToken.transfer(address(32), 1 ether));
     }
 
     // This tests that a blacklisted wallet can only make transfers to a whitelisted wallet.
-    function test_blacklist_whitelist() public {
+    function test_taxToken_blacklist_whitelist() public {
         // This contract can successfully send assets to address(32).
         assert(taxToken.transfer(address(32), 1 ether));
 
@@ -154,13 +154,13 @@ contract TaxTokenTest is Utility {
     // ~ Whitelist Testing ~
 
     // This tests whether a transfer is taxed when the receiver is whitelisted.
-    function test_whitelist_transfer() public {
+    function test_taxToken_whitelist_transfer() public {
         taxToken.modifyWhitelist(address(69), true);
         taxToken.transfer(address(69), 1 ether);
     }
 
     // This tests once a whitelisted wallet calls a transfer, they receive the full amount of tokens.
-    function test_whitelist_balance() public {
+    function test_taxToken_whitelist_balance() public {
         taxToken.modifyWhitelist(address(69), true);
         taxToken.transfer(address(69), 1 ether);
         assertEq(taxToken.balanceOf(address(69)), 1 ether);
@@ -169,25 +169,25 @@ contract TaxTokenTest is Utility {
     // ~ Restrictive functions Testing (Non-Whitelisted) ~
 
     // Test changing maxWalletSize.
-    function test_updateMaxWalletSize() public {
+    function test_taxToken_updateMaxWalletSize() public {
         taxToken.updateMaxWalletSize(300);
         assertEq((300 * 10**18), taxToken.maxWalletSize());
     }
 
     // Test updating a transfer amount.
-    function test_updateMaxTxAmount() public {
+    function test_taxToken_updateMaxTxAmount() public {
         taxToken.updateMaxTxAmount(30);
         assertEq((30 * 10**18), taxToken.maxTxAmount());
     }
 
     // Test a transfer amount greater than the maxTxAmount NON Whitelisted.
-    function testFail_MaxTxAmount_sender() public {
+    function testFail_taxToken_MaxTxAmount_sender() public {
         taxToken.modifyWhitelist(address(70), false);
         assert(taxToken.transfer(address(70), 11 ether));
     }
 
     // Test adding an amount greater than the maxWalletAmount.
-    function testFail_MaxWalletAmount_sender() public {
+    function testFail_taxToken_MaxWalletAmount_sender() public {
         taxToken.modifyWhitelist(address(70), false);
         taxToken.transfer(address(70), 10 ether);
         taxToken.transfer(address(70), 10 ether);
@@ -206,13 +206,13 @@ contract TaxTokenTest is Utility {
     // ~ Restrictive functions Testing (Whitelisted) ~
     
     // Test a transfer amount greater than the maxTxAmount Whitelisted.
-    function test_WLMaxTxAmount_sender() public {
+    function test_taxToken_WLMaxTxAmount_sender() public {
         taxToken.modifyWhitelist(address(70), true);
         assert(taxToken.transfer(address(70), 11 ether));
     }
 
     // Test adding an amount greater than the maxWalletAmount.
-    function test_WLMaxWalletAmount_sender() public {
+    function test_taxToken_WLMaxWalletAmount_sender() public {
         taxToken.transfer(address(70), 10 ether);
         taxToken.transfer(address(70), 10 ether);
         taxToken.transfer(address(70), 10 ether);
@@ -237,21 +237,21 @@ contract TaxTokenTest is Utility {
     }
 
     // Test taking a tax of type 0 from a transfer when the wallet is whitelisted.
-    function testFail_TaxOnTransfer_WL() public {
+    function testFail_taxToken_TaxOnTransfer_WL() public {
         taxToken.modifyWhitelist(address(16), true);
         taxToken.transfer(address(16), 10 ether);
         assertEq(taxToken.balanceOf(address(16)), 9 ether);
     }
 
     // Verify that we cannot blacklist a whitelisted wallet.
-    function testFail_blacklistWhitelistedWallet() public {
+    function testFail_taxToken_blacklistWhitelistedWallet() public {
         taxToken.modifyBlacklist(address(treasury), true);
     }
 
     // ~ mint() Testing ~
 
     // Test mint() to admin
-    function test_mint() public {
+    function test_taxToken_mint() public {
         taxToken.transferOwnership(address(god));
 
         // Pre-state check.
@@ -267,7 +267,7 @@ contract TaxTokenTest is Utility {
     }
 
     // Test industryMint() state changes.
-    function test_industryMint() public {
+    function test_taxToken_industryMint() public {
         taxToken.transferOwnership(address(god));
 
         // Pre-state check.
@@ -288,7 +288,7 @@ contract TaxTokenTest is Utility {
     }
 
     // Test mint()/industryMint() restrictions.
-    function test_mint_restrictions() public {
+    function test_taxToken_mint_restrictions() public {
         taxToken.transferOwnership(address(god));
 
         // Joe attempts to mint himself tokens
@@ -316,7 +316,7 @@ contract TaxTokenTest is Utility {
     // ~ burn() Testing ~
 
     // Test burn() from admin.
-    function test_burn() public {
+    function test_taxToken_burn() public {
         taxToken.transferOwnership(address(god));
         assert(god.try_mint(address(taxToken), address(god), 10 ether));
 
@@ -333,7 +333,7 @@ contract TaxTokenTest is Utility {
     }
 
     // Test industryBurn with no locked tokens.
-    function test_industryBurn_noLocked() public {
+    function test_taxToken_industryBurn_noLocked() public {
         taxToken.transferOwnership(address(god));
         assert(god.try_mint(address(taxToken), address(god), 10 ether));
         assertEq(taxToken.industryTokens(address(god)), 0);
@@ -352,7 +352,7 @@ contract TaxTokenTest is Utility {
     }
 
     // Test industryBurn with some locked tokens.
-    function test_industryBurn_someLocked() public {
+    function test_taxToken_industryBurn_someLocked() public {
         taxToken.transferOwnership(address(god));
         assert(god.try_mint(address(taxToken), address(god), 10 ether));
         assert(god.try_industryMint(address(taxToken), address(god), 10 ether));
@@ -372,7 +372,7 @@ contract TaxTokenTest is Utility {
     }
 
     // Test industryBurn with only locked tokens.
-    function test_industryBurn_allLocked() public {
+    function test_taxToken_industryBurn_allLocked() public {
         taxToken.transferOwnership(address(god));
         assert(god.try_industryMint(address(taxToken), address(god), 10 ether));
 
@@ -391,7 +391,7 @@ contract TaxTokenTest is Utility {
     }
 
     // Test burn()/industryBurn() restrictions.
-    function test_burn_restrictions() public {
+    function test_taxToken_burn_restrictions() public {
         taxToken.transferOwnership(address(god));
 
         // Admin cannot burn tokens that don't exist.
