@@ -3,12 +3,9 @@ pragma solidity ^0.8.6;
 
 import "../../lib/ds-test/src/test.sol";
 import "./Utility.sol";
-
-// Import sol file
 import "../TaxToken.sol";
 import "../Treasury.sol";
 
-// Import interface.
 import { IERC20, IUniswapV2Router01, IWETH } from "../interfaces/InterfacesAggregated.sol";
 
 contract UniswapLiquidityPoolETHTest is Utility {
@@ -29,9 +26,9 @@ contract UniswapLiquidityPoolETHTest is Utility {
         // Token instantiation.
         taxToken = new TaxToken(
             1000000000,             // Initial liquidity
-            'ProveZero',            // Name of token.
-            'PROZ',                 // Symbol of token.
-            18,                     // Precision of decimals.
+            'ProveZero',            // Name of token
+            'PROZ',                 // Symbol of token
+            18,                     // Precision of decimals
             1000000,                // Max wallet size
             100000                  // Max transaction amount 
         );
@@ -52,7 +49,7 @@ contract UniswapLiquidityPoolETHTest is Utility {
 
         // TODO: Identify how to pull pair address of TaxToken/WETH.
 
-        // Convert our ETH to WETH
+        // Convert our ETH to WETH.
         uint ETH_DEPOSIT = 100 ether;
         uint TAX_DEPOSIT = 10000 ether;
 

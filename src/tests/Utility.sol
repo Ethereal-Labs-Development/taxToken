@@ -111,7 +111,7 @@ contract Utility is DSTest {
         tokens["WBTC"].orcl = 0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c;
     }
 
-    // Manipulate mainnet ERC20 balance
+    // Manipulate mainnet ERC20 balance.
     function mint(bytes32 symbol, address account, uint256 amt) public {
         address addr = tokens[symbol].addr;
         uint256 slot  = tokens[symbol].slot;
@@ -126,7 +126,7 @@ contract Utility is DSTest {
         assertEq(IERC20(addr).balanceOf(account), bal + amt); // Assert new balance
     }
 
-    // Verify equality within accuracy decimals
+    // Verify equality within accuracy decimals.
     function withinPrecision(uint256 val0, uint256 val1, uint256 accuracy) public {
         uint256 diff  = val0 > val1 ? val0 - val1 : val1 - val0;
         if (diff == 0) return;
@@ -142,7 +142,7 @@ contract Utility is DSTest {
         }
     }
 
-    // Verify equality within difference
+    // Verify equality within difference.
     function withinDiff(uint256 val0, uint256 val1, uint256 expectedDiff) public {
         uint256 actualDiff = val0 > val1 ? val0 - val1 : val1 - val0;
         bool check = actualDiff <= expectedDiff;

@@ -23,9 +23,9 @@ contract TaxTokenTest is Utility {
         // taxToken constructor
         taxToken = new TaxToken(
             1000,       // Initial liquidity
-            'Darpa',    // Name of token.
-            'DRPK',     // Symbol of token.
-            18,         // Precision of decimals.
+            'Darpa',    // Name of token
+            'DRPK',     // Symbol of token
+            18,         // Precision of decimals
             100,        // Max wallet size
             10          // Max transaction amount
         );
@@ -106,7 +106,8 @@ contract TaxTokenTest is Utility {
     
     // This tests if contract is "paused" or "unpaused" after admin calls the pause() or unpause() functions.
     function test_pause_unpause() public {
-        assert(!taxToken.paused());     // Initial state of contract is "not paused".
+        // Initial state of contract is "not paused".
+        assert(!taxToken.paused());
 
         taxToken.pause();
         assert(taxToken.paused());
@@ -132,21 +133,21 @@ contract TaxTokenTest is Utility {
         assert(!taxToken.transfer(address(32), 1 ether));
     }
 
-    // This tests that a blacklisted wallet can only make transfers to a whitelisted wallet
+    // This tests that a blacklisted wallet can only make transfers to a whitelisted wallet.
     function test_blacklist_whitelist() public {
-        // this contract can successfully send assets to address(32)
+        // This contract can successfully send assets to address(32).
         assert(taxToken.transfer(address(32), 1 ether));
 
-        // blacklist this contract
+        // Blacklist this contract.
         taxToken.modifyBlacklist(address(this), true);
 
-        // This contract can no longer send tokens to address(32)
+        // This contract can no longer send tokens to address(32).
         assert(!taxToken.transfer(address(32), 1 ether));
 
-        // Whitelist address(32)
+        // Whitelist address(32).
         taxToken.modifyWhitelist(address(32), true);
 
-        // this contract can successfully send assets to whitelisted address(32)
+        // This contract can successfully send assets to whitelisted address(32).
         assert(taxToken.transfer(address(32), 1 ether));
     }
 
@@ -265,6 +266,7 @@ contract TaxTokenTest is Utility {
         assertEq(taxToken.totalSupply(), 1010 ether);
     }
 
+    // Test industryMint() state changes.
     function test_industryMint() public {
         taxToken.transferOwnership(address(god));
 
@@ -285,18 +287,24 @@ contract TaxTokenTest is Utility {
         assertEq(taxToken.totalSupply(), 1020 ether);
     }
 
-    // Test mint() by a non-admin
+    // Test mint()/industryMint() restrictions.
     function test_mint_restrictions() public {
         taxToken.transferOwnership(address(god));
 
         // Joe attempts to mint himself tokens
         assert(!joe.try_mint(address(taxToken), address(joe), 10 ether));
 
+        // Admin cannot perform a mint to address 0
+        assert(!god.try_mint(address(taxToken), address(0), 10 ether));
+
         // Admin can successfully perform a mint
         assert(god.try_mint(address(taxToken), address(god), 10 ether));
 
         // Joe attempts to perform an industryMint to himself
         assert(!joe.try_industryMint(address(taxToken), address(joe), 10 ether));
+
+        // Admin cannot perform an industry mint to address 0
+        assert(!god.try_industryMint(address(taxToken), address(0), 10 ether));
 
         // Admin can successfully perform an industry mint
         assert(god.try_industryMint(address(taxToken), address(god), 10 ether));
@@ -307,7 +315,7 @@ contract TaxTokenTest is Utility {
 
     // ~ burn() Testing ~
 
-    // Test burn() from admin
+    // Test burn() from admin.
     function test_burn() public {
         taxToken.transferOwnership(address(god));
         assert(god.try_mint(address(taxToken), address(god), 10 ether));
@@ -324,6 +332,7 @@ contract TaxTokenTest is Utility {
         assertEq(taxToken.totalSupply(), 1000 ether);
     }
 
+    // Test industryBurn with no locked tokens.
     function test_industryBurn_noLocked() public {
         taxToken.transferOwnership(address(god));
         assert(god.try_mint(address(taxToken), address(god), 10 ether));
@@ -342,6 +351,7 @@ contract TaxTokenTest is Utility {
         assertEq(taxToken.industryTokens(address(god)), 0);
     }
 
+    // Test industryBurn with some locked tokens.
     function test_industryBurn_someLocked() public {
         taxToken.transferOwnership(address(god));
         assert(god.try_mint(address(taxToken), address(god), 10 ether));
@@ -361,6 +371,7 @@ contract TaxTokenTest is Utility {
         assertEq(taxToken.industryTokens(address(god)), 0);
     }
 
+    // Test industryBurn with only locked tokens.
     function test_industryBurn_allLocked() public {
         taxToken.transferOwnership(address(god));
         assert(god.try_industryMint(address(taxToken), address(god), 10 ether));
@@ -379,22 +390,36 @@ contract TaxTokenTest is Utility {
         assertEq(taxToken.industryTokens(address(god)), 0);
     }
 
-    // Test burn() by a non-admin
+    // Test burn()/industryBurn() restrictions.
     function test_burn_restrictions() public {
         taxToken.transferOwnership(address(god));
-        // god will mint tokens for burn
+
+        // Admin cannot burn tokens that don't exist.
+        assert(!god.try_burn(address(taxToken), address(god), 10 ether));
+
+        // Admin cannot burn tokens that don't exist.
+        assert(!god.try_industryBurn(address(taxToken), address(god), 10 ether));
+
+
+        // god will mint tokens for burn.
         assert(god.try_mint(address(taxToken), address(god), 20 ether));
 
-        // Joe attempts to mint himself tokens
+        // Joe attempts to mint himself tokens.
         assert(!joe.try_burn(address(taxToken), address(joe), 10 ether));
 
-        // Admin can successfully perform a burn
+        // Admin cannot burn tokens from the dead wallet.
+        assert(!god.try_burn(address(taxToken), address(0), 10 ether));
+
+        // Admin can successfully perform a burn.
         assert(god.try_burn(address(taxToken), address(god), 10 ether));
 
-        // Joe attempts to perform an industryBurn
+        // Joe attempts to perform an industryBurn.
         assert(!joe.try_industryBurn(address(taxToken), address(joe), 10 ether));
 
-        // Admin can successfully perform an industry burn
+        // Admin cannot industry burn from the dead wallet.
+        assert(!god.try_industryBurn(address(taxToken), address(0), 10 ether));
+
+        // Admin can successfully perform an industry burn.
         assert(god.try_industryBurn(address(taxToken), address(god), 10 ether));
     }
 

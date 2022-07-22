@@ -3,12 +3,9 @@ pragma solidity ^0.8.6;
 
 import "../../lib/ds-test/src/test.sol";
 import "./Utility.sol";
-
-// Import sol file
 import "../TaxToken.sol";
 import "../Treasury.sol";
 
-// Import interface.
 import { IERC20, IUniswapV2Router01, IWETH } from "../interfaces/InterfacesAggregated.sol";
 
 contract UniswapLiquidityPoolSTABLETest is Utility {
@@ -24,9 +21,9 @@ contract UniswapLiquidityPoolSTABLETest is Utility {
     function setUp() public {
         taxToken = new TaxToken(
             1000,                 // Initial liquidity
-            'Darpa',              // Name of token.
-            'DRPK',               // Symbol of token.
-            18,                   // Precision of decimals.
+            'Darpa',              // Name of token
+            'DRPK',               // Symbol of token
+            18,                   // Precision of decimals
             100,                  // Max wallet size
             10                    // Max transaction amount
         );
@@ -37,7 +34,7 @@ contract UniswapLiquidityPoolSTABLETest is Utility {
         taxToken.setTreasury(address(treasury));
         taxToken.adjustBasisPointsTax(0, 1000);   // 1000 = 10.00 %
 
-        // Convert our ETH to WETH
+        // Convert our ETH to WETH.
         uint depositAmt = 100 ether;
         IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2).deposit{value: depositAmt}();
         IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2).approve(
