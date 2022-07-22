@@ -23,8 +23,8 @@ contract TaxTokenTest is Utility {
         // taxToken constructor
         taxToken = new TaxToken(
             1000,       // Initial liquidity
-            'Darpa',    // Name of token
-            'DRPK',     // Symbol of token
+            'TaxToken', // Name of token
+            'TAX',      // Symbol of token
             18,         // Precision of decimals
             100,        // Max wallet size
             10          // Max transaction amount
@@ -39,8 +39,8 @@ contract TaxTokenTest is Utility {
     // Test initial state of state variables.
     function test_taxToken_simple_stateVariables() public {
         assertEq(1000 ether, taxToken.totalSupply());
-        assertEq('Darpa', taxToken.name());
-        assertEq('DRPK', taxToken.symbol());
+        assertEq('TaxToken', taxToken.name());
+        assertEq('TAX', taxToken.symbol());
         assertEq(18, taxToken.decimals());
         assertEq((100 * 10**18), taxToken.maxWalletSize());
         assertEq((10 * 10**18), taxToken.maxTxAmount());
@@ -48,7 +48,7 @@ contract TaxTokenTest is Utility {
         assertEq(taxToken.treasury(), address(treasury));
     }
 
-    // Test onlyOwner() modifier, confirm one function fails when caller is not msg.sender.
+    // Test onlyOwner() modifier and ensure old owners cannot call onlyOwner.
     function testFail_taxToken_simple_owner_modifer() public {
         assertEq(address(this), taxToken.owner());
         taxToken.transferOwnership(
@@ -250,7 +250,7 @@ contract TaxTokenTest is Utility {
 
     // ~ mint() Testing ~
 
-    // Test mint() to admin
+    // Test mint() to admin.
     function test_taxToken_mint() public {
         taxToken.transferOwnership(address(god));
 
@@ -310,8 +310,11 @@ contract TaxTokenTest is Utility {
         assert(god.try_industryMint(address(taxToken), address(god), 10 ether));
     }
 
-    //TODO: Test sending restrictions
-    //TODO: Test burning restrictions
+    //TODO: Test sending tokens while restricted
+    //      Some Locked (Move an acceptable amount + an unnaceptable amount)
+    //      Some UnLocked (Move an acceptable amount + an unnaceptable amount)
+    //      All Locked  (Move an unnaceptable amount)
+
 
     // ~ burn() Testing ~
 

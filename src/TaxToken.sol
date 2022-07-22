@@ -500,5 +500,4 @@ contract TaxToken {
 
         }
     }
-
 }
