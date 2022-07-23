@@ -47,28 +47,28 @@ contract TaxTokenTest is Utility {
         assertEq(taxToken.treasury(), address(treasury));
     }
 
-    //TODO: Replace testFail functions with test cases.
     // Test onlyOwner() modifier and ensure old owners cannot call onlyOwner.
     function testFail_taxToken_simple_owner_modifer() public {
+        //Verify original owner.
         assertEq(address(this), taxToken.owner());
-        taxToken.transferOwnership(
-            0xD533a949740bb3306d119CC777fa900bA034cd52
-        );
-        taxToken.transferOwnership(
-            0x62B9c7356A2Dc64a1969e19C23e4f579F9810Aa7
-        );
+
+        //Transfer Ownership to a different wallet.
+        taxToken.transferOwnership(0xD533a949740bb3306d119CC777fa900bA034cd52);
+
+        //Attempt to call owner only function with a now non-owner wallet.
+        taxToken.transferOwnership(0x62B9c7356A2Dc64a1969e19C23e4f579F9810Aa7);
     }
 
     // Test transferOwnership().
     function test_taxToken_simple_ownership_change() public {
+        //Verify original owner.
         assertEq(address(this), taxToken.owner());
-        taxToken.transferOwnership(
-            0xD533a949740bb3306d119CC777fa900bA034cd52
-        );
-        assertEq(
-            0xD533a949740bb3306d119CC777fa900bA034cd52, 
-            taxToken.owner()
-        );
+
+        //Transfer ownership to a different wallet.
+        taxToken.transferOwnership(0xD533a949740bb3306d119CC777fa900bA034cd52);
+
+        //Verify new owner wallet is the same as the set wallet.
+        assertEq(0xD533a949740bb3306d119CC777fa900bA034cd52, taxToken.owner());
     }
 
     // Test permanentlyRemoveTaxes() fail case, where input != 42.
@@ -78,6 +78,7 @@ contract TaxTokenTest is Utility {
 
     // Test adjustBasisPointsTax and ensure it is impossible to set basis tax over 20%.
     function testFail_taxToken_adjustBasisPointsTax_aboveMax() public {
+        // Attempt to set a tax at 21%.
         taxToken.adjustBasisPointsTax(0, 2100);
     }
 
@@ -308,13 +309,29 @@ contract TaxTokenTest is Utility {
 
         // Admin can successfully perform an industry mint.
         assert(god.try_industryMint(address(taxToken), address(god), 10 ether));
+
     }
 
-    //TODO: Test sending tokens while restricted
-    //      Some Locked (Move an acceptable amount + an unnaceptable amount)
-    //      Some UnLocked (Move an acceptable amount + an unnaceptable amount)
-    //      All Locked  (Move an unnaceptable amount)
+    // Test to see if you can send locked tokens.
+    function test_taxToken_industryMint_restrictions() public {
+        taxToken.transferOwnership(address(god));
+        
+        // Regular Mint Joe 10 tokens.
+        assert(god.try_mint(address(taxToken), address(god), 10 ether));
 
+        // Industry Mint Joe 10 tokens.
+        assert(god.try_industryMint(address(taxToken), address(god), 10 ether));
+
+        // Confirm Balances.
+        assertEq(taxToken.balanceOf(address(god)), 20 ether);
+
+        // Attempt to send 15 tokens.
+        assert(!taxToken.transfer(address(god), 15 ether));
+
+        // Confirm Balances didn't change.
+        assertEq(taxToken.balanceOf(address(god)), 20 ether);
+
+    }
 
     // ~ burn() Testing ~
 
