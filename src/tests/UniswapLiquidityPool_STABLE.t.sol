@@ -21,8 +21,8 @@ contract UniswapLiquidityPoolSTABLETest is Utility {
     function setUp() public {
         taxToken = new TaxToken(
             1000,                 // Initial liquidity
-            'Darpa',              // Name of token
-            'DRPK',               // Symbol of token
+            'TaxToken',           // Name of token
+            'TAX',                // Symbol of token
             18,                   // Precision of decimals
             100,                  // Max wallet size
             10                    // Max transaction amount

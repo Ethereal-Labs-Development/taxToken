@@ -29,9 +29,9 @@ contract MainDeployment_RX2 is Utility {
         // (1) Deploy the TaxToken.
         taxToken = new TaxToken(
             300000000,          // Initial liquidity (300mm)
-            'Royal Riches',     // Name of token.
-            'RX2',              // Symbol of token.
-            18,                 // Precision of decimals.
+            'Royal Riches',     // Name of token
+            'RX2',              // Symbol of token
+            18,                 // Precision of decimals
             10000000,           // Max wallet (10mm)
             300000000           // Max transaction (300mm)
         );
