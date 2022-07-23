@@ -106,14 +106,14 @@ contract TaxToken {
     }
 
     /// @dev whenNotPausedDual() is used if the contract MUST be paused ("paused").
-    modifier whenNotPausedDual(address from, address to) {
-        require(!paused() || whitelist[from] || whitelist[to], "TaxToken.sol::whenNotPausedDual, Contract is currently paused.");
+    modifier whenNotPausedDual(address _from, address _to) {
+        require(!paused() || whitelist[_from] || whitelist[_to], "TaxToken.sol::whenNotPausedDual, Contract is currently paused.");
         _;
     }
 
     /// @dev whenNotPausedTri() is used if the contract MUST be paused ("paused").
-    modifier whenNotPausedTri(address from, address to, address sender) {
-        require(!paused() || whitelist[from] || whitelist[to] || whitelist[sender], "TaxToken.sol::whenNotPausedTri, Contract is currently paused.");
+    modifier whenNotPausedTri(address _from, address _to, address _sender) {
+        require(!paused() || whitelist[_from] || whitelist[_to] || whitelist[_sender], "TaxToken.sol::whenNotPausedTri, Contract is currently paused.");
         _;
     }
 
@@ -136,10 +136,10 @@ contract TaxToken {
     // ------
 
     /// @dev Emitted when the pause is triggered by `account`.
-    event Paused(address account);
+    event Paused(address _account);
 
     /// @dev Emitted when the pause is lifted by `account`.
-    event Unpaused(address account);
+    event Unpaused(address _account);
 
     /// @dev Emitted when approve() is called.
     event Approval(address indexed _owner, address indexed _spender, uint256 _value);   
@@ -151,7 +151,7 @@ contract TaxToken {
     event TransferTax(address indexed _from, address indexed _to, uint256 _value, uint256 _taxType);
 
     /// @dev Emitted when transferOwnership() is completed.
-    event OwnershipTransferred(address indexed currentAdmin, address indexed newAdmin);
+    event OwnershipTransferred(address indexed _currentAdmin, address indexed _newAdmin);
 
 
 
