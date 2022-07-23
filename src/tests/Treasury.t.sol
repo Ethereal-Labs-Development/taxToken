@@ -28,7 +28,7 @@ contract TreasuryTest is Utility {
         // Token instantiation.
         taxToken = new TaxToken(
             1000000000,                // Initial liquidity
-            'TaxToke',                 // Name of token
+            'TaxToken',                 // Name of token
             'TAX',                     // Symbol of token
             18,                        // Precision of decimals
             1000000,                   // Max wallet size
