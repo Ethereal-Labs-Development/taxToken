@@ -331,7 +331,7 @@ contract TaxToken {
     }
 
     /// @notice Unpause the contract.
-    /// @dev    Contract MUST be puased to call this, caller must be "owner".
+    /// @dev    Contract MUST be paused to call this, caller must be "owner".
     function unpause() external onlyOwner whenPaused {
         _paused = false;
         emit Unpaused(msg.sender);
@@ -500,12 +500,13 @@ contract TaxToken {
     /// @return numTokens the amount of taxTokens the _wallet holds.
     /// @return numIndustryTokens the amount of tokens they hold that is industry tokens.
     /// @return numDifference the amount of tokens they have that are NOT industry tokens.
-    function getIndustryTokens(address _wallet) external view returns (uint numTokens, uint numIndustryTokens, uint numDifference) {
+    /// @return lifetime the amount of industry tokens that have been minted to _wallet in total.
+    function getIndustryTokens(address _wallet) external view returns (uint numTokens, uint numIndustryTokens, uint numDifference, uint lifetime) {
         uint fullBalance = IERC20(address(this)).balanceOf(_wallet);
         uint industryBalance = industryTokens[_wallet];
         uint difference = fullBalance - industryBalance;
 
-        return (fullBalance, industryBalance, difference);
+        return (fullBalance, industryBalance, difference, lifeTimeIndustryTokens[_wallet]);
     }
 
 }

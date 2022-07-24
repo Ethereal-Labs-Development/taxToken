@@ -411,12 +411,13 @@ contract TaxTokenTest is Utility {
         assert(taxToken.transfer(address(1), 40 ether));
 
         // call getIndustryTokens().
-        (uint getBal, uint getIndustryBal, uint getDiffy) = taxToken.getIndustryTokens(address(1));
+        (uint getBal, uint getIndustryBal, uint getDiffy, uint lifetime) = taxToken.getIndustryTokens(address(1));
 
         // post-state check.
         assertEq(getBal, 140 ether);
         assertEq(getIndustryBal, 100 ether);
         assertEq(getDiffy, 40 ether);
+        assertEq(lifetime, 100 ether);
     }
 
 
