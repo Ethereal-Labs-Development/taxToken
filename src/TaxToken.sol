@@ -101,25 +101,25 @@ contract TaxToken {
 
     /// @dev whenNotPausedUni() is used if the contract MUST be paused ("paused").
     modifier whenNotPausedUni(address a) {
-        require(!paused() || whitelist[a], "TaxToken.sol::whenNotPausedUni, Contract is currently paused.");
+        require(!paused() || whitelist[a], "TaxToken.sol::whenNotPausedUni(), Contract is currently paused.");
         _;
     }
 
     /// @dev whenNotPausedDual() is used if the contract MUST be paused ("paused").
     modifier whenNotPausedDual(address _from, address _to) {
-        require(!paused() || whitelist[_from] || whitelist[_to], "TaxToken.sol::whenNotPausedDual, Contract is currently paused.");
+        require(!paused() || whitelist[_from] || whitelist[_to], "TaxToken.sol::whenNotPausedDual(), Contract is currently paused.");
         _;
     }
 
     /// @dev whenNotPausedTri() is used if the contract MUST be paused ("paused").
     modifier whenNotPausedTri(address _from, address _to, address _sender) {
-        require(!paused() || whitelist[_from] || whitelist[_to] || whitelist[_sender], "TaxToken.sol::whenNotPausedTri, Contract is currently paused.");
+        require(!paused() || whitelist[_from] || whitelist[_to] || whitelist[_sender], "TaxToken.sol::whenNotPausedTri(), Contract is currently paused.");
         _;
     }
 
     /// @dev whenPaused() is used if the contract MUST NOT be paused ("unpaused").
     modifier whenPaused() {
-        require(paused(), "TaxToken.sol::whenPaused, Contract is not currently paused.");
+        require(paused(), "TaxToken.sol::whenPaused(), Contract is not currently paused.");
         _;
     }
     
