@@ -47,8 +47,7 @@ contract TaxTokenTest is Utility {
         assertEq(taxToken.treasury(), address(treasury));
     }
 
-    //TODO: Replace testFail functions with test cases.
-    // Test onlyOwner() modifier and ensure old owners cannot call onlyOwner.
+    // Test onlyOwner() modifier, confirm one function fails when caller is not msg.sender.
     function testFail_taxToken_simple_owner_modifer() public {
         assertEq(address(this), taxToken.owner());
         taxToken.transferOwnership(
@@ -231,7 +230,7 @@ contract TaxTokenTest is Utility {
     // ~ Taxt Type 0 Testing ~
 
     // Test taking a tax of type 0 from a transfer.
-    function test_TaxOnTransfer() public {
+    function test_taxToken_TaxOnTransfer() public {
         taxToken.transfer(address(15), 10 ether);
         assertEq(taxToken.balanceOf(address(15)), 9 ether);
     }
@@ -255,14 +254,14 @@ contract TaxTokenTest is Utility {
         taxToken.transferOwnership(address(god));
 
         // Pre-state check.
-        assertEq(taxToken.balanceOf(address(god)), 0);
+        assertEq(taxToken.balanceOf(address(dev)), 0);
         assertEq(taxToken.totalSupply(), 1000 ether);
 
         // Mint 10 tokens to admin.
-        assert(god.try_mint(address(taxToken), address(god), 10 ether));
+        assert(dev.try_mint(address(taxToken), address(dev), 10 ether));
 
         //Post-state check.
-        assertEq(taxToken.balanceOf(address(god)), 10 ether);
+        assertEq(taxToken.balanceOf(address(dev)), 10 ether);
         assertEq(taxToken.totalSupply(), 1010 ether);
     }
 
@@ -271,14 +270,14 @@ contract TaxTokenTest is Utility {
         taxToken.transferOwnership(address(god));
 
         // Pre-state check.
-        assertEq(taxToken.balanceOf(address(god)), 0);
+        assertEq(taxToken.balanceOf(address(dev)), 0);
         assertEq(taxToken.totalSupply(), 1000 ether);
 
         // Mint 10 tokens to joe.
-        assert(god.try_mint(address(taxToken), address(joe), 10 ether));
+        assert(dev.try_mint(address(taxToken), address(joe), 10 ether));
 
         // Mint 10 tokens to joe.
-        assert(god.try_industryMint(address(taxToken), address(joe), 10 ether));
+        assert(dev.try_industryMint(address(taxToken), address(joe), 10 ether));
 
         //Post-state check.
         assertEq(taxToken.balanceOf(address(joe)), 20 ether);
@@ -324,14 +323,14 @@ contract TaxTokenTest is Utility {
         assert(god.try_mint(address(taxToken), address(god), 10 ether));
 
         // Pre-state check.
-        assertEq(taxToken.balanceOf(address(god)), 10 ether);
+        assertEq(taxToken.balanceOf(address(dev)), 10 ether);
         assertEq(taxToken.totalSupply(), 1010 ether);
 
         // Burn 10 tokens to admin.
-        assert(god.try_burn(address(taxToken), address(god), 10 ether));
+        assert(dev.try_burn(address(taxToken), address(dev), 10 ether));
 
         //Post-state check.
-        assertEq(taxToken.balanceOf(address(god)), 0 ether);
+        assertEq(taxToken.balanceOf(address(dev)), 0 ether);
         assertEq(taxToken.totalSupply(), 1000 ether);
     }
 
@@ -342,16 +341,16 @@ contract TaxTokenTest is Utility {
         assertEq(taxToken.industryTokens(address(god)), 0);
 
         // Pre-state check.
-        assertEq(taxToken.balanceOf(address(god)), 10 ether);
+        assertEq(taxToken.balanceOf(address(dev)), 10 ether);
         assertEq(taxToken.totalSupply(), 1010 ether);
 
         // Burn 10 tokens to admin.
-        assert(god.try_industryBurn(address(taxToken), address(god), 10 ether));
+        assert(dev.try_industryBurn(address(taxToken), address(dev), 10 ether));
 
         //Post-state check.
-        assertEq(taxToken.balanceOf(address(god)), 0 ether);
+        assertEq(taxToken.balanceOf(address(dev)), 0 ether);
         assertEq(taxToken.totalSupply(), 1000 ether);
-        assertEq(taxToken.industryTokens(address(god)), 0);
+        assertEq(taxToken.industryTokens(address(dev)), 0);
     }
 
     // Test industryBurn with some locked tokens.
@@ -361,17 +360,17 @@ contract TaxTokenTest is Utility {
         assert(god.try_industryMint(address(taxToken), address(god), 10 ether));
 
         // Pre-state check.
-        assertEq(taxToken.balanceOf(address(god)), 20 ether);
+        assertEq(taxToken.balanceOf(address(dev)), 20 ether);
         assertEq(taxToken.totalSupply(), 1020 ether);
-        assertEq(taxToken.industryTokens(address(god)), 10 ether);
+        assertEq(taxToken.industryTokens(address(dev)), 10 ether);
 
         // Burn 10 tokens to admin.
-        assert(god.try_industryBurn(address(taxToken), address(god), 15 ether));
+        assert(dev.try_industryBurn(address(taxToken), address(dev), 15 ether));
 
         //Post-state check.
-        assertEq(taxToken.balanceOf(address(god)), 5 ether);
+        assertEq(taxToken.balanceOf(address(dev)), 5 ether);
         assertEq(taxToken.totalSupply(), 1005 ether);
-        assertEq(taxToken.industryTokens(address(god)), 0);
+        assertEq(taxToken.industryTokens(address(dev)), 0);
     }
 
     // Test industryBurn with only locked tokens.
@@ -380,17 +379,17 @@ contract TaxTokenTest is Utility {
         assert(god.try_industryMint(address(taxToken), address(god), 10 ether));
 
         // Pre-state check.
-        assertEq(taxToken.balanceOf(address(god)), 10 ether);
+        assertEq(taxToken.balanceOf(address(dev)), 10 ether);
         assertEq(taxToken.totalSupply(), 1010 ether);
-        assertEq(taxToken.industryTokens(address(god)), 10 ether);
+        assertEq(taxToken.industryTokens(address(dev)), 10 ether);
 
         // Burn 10 tokens to admin.
-        assert(god.try_industryBurn(address(taxToken), address(god), 10 ether));
+        assert(dev.try_industryBurn(address(taxToken), address(dev), 10 ether));
 
         //Post-state check.
-        assertEq(taxToken.balanceOf(address(god)), 0 ether);
+        assertEq(taxToken.balanceOf(address(dev)), 0 ether);
         assertEq(taxToken.totalSupply(), 1000 ether);
-        assertEq(taxToken.industryTokens(address(god)), 0);
+        assertEq(taxToken.industryTokens(address(dev)), 0);
     }
 
     // Test burn()/industryBurn() restrictions.
@@ -422,7 +421,29 @@ contract TaxTokenTest is Utility {
         // Admin cannot industry burn from the dead wallet.
         assert(!god.try_industryBurn(address(taxToken), address(0), 10 ether));
 
-        // Admin can successfully perform an industry burn.
-        assert(god.try_industryBurn(address(taxToken), address(god), 10 ether));
+        // Admin can successfully perform an industry burn
+        assert(dev.try_industryBurn(address(taxToken), address(dev), 10 ether));
+    }
+
+    // ~ getIndustryTokens() Testing ~
+
+    function test_taxToken_taxToken_getIndustryTokens() public {
+        taxToken.modifyWhitelist(address(1), true);
+        taxToken.transferOwnership(address(dev));
+
+        // dev will use industryMint() to give address(1) 500 industry tokens.
+        assert(dev.try_industryMint(address(taxToken), address(1), 100 ether));
+
+        // dev will then transfer 100 tokens to address(1).
+        assert(taxToken.transfer(address(1), 40 ether));
+
+        // call getIndustryTokens().
+        (uint getBal, uint getIndustryBal, uint getDiffy, uint lifetime) = taxToken.getIndustryTokens(address(1));
+
+        // post-state check.
+        assertEq(getBal, 140 ether);
+        assertEq(getIndustryBal, 100 ether);
+        assertEq(getDiffy, 40 ether);
+        assertEq(lifetime, 100 ether);
     }
 }

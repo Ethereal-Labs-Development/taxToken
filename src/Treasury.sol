@@ -110,7 +110,7 @@ contract Treasury {
     }
 
     /// @notice This function modifies the distribution settings for a given taxType.
-    /// @dev    Only callable by Admin.
+    /// @dev    Only callable by Admin. percentDistribution must add up to 100.
     /// @param  taxType The taxType to update settings for.
     /// @param  walletCount The number of wallets to distribute across.
     /// @param  wallets The address of wallets to distribute fees across.
@@ -215,6 +215,11 @@ contract Treasury {
 
 
     /// @notice Helper view function for taxSettings.
+    /// @param taxType     tax type of tax settings we want to return 0, 1, or 2.
+    /// @return uint256    num of wallets in distribution.
+    /// @return address[]  array of wallets in distribution.
+    /// @return address[]  array of assets to be converted to during distribution to it's respective wallet.
+    /// @return uint[]     array of distribution, all uints must add up to 100.
     function viewTaxSettings(uint taxType) external view returns(uint256, address[] memory, address[] memory, uint[] memory) {
         return (
             taxSettings[taxType].walletCount,

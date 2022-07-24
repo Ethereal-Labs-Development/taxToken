@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import { ITreasury, IUniswapV2Factory, IUniswapV2Router01 } from "./interfaces/InterfacesAggregated.sol";
+import { IERC20, ITreasury, IUniswapV2Factory, IUniswapV2Router01 } from "./interfaces/InterfacesAggregated.sol";
 
 /// @dev    The TaxToken is responsible for supporting generic ERC20 functionality including ERC20Pausable functionality.
 ///         The TaxToken will generate taxes on transfer() and transferFrom() calls for non-whitelisted addresses.
@@ -338,7 +338,7 @@ contract TaxToken {
     }
 
     /// @notice Unpause the contract.
-    /// @dev    Contract MUST be puased to call this, caller must be "owner".
+    /// @dev    Contract MUST be paused to call this, caller must be "owner".
     function unpause() external onlyOwner whenPaused {
         _paused = false;
         emit Unpaused(msg.sender);
@@ -500,4 +500,20 @@ contract TaxToken {
 
         }
     }
+
+    /// @notice This function is a VIEW function that returns the amount of industry tokens,
+    ///         full balance, and normal tokens a wallet has.
+    /// @dev    This function is for the front end to pull industry data for a specific wallet.
+    /// @return numTokens the amount of taxTokens the _wallet holds.
+    /// @return numIndustryTokens the amount of tokens they hold that is industry tokens.
+    /// @return numDifference the amount of tokens they have that are NOT industry tokens.
+    /// @return lifetime the amount of industry tokens that have been minted to _wallet in total.
+    function getIndustryTokens(address _wallet) external view returns (uint numTokens, uint numIndustryTokens, uint numDifference, uint lifetime) {
+        uint fullBalance = IERC20(address(this)).balanceOf(_wallet);
+        uint industryBalance = industryTokens[_wallet];
+        uint difference = fullBalance - industryBalance;
+
+        return (fullBalance, industryBalance, difference, lifeTimeIndustryTokens[_wallet]);
+    }
+
 }
