@@ -232,6 +232,11 @@ contract Treasury {
 
 
     /// @notice Helper view function for taxSettings.
+    /// @param taxType     tax type of tax settings we want to return 0, 1, or 2.
+    /// @return uint256    num of wallets in distribution.
+    /// @return address[]  array of wallets in distribution.
+    /// @return address[]  array of assets to be converted to during distribution to it's respective wallet.
+    /// @return uint[]     array of distribution, all uints must add up to 100.
     function viewTaxSettings(uint _taxType) external view returns(uint256, address[] memory, address[] memory, uint[] memory) {
         return (
             taxSettings[_taxType].walletCount,

@@ -22,7 +22,7 @@ contract Utility is DSTest {
     /*** Protocol Actors ***/
     /***********************/
     Actor  joe;
-    Actor  god;
+    Actor  dev;
 
     /**********************************/
     /*** Mainnet Contract Addresses ***/
@@ -86,7 +86,7 @@ contract Utility is DSTest {
     /**************************************/
     function createActors() public {
         joe = new Actor();
-        god = new Actor();
+        dev = new Actor();
     }
 
 
