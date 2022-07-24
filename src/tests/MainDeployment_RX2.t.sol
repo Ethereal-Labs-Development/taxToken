@@ -4,7 +4,7 @@ pragma solidity ^0.8.6;
 import "../../lib/ds-test/src/test.sol";
 import "./Utility.sol";
 
-// Import sol file
+// Import sol file.
 import "../TaxToken.sol";
 import "../Treasury.sol";
 
@@ -29,9 +29,9 @@ contract MainDeployment_RX2 is Utility {
         // (1) Deploy the TaxToken.
         taxToken = new TaxToken(
             300000000,          // Initial liquidity (300mm)
-            'Royal Riches',     // Name of token.
-            'RX2',              // Symbol of token.
-            18,                 // Precision of decimals.
+            'Royal Riches',     // Name of token
+            'RX2',              // Symbol of token
+            18,                 // Precision of decimals
             10000000,           // Max wallet (10mm)
             300000000           // Max transaction (300mm)
         );
@@ -150,7 +150,7 @@ contract MainDeployment_RX2 is Utility {
         assertEq(taxToken.treasury(), address(treasury));
     }
 
-    // Test a post deployment buy
+    // Test a post deployment buy.
     function test_royal_riches_buy() public {
         uint tradeAmt = 1 ether;
 
@@ -186,14 +186,14 @@ contract MainDeployment_RX2 is Utility {
         emit LogUint("Amount_Recieved_TaxToken", taxToken.balanceOf(address(32)));
     }
 
-    // Test a post deployment sell
+    // Test a post deployment sell.
     function test_royal_riches_sell() public {
         uint tradeAmt = 1 ether;
         taxToken.transfer(address(32), 2 ether);
 
         emit LogUint("Balance of address 32", taxToken.balanceOf(address(32)));
 
-        taxToken.modifyWhitelist(address(this), false); // Had to remove address(this) from whitelist to yield a taxed sell
+        taxToken.modifyWhitelist(address(this), false);
 
         IERC20(address(taxToken)).approve(
             address(UNIV2_ROUTER), tradeAmt
@@ -215,7 +215,7 @@ contract MainDeployment_RX2 is Utility {
         emit LogUint("Amount_Received_WETH", IERC20(WETH).balanceOf(address(32)));
     }
 
-    // Test a post deployment buy after pausing the contract
+    // Test a post deployment buy after pausing the contract.
     function testFail_royal_riches_pause_then_buy() public {
         uint tradeAmt = 1 ether;
 
@@ -250,7 +250,7 @@ contract MainDeployment_RX2 is Utility {
         );
     }
 
-    // Test a post deployment sell atfer pausing the contract
+    // Test a post deployment sell atfer pausing the contract.
     function testFail_royal_riches_pause_then_sell() public {
         uint tradeAmt = 1 ether;
         taxToken.transfer(address(32), 2 ether);
@@ -279,7 +279,7 @@ contract MainDeployment_RX2 is Utility {
         );
     }
 
-    // Test a post deployment whitelisted buy after pausing the contract
+    // Test a post deployment whitelisted buy after pausing the contract.
     function test_royal_riches_pause_then_WL_buy() public {
         uint tradeAmt = 1 ether;
         
@@ -317,7 +317,7 @@ contract MainDeployment_RX2 is Utility {
         );
     }
 
-    // Test a post deployment whitelisted sell after pausing the contract
+    // Test a post deployment whitelisted sell after pausing the contract.
     function test_royal_riches_pause_then_WL_sell() public {
         uint tradeAmt = 1 ether;
         taxToken.transfer(address(32), 2 ether);

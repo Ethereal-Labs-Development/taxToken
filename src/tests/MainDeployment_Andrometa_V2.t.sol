@@ -4,7 +4,7 @@ pragma solidity ^0.8.6;
 import "../../lib/ds-test/src/test.sol";
 import "./Utility.sol";
 
-// Import sol file
+// Import sol file.
 import "../TaxToken.sol";
 import "../Treasury.sol";
 
@@ -28,7 +28,7 @@ contract MainDeployment_ADMT is Utility {
 
         // (1) VERIFY ROUTER IS CORRECT.
 
-        // NOTE: May have to flatten contract upon deployment
+        // NOTE: May have to flatten contract upon deployment.
 
         // (2) Deploy the TaxToken.
         taxToken = new TaxToken(
@@ -126,7 +126,7 @@ contract MainDeployment_ADMT is Utility {
         percentDistribution[3] = 25;
         percentDistribution[4] = 17;
 
-        //(9) Update tax types 0 and 2
+        //(9) Update tax types 0 and 2.
         treasury.setTaxDistribution(
             0, 
             5, 
@@ -143,8 +143,8 @@ contract MainDeployment_ADMT is Utility {
             percentDistribution
         );
 
-        // (10) pause taxToken
-        // NOTE: might have to do between approve and addLiquidity
+        // (10) pause taxToken.
+        // NOTE: might have to do between approve and addLiquidity.
         taxToken.pause();
         
         uint ETH_DEPOSIT = 100 ether;
@@ -167,7 +167,7 @@ contract MainDeployment_ADMT is Utility {
             block.timestamp + 300       // Unix timestamp after which the transaction will revert.
         );
 
-        // (14) AIRDROP SNAPSHOT
+        // (14) AIRDROP SNAPSHOT.
         // TODO: VERIFY BULKSENDER IS WHITELISTED
         // NOTE: No need to airdrop private sales again, should be included in snapshot
         // 0x458b14915e651243Acf89C05859a22d5Cff976A6
@@ -182,7 +182,7 @@ contract MainDeployment_ADMT is Utility {
         // (15) Unpause TaxToken.
         taxToken.unpause();
 
-        // (16) Lock LP and remaining tokens
+        // (16) Lock LP and remaining tokens.
     }
 
     // Initial state check.
@@ -197,7 +197,7 @@ contract MainDeployment_ADMT is Utility {
         assertEq(taxToken.treasury(), address(treasury));
     }
 
-    // Test a post deployment buy
+    // Test a post deployment buy.
     function test_andrometa_buy() public {
         uint tradeAmt = 1 ether;
 
@@ -233,14 +233,14 @@ contract MainDeployment_ADMT is Utility {
         emit LogUint("Amount_Recieved_TaxToken", taxToken.balanceOf(address(32)));
     }
 
-    // Test a post deployment sell
+    // Test a post deployment sell.
     function test_andrometa_sell() public {
         uint tradeAmt = 1 ether;
         taxToken.transfer(address(32), 2 ether);
 
         emit LogUint("Balance of address 32", taxToken.balanceOf(address(32)));
 
-        taxToken.modifyWhitelist(address(this), false); // Had to remove address(this) from whitelist to yield a taxed sell
+        taxToken.modifyWhitelist(address(this), false);
 
         IERC20(address(taxToken)).approve(
             address(UNIV2_ROUTER), tradeAmt
@@ -262,7 +262,7 @@ contract MainDeployment_ADMT is Utility {
         emit LogUint("Amount_Received_WETH", IERC20(WETH).balanceOf(address(32)));
     }
 
-    // Test a post deployment buy after pausing the contract
+    // Test a post deployment buy after pausing the contract.
     function testFail_andrometa_pause_then_buy() public {
         uint tradeAmt = 1 ether;
 
@@ -297,7 +297,7 @@ contract MainDeployment_ADMT is Utility {
         );
     }
 
-    // Test a post deployment sell atfer pausing the contract
+    // Test a post deployment sell atfer pausing the contract.
     function testFail_andrometa_pause_then_sell() public {
         uint tradeAmt = 1 ether;
         taxToken.transfer(address(32), 2 ether);
@@ -326,7 +326,7 @@ contract MainDeployment_ADMT is Utility {
         );
     }
 
-    // Test a post deployment whitelisted buy after pausing the contract
+    // Test a post deployment whitelisted buy after pausing the contract.
     function test_andrometa_pause_then_WL_buy() public {
         uint tradeAmt = 1 ether;
         
@@ -364,7 +364,7 @@ contract MainDeployment_ADMT is Utility {
         );
     }
 
-    // Test a post deployment whitelisted sell after pausing the contract
+    // Test a post deployment whitelisted sell after pausing the contract.
     function test_andrometa_pause_then_WL_sell() public {
         uint tradeAmt = 1 ether;
         taxToken.transfer(address(32), 2 ether);
