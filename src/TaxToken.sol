@@ -44,7 +44,7 @@ contract TaxToken {
     mapping(uint => uint) public basisPointsTax;                /// @dev Mapping between taxType and basisPoints (taxed).
     mapping(address => uint) public industryTokens;             /// @dev Mapping of how many locked tokens exist in a wallet (In 18 decimal format).
     mapping(address => uint) public lifeTimeIndustryTokens;     /// @dev Mapping of how many locked tokens have ever been minted (In 18 decimal format).  
-
+    mapping(address => bool) public authorized;                 /// @dev Mapping of which wallets are authorized to call specific functions.
 
 
     // -----------
@@ -129,6 +129,11 @@ contract TaxToken {
        _;
     }
 
+    /// @dev isAuthorized() is used if msg.sender MUST be either the owner, or an authorized user/contract.
+    modifier onlyAuthorized {
+       require(msg.sender == owner || authorized[msg.sender] == true, "TaxToken.sol::onlyAuthorized(), msg.sender is not authorized."); 
+       _;
+    }
 
 
     // ------
@@ -153,6 +158,8 @@ contract TaxToken {
     /// @dev Emitted when transferOwnership() is completed.
     event OwnershipTransferred(address indexed _currentAdmin, address indexed _newAdmin);
 
+    /// @dev Emitted when updating authorized users.
+    event UpdatedAuthorizedUsers(address indexed _account, bool _state);
 
 
     // ---------
@@ -402,6 +409,15 @@ contract TaxToken {
         owner = _owner;
     }
 
+    /// @notice This is used to change the owner's wallet address. Used to give ownership to another wallet.
+    /// @param  _account is the address that will change from authorized or not.
+    /// @param  _state (True or False) If true, _account is authorized, if false, _account is not authorized.
+    function updateAuthorizedList(address _account, bool _state) external onlyOwner {
+        require(_account != address(0), "TaxToken.sol::updateAuthorizedList(), _owner == 0.");
+        emit UpdatedAuthorizedUsers(_account, _state);
+        authorized[_account] = _state;
+    }
+
     /// @notice Set the treasury (contract) which receives taxes generated through transfer() and transferFrom().
     /// @param  _treasury is the contract address of the treasury.
     function setTreasury(address _treasury) external onlyOwner {
@@ -445,7 +461,7 @@ contract TaxToken {
     /// @dev    Does not truncate so amount needs to include the 18 decimal points.
     /// @param  _wallet the account we're minting tokens to.
     /// @param  _amount the amount of tokens we're minting.
-    function mint(address _wallet, uint256 _amount) public onlyOwner() {
+    function mint(address _wallet, uint256 _amount) public onlyAuthorized() {
         require(_wallet != address(0), "TaxToken.sol::mint(), Cannot mint to zero address.");
 
         _totalSupply += _amount;
@@ -460,7 +476,7 @@ contract TaxToken {
     /// @dev    Does not truncate so amount needs to include the 18 decimal points.
     /// @param  _wallet is the wallet address that will recieve these minted tokens.
     /// @param  _amount is the amount of tokens to be minted into _wallet.
-    function industryMint(address _wallet, uint256 _amount) external onlyOwner {
+    function industryMint(address _wallet, uint256 _amount) external onlyAuthorized {
         mint(_wallet, _amount);
 
         industryTokens[_wallet] += _amount;
@@ -471,7 +487,7 @@ contract TaxToken {
     /// @dev    Does not truncate so amount needs to include the 18 decimal points.
     /// @param  _wallet the account we're burning tokens from.
     /// @param  _amount the amount of tokens we're burning.
-    function burn(address _wallet, uint256 _amount) public onlyOwner() {
+    function burn(address _wallet, uint256 _amount) public onlyAuthorized() {
         require(_wallet != address(0), "TaxToken.sol::burn(), Cannot burn to zero address.");
         uint256 accountBalance = balances[_wallet];
         require(accountBalance >= _amount, "TaxToken.sol::burn(), Burn amount exceeds balance.");
@@ -486,7 +502,7 @@ contract TaxToken {
     /// @dev    Does not truncate so amount needs to include the 18 decimal points.    
     /// @param  _wallet the account we're burning tokens from.
     /// @param  _amount the amount of tokens we're burning.
-    function industryBurn(address _wallet, uint256 _amount) external onlyOwner {
+    function industryBurn(address _wallet, uint256 _amount) external onlyAuthorized {
         require(_wallet != address(0), "TaxToken.sol::industryBurn(), Cannot burn to zero address.");
         require(balances[_wallet] >= _amount, "TaxToken.sol::industryBurn(), Insufficient balance of $PROVE to burn.");
 

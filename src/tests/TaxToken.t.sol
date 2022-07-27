@@ -59,6 +59,28 @@ contract TaxTokenTest is Utility {
         taxToken.transferOwnership(0x62B9c7356A2Dc64a1969e19C23e4f579F9810Aa7);
     }
 
+    // Test updateAuthorizedList().
+    function test_taxToken_updateAuthorizedList_change() public {
+        //Verify original owner.
+        assertEq(address(this), taxToken.owner());
+
+        // Have unAuthorized joe attempt to mint tokens.
+        assert(!joe.try_industryMint(address(taxToken), address(1), 100 ether));
+
+        // Add Joe to authorized users list.
+        taxToken.updateAuthorizedList(address(joe), true);
+
+        // Have authorized Joe attempt to mint tokens.
+        assert(joe.try_industryMint(address(taxToken), address(1), 100 ether));
+
+        // Remove Joe to authorized users list.
+        taxToken.updateAuthorizedList(address(joe), false);
+
+        // Have authorized Joe attempt to mint tokens.
+        assert(!joe.try_industryBurn(address(taxToken), address(1), 100 ether));
+
+    }
+
     // Test transferOwnership().
     function test_taxToken_simple_ownership_change() public {
         //Verify original owner.
