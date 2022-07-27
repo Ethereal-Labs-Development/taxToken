@@ -3,8 +3,6 @@ pragma solidity ^0.8.6;
 
 import "../../lib/ds-test/src/test.sol";
 import "./Utility.sol";
-
-// Import sol file
 import "../TaxToken.sol";
 import "../Treasury.sol";
 
@@ -12,7 +10,6 @@ import "../Treasury.sol";
 import { IERC20, IUniswapV2Router01, IWETH } from "../interfaces/InterfacesAggregated.sol";
 
 contract TreasuryNullTest is Utility {
-
     // State variable for contract.
     TaxToken taxToken;
     Treasury treasury;
@@ -29,8 +26,8 @@ contract TreasuryNullTest is Utility {
         // Token instantiation.
         taxToken = new TaxToken(
             1000000000,                 // Initial liquidity
-            'ProveZero',                // Name of token
-            'PROZ',                     // Symbol of token
+            'TaxToken',                 // Name of token
+            'TAX',                      // Symbol of token
             18,                         // Precision of decimals
             1000000,                    // Max wallet size
             100000                      // Max transaction amount
@@ -41,7 +38,6 @@ contract TreasuryNullTest is Utility {
         );
 
         taxToken.setTreasury(address(treasury));
-
 
         // Set basisPointsTax for taxType 0 / 1 / 2
         // taxType 0 => Xfer Tax (10%)  => 10% (1wallets, marketing)
@@ -60,11 +56,9 @@ contract TreasuryNullTest is Utility {
     //    //TODO: Test withdrawing funds ect with an empty treasury
     // }
 
-    //Shameless stealing of other test cases
-
     // Initial state check on treasury.
-    // Each taxType (0, 1, and 2) should all be equal to 0
-    // The sum of all taxes accrued for each taxType should also be 0
+    // Each taxType (0, 1, and 2) should all be equal to 0.
+    // The sum of all taxes accrued for each taxType should also be 0.
     function test_nullTreasury_initialState() public {
         assert(treasury.taxTokenAccruedForTaxType(0) == 0);
         assert(treasury.taxTokenAccruedForTaxType(1) == 0);
@@ -73,7 +67,7 @@ contract TreasuryNullTest is Utility {
         assertEq(sum, taxToken.balanceOf(address(treasury)));
     }
 
-    // Test require statement fail: require(walletCount == wallets.length)
+    // Test require statement fail: require(walletCount == wallets.length).
     function testFail_nullTreasury_modify_taxSetting_require_0() public {
         address[] memory wallets = new address[](3);
         address[] memory convertToAsset = new address[](2);
@@ -96,7 +90,7 @@ contract TreasuryNullTest is Utility {
         );
     }
 
-    // Test require statement fail: require(walletCount == convertToAsset.length)
+    // Test require statement fail: require(walletCount == convertToAsset.length).
     function testFail_nullTreasury_modify_taxSetting_require_1() public {
         address[] memory wallets = new address[](2);
         address[] memory convertToAsset = new address[](3);
@@ -119,7 +113,7 @@ contract TreasuryNullTest is Utility {
         );
     }
 
-    // Test require statement fail: require(walletCount == percentDistribution.length)
+    // Test require statement fail: require(walletCount == percentDistribution.length).
     function testFail_nullTreasury_modify_taxSetting_require_2() public {
         address[] memory wallets = new address[](2);
         address[] memory convertToAsset = new address[](2);
@@ -142,7 +136,7 @@ contract TreasuryNullTest is Utility {
         );
     }
 
-    // Test require statement fail: require(sumPercentDistribution == 100)
+    // Test require statement fail: require(sumPercentDistribution == 100).
     function testFail_nullTreasury_modify_taxSetting_require_3() public {
         address[] memory wallets = new address[](2);
         address[] memory convertToAsset = new address[](2);
@@ -242,7 +236,7 @@ contract TreasuryNullTest is Utility {
         assertEq(_percentDistribution[2], 40);
     }
 
-    // Test distributing taxes when none exist in wallet
+    // Test distributing taxes when none exist in wallet.
     function test_nullTreasury_taxDistribution() public {
 
         address[] memory wallets = new address[](2);
@@ -267,7 +261,7 @@ contract TreasuryNullTest is Utility {
         assertEq(treasury.distributeTaxes(1), 0);
     }
 
-    // Test converting tokens when none exist
+    // Test converting tokens when none exist.
     function test_nullTreasury_taxDistribution_conversion() public {
 
         address[] memory wallets = new address[](2);

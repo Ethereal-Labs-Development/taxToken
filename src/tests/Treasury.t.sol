@@ -3,8 +3,6 @@ pragma solidity ^0.8.6;
 
 import "../../lib/ds-test/src/test.sol";
 import "./Utility.sol";
-
-// Import sol file
 import "../TaxToken.sol";
 import "../Treasury.sol";
 
@@ -31,9 +29,9 @@ contract TreasuryTest is Utility {
         // Token instantiation.
         taxToken = new TaxToken(
             1000000000,                // Initial liquidity
-            'ProveZero',               // Name of token.
-            'PROZ',                    // Symbol of token.
-            18,                        // Precision of decimals.
+            'TaxToken',                 // Name of token
+            'TAX',                     // Symbol of token
+            18,                        // Precision of decimals
             1000000,                   // Max wallet size
             100000                     // Max transaction amount
         );
@@ -83,8 +81,6 @@ contract TreasuryTest is Utility {
         );
 
         taxToken.modifyWhitelist(address(this), false);
-        // taxToken.updateSenderTaxType(UNIV2_PAIR, 1);
-        // taxToken.updateReceiverTaxType(UNIV2_PAIR, 2);
 
         buy_generateFees();
         sell_generateFees();
@@ -94,10 +90,8 @@ contract TreasuryTest is Utility {
         setTaxDistribution_DAI();
     }
 
+    // Simulate buy (taxType 1).
     function buy_generateFees() public {
-
-        // Simulate buy (taxType 1)
-
         uint tradeAmt = 1 ether;
 
         IERC20(WETH).approve(
@@ -118,9 +112,8 @@ contract TreasuryTest is Utility {
         );
     }
 
+    // Simulate sell (taxType 2).
     function sell_generateFees() public {
-        // Simulate sell (taxType 2)
-
         uint tradeAmt = 10 ether;
 
         IERC20(address(taxToken)).approve(
@@ -143,12 +136,10 @@ contract TreasuryTest is Utility {
         );
     }
 
+    // Simulate xfer (taxType 0).
     function xfer_generateFees() public {
-        // Simulate xfer (taxType 0)
         taxToken.transfer(address(0), 1 ether);
     }
-
-
 
     // Initial state check on treasury.
     // Each taxType (0, 1, and 2) should have some greater than 0 value.
@@ -161,7 +152,7 @@ contract TreasuryTest is Utility {
         assertEq(sum, taxToken.balanceOf(address(treasury)));
     }
 
-    // Test require statement fail: require(walletCount == wallets.length)
+    // Test require statement fail: require(walletCount == wallets.length).
     function testFail_treasury_modify_taxSetting_require_0() public {
         address[] memory wallets = new address[](3);
         address[] memory convertToAsset = new address[](2);
@@ -184,7 +175,7 @@ contract TreasuryTest is Utility {
         );
     }
 
-    // Test require statement fail: require(walletCount == convertToAsset.length)
+    // Test require statement fail: require(walletCount == convertToAsset.length).
     function testFail_treasury_modify_taxSetting_require_1() public {
         address[] memory wallets = new address[](2);
         address[] memory convertToAsset = new address[](3);
@@ -207,7 +198,7 @@ contract TreasuryTest is Utility {
         );
     }
 
-    // Test require statement fail: require(walletCount == percentDistribution.length)
+    // Test require statement fail: require(walletCount == percentDistribution.length).
     function testFail_treasury_modify_taxSetting_require_2() public {
         address[] memory wallets = new address[](2);
         address[] memory convertToAsset = new address[](2);
@@ -230,7 +221,7 @@ contract TreasuryTest is Utility {
         );
     }
 
-    // Test require statement fail: require(sumPercentDistribution == 100)
+    // Test require statement fail: require(sumPercentDistribution == 100).
     function testFail_treasury_modify_taxSetting_require_3() public {
         address[] memory wallets = new address[](2);
         address[] memory convertToAsset = new address[](2);
@@ -330,6 +321,7 @@ contract TreasuryTest is Utility {
         assertEq(_percentDistribution[2], 40);
     }
 
+    // TODO: Add descriptions.
     function test_treasury_taxDistribution() public {
 
         address[] memory wallets = new address[](2);
@@ -356,6 +348,7 @@ contract TreasuryTest is Utility {
         assertEq(treasury.distributeTaxes(1), _preTaxAccrued);
     }
 
+    // TODO: Add descriptions.
     function test_treasury_taxDistribution_conversion() public {
 
         address[] memory wallets = new address[](2);
@@ -407,6 +400,7 @@ contract TreasuryTest is Utility {
         treasury.distributeAllTaxes();
     }
     
+    // TODO: Add descriptions.
     function test_view_function_taxesAccrued() public {
         (
             uint _taxType0,
@@ -425,8 +419,8 @@ contract TreasuryTest is Utility {
         assertEq(_sum, taxToken.balanceOf(address(treasury)));
     }
 
+    // TODO: Add descriptions.
     function test_treasury_safeWithdraw_USDC() public {
-        
         // Buy USDC through Uniswap and deposit into Treasury.
         uint tradeAmt = 10 ether;
 
@@ -443,7 +437,7 @@ contract TreasuryTest is Utility {
             tradeAmt,
             0,
             path_uni_v2,
-            address(treasury),  // Send USDC to treasury instead of msg.sender
+            address(treasury),  // Send USDC to treasury instead of msg.sender.
             block.timestamp + 300
         );
 
@@ -459,8 +453,8 @@ contract TreasuryTest is Utility {
         assertEq(postBal_admin, preBal_treasury);
     }
 
+    // TODO: Add descriptions.
     function test_treasury_safeWithdraw_DAI() public {
-        
         // Buy DAI through Uniswap and deposit into Treasury.
         uint tradeAmt = 10 ether;
 
@@ -477,7 +471,7 @@ contract TreasuryTest is Utility {
             tradeAmt,
             0,
             path_uni_v2,
-            address(treasury),  // Send DAI to treasury instead of msg.sender
+            address(treasury),  // Send DAI to treasury instead of msg.sender.
             block.timestamp + 300
         );
 
@@ -493,50 +487,13 @@ contract TreasuryTest is Utility {
         assertEq(postBal_admin, preBal_treasury);
     }
 
-    // function test_treasury_safeWithdraw_USDT() public {
-
-    //     // Buy USDT through Uniswap and deposit into Treasury.
-    //     uint tradeAmt = 10 ether;
-    //     address USDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
-
-    //     IERC20(WETH).approve(
-    //         address(UNIV2_ROUTER), tradeAmt
-    //     );
-
-    //     address[] memory path_uni_v2 = new address[](2);
-
-    //     path_uni_v2[0] = WETH;
-    //     path_uni_v2[1] = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
-
-    //     IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokens(
-    //         tradeAmt,
-    //         0,
-    //         path_uni_v2,
-    //         address(treasury),  // Send USDT to treasury instead of msg.sender
-    //         block.timestamp + 300
-    //     );
-
-    //     uint preBal_treasury = IERC20(USDT).balanceOf(address(treasury));
-    //     uint preBal_admin = IERC20(USDT).balanceOf(address(this));
-
-    //     treasury.safeWithdraw(USDT);
-
-    //     uint postBal_treasury = IERC20(USDT).balanceOf(address(treasury));
-    //     uint postBal_admin = IERC20(USDT).balanceOf(address(this));
-
-    //     assertEq(preBal_admin, postBal_treasury);
-    //     assertEq(postBal_admin, preBal_treasury);
-    // }
-
+    // TODO: Add descriptions.
     function test_treasury_updateAdmin() public {
         treasury.updateAdmin(address(32));
         assertEq(treasury.admin(), address(32));
     }
 
-
-
     // Experiment with exchangeRateTotal() view function.
-
     function test_treasury_exchangeRateTotal() public {
 
         address[] memory path_uni_v2 = new address[](3);
@@ -608,7 +565,6 @@ contract TreasuryTest is Utility {
     }
 
     // Verify new distributeTaxes() function.
-
     function test_treasury_distributeTaxes_new() public {
         treasury.distributeTaxes(0);
         treasury.distributeTaxes(1);
@@ -653,21 +609,6 @@ contract TreasuryTest is Utility {
             convertToAsset, 
             percentDistribution
         );
-
-        // (
-        //     uint256 _walletCount, 
-        //     address[] memory _wallets, 
-        //     address[] memory _convertToAsset, 
-        //     uint[] memory _percentDistribution
-        // ) = treasury.viewTaxSettings(0);
-
-        // assertEq(_walletCount, 2);
-        // assertEq(_wallets[0], address(0));
-        // assertEq(_wallets[1], address(1));
-        // assertEq(_convertToAsset[0], address(taxToken));
-        // assertEq(_convertToAsset[1], address(taxToken));
-        // assertEq(_percentDistribution[0], 50);
-        // assertEq(_percentDistribution[1], 50);
 
         // Update distribution settings (for buys).
         wallets = new address[](4);
@@ -742,10 +683,12 @@ contract TreasuryTest is Utility {
         treasury.distributeTaxes(0);
     }
 
+    // Attempt to distribute taxes for tax type 1.
     function test_treasury_distributeTaxes_new_1() public {
         treasury.distributeTaxes(1);
     }
 
+    // Attempt to distribute taxes for tax type 2.
     function test_treasury_distributeTaxes_new_2() public {
         treasury.distributeTaxes(2);
     }
