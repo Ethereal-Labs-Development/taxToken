@@ -14,27 +14,38 @@ contract Treasury {
     // State Variables
     // ---------------
 
-    address public taxToken;        /// @dev The token that fees are taken from, and what is held in escrow here.
-    address public admin;           /// @dev The administrator of accounting and distribution settings.
+    /// @dev The token that fees are taken from, and what is held in escrow here.
+    address public taxToken;
 
+    /// @dev The administrator of accounting and distribution settings.
+    address public admin;
+    
     address public constant UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
 
+    // Mappings
+
     /// @notice Handles the internal accounting for how much taxToken is owed to each taxType.
-    /// @dev    e.g. 10,000 taxToken owed to taxType 0 => taxTokenAccruedForTaxType[0] = 10000 * 10**18
+    /// @dev    e.g. 10,000 taxToken owed to taxType 0 => taxTokenAccruedForTaxType[0] = 10000 * 10**18.
     ///         taxType 0 => Xfer Tax
     ///         taxType 1 => Buy Tax
     ///         taxType 2 => Sell Tax
     mapping(uint => uint) public taxTokenAccruedForTaxType;
 
-    mapping(uint => TaxDistribution) public taxSettings;    /// @dev Mapping of taxType to TaxDistribution struct.
+    /// @dev Mapping of taxType to TaxDistribution struct.
+    mapping(uint => TaxDistribution) public taxSettings;
 
-    mapping(address => uint) public distributionsTaxToken;  /// @dev Tracks amount of taxToken distributed to recipients.
-    mapping(address => uint) public distributionsWETH;      /// @dev Tracks amount of WETH distributed to recipients.
- 
+    /// @dev Tracks amount of taxToken distributed to recipients.
+    mapping(address => uint) public distributionsTaxToken;
+
+    /// @dev Tracks amount of WETH distributed to recipients.
+    mapping(address => uint) public distributionsWETH;      
+
+    // Structs
+
     /// @notice Manages how TaxToken is distributed for a given taxType.
     ///         Variables:
     ///           walletCount           => The number of wallets to distribute fees to.
-    ///           wallets               => The addresses to distribute fees (maps with convertToAsset and percentDistribution)
+    ///           wallets               => The addresses to distribute fees (maps with convertToAsset and percentDistribution).
     ///           convertToAsset        => The asset to pre-convert taxToken to prior to distribution (if same as taxToken, no conversion executed).
     ///           percentDistribution   => The percentage of taxToken accrued for taxType to distribute.
     struct TaxDistribution {
@@ -43,6 +54,7 @@ contract Treasury {
         address[] convertToAsset;
         uint[] percentDistribution;
     }
+
 
 
     // -----------
@@ -57,31 +69,37 @@ contract Treasury {
         taxToken = _taxToken;
     }
 
-    // -----
-    // Event
-    // -----
 
-    event OwnershipTransferred(address indexed currentAdmin, address indexed newAdmin);
 
-    event RoyaltiesDistributed(address indexed recipient, uint amount, address asset);
-
- 
     // ---------
     // Modifiers
     // ---------
 
-    /// @dev    Enforces msg.sender is admin.
+    /// @dev Enforces msg.sender is admin.
     modifier isAdmin {
         require(msg.sender == admin);
         _;
     }
 
-    /// @dev    Enforces msg.sender is taxToken.
+    /// @dev Enforces msg.sender is taxToken.
     modifier isTaxToken {
         require(msg.sender == taxToken);
         _;
     }
 
+
+
+    // ------
+    // Events
+    // ------
+
+    /// @dev Emitted when transferOwnership() is completed.
+    event OwnershipTransferred(address indexed currentAdmin, address indexed newAdmin);
+
+    /// @dev Emitted when transferOwnership() is completed.
+    event RoyaltiesDistributed(address indexed recipient, uint amount, address asset);
+
+ 
 
     // ---------
     // Functions
@@ -89,10 +107,10 @@ contract Treasury {
 
     /// @notice Increases _amt of taxToken allocated to _taxType.
     /// @dev    Only callable by taxToken.
-    /// @param  taxType The taxType to allocate more taxToken to for distribution.
-    /// @param  amt The amount of taxToken going to taxType.
-    function updateTaxesAccrued(uint taxType, uint amt) isTaxToken external {
-        taxTokenAccruedForTaxType[taxType] += amt;
+    /// @param  _taxType The taxType to allocate more taxToken to for distribution.
+    /// @param  _amt The amount of taxToken going to taxType.
+    function updateTaxesAccrued(uint _taxType, uint _amt) isTaxToken external {
+        taxTokenAccruedForTaxType[_taxType] += _amt;
     }
 
     /// @notice View function for taxes accrued (a.k.a. "claimable") for each tax type, and the sum.
@@ -110,69 +128,69 @@ contract Treasury {
     }
 
     /// @notice This function modifies the distribution settings for a given taxType.
-    /// @dev    Only callable by Admin. percentDistribution must add up to 100.
-    /// @param  taxType The taxType to update settings for.
-    /// @param  walletCount The number of wallets to distribute across.
-    /// @param  wallets The address of wallets to distribute fees across.
-    /// @param  convertToAsset The asset to convert taxToken to, prior to distribution.
-    /// @param  percentDistribution The percentage (corresponding with wallets) to distribute taxes to of overall amount owed for taxType.
+    /// @dev    Only callable by Admin.
+    /// @param  _taxType The taxType to update settings for.
+    /// @param  _walletCount The number of wallets to distribute across.
+    /// @param  _wallets The address of wallets to distribute fees across.
+    /// @param  _convertToAsset The asset to convert taxToken to, prior to distribution.
+    /// @param  _percentDistribution The percentage (corresponding with wallets) to distribute taxes to of overall amount owed for taxType.
     function setTaxDistribution(
-        uint taxType,
-        uint walletCount,
-        address[] calldata wallets,
-        address[] calldata convertToAsset,
-        uint[] calldata percentDistribution
+        uint _taxType,
+        uint _walletCount,
+        address[] calldata _wallets,
+        address[] calldata _convertToAsset,
+        uint[] calldata _percentDistribution
     ) isAdmin external {
 
         // Pre-check that supplied values have equal lengths.
-        require(walletCount == wallets.length, "err walletCount length != wallets.length");
-        require(walletCount == convertToAsset.length, "err walletCount length != convertToAsset.length");
-        require(walletCount == percentDistribution.length, "err walletCount length != percentDistribution.length");
+        require(_walletCount == _wallets.length, "Treasury.sol::setTaxDistribution(), walletCount length != wallets.length");
+        require(_walletCount == _convertToAsset.length, "Treasury.sol::setTaxDistribution(), walletCount length != convertToAsset.length");
+        require(_walletCount == _percentDistribution.length, "Treasury.sol::setTaxDistribution(), walletCount length != percentDistribution.length");
 
         // Enforce sum(percentDistribution) = 100;
         uint sumPercentDistribution;
-        for(uint i = 0; i < walletCount; i++) {
-            sumPercentDistribution += percentDistribution[i];
+        for(uint i = 0; i < _walletCount; i++) {
+            sumPercentDistribution += _percentDistribution[i];
         }
-        require(sumPercentDistribution == 100, "err sumPercentDistribution != 100");
+        require(sumPercentDistribution == 100, "Treasury.sol::setTaxDistribution(), sumPercentDistribution != 100");
 
         // Update taxSettings for taxType.
-        taxSettings[taxType] = TaxDistribution(
-            walletCount,
-            wallets,
-            convertToAsset,
-            percentDistribution
+        taxSettings[_taxType] = TaxDistribution(
+            _walletCount,
+            _wallets,
+            _convertToAsset,
+            _percentDistribution
         );
     }
 
     /// @notice Distributes taxes for given taxType.
-    /// @param  taxType Chosen taxType to distribute.
-    /// @return amountToDistribute TaxToken amount distributed.
-    function distributeTaxes(uint taxType) public returns(uint amountToDistribute) {
+    /// @param  _taxType Chosen taxType to distribute.
+    /// @return _amountToDistribute TaxToken amount distributed.
+    function distributeTaxes(uint _taxType) public returns(uint _amountToDistribute) {
         
-        amountToDistribute = taxTokenAccruedForTaxType[taxType];
+        _amountToDistribute = taxTokenAccruedForTaxType[_taxType];
 
-        if (amountToDistribute > 0) {
+        if (_amountToDistribute > 0) {
 
-            taxTokenAccruedForTaxType[taxType] = 0;
+            taxTokenAccruedForTaxType[_taxType] = 0;
 
             uint sumPercentSell = 0;
 
-            for (uint i = 0; i < taxSettings[taxType].wallets.length; i++) {
-                if (taxSettings[taxType].convertToAsset[i] == taxToken) {
-                    uint amt = amountToDistribute * taxSettings[taxType].percentDistribution[i] / 100;
-                    assert(IERC20(taxToken).transfer(taxSettings[taxType].wallets[i], amt));
-                    distributionsTaxToken[taxSettings[taxType].wallets[i]] += amt;
-                    emit RoyaltiesDistributed(taxSettings[taxType].wallets[i], amt, taxToken);
+            for (uint i = 0; i < taxSettings[_taxType].wallets.length; i++) {
+                if (taxSettings[_taxType].convertToAsset[i] == taxToken) {
+                    uint amt = _amountToDistribute * taxSettings[_taxType].percentDistribution[i] / 100;
+                    assert(IERC20(taxToken).transfer(taxSettings[_taxType].wallets[i], amt));
+                    distributionsTaxToken[taxSettings[_taxType].wallets[i]] += amt;
+                    emit RoyaltiesDistributed(taxSettings[_taxType].wallets[i], amt, taxToken);
                 }
                 else {
-                    sumPercentSell += taxSettings[taxType].percentDistribution[i];
+                    sumPercentSell += taxSettings[_taxType].percentDistribution[i];
                 }
             }
 
             if (sumPercentSell > 0) {
 
-                uint amountToSell = amountToDistribute * sumPercentSell / 100;
+                uint amountToSell = _amountToDistribute * sumPercentSell / 100;
 
                 address WETH = IUniswapV2Router01(UNIV2_ROUTER).WETH();
 
@@ -193,17 +211,16 @@ contract Treasury {
 
                 uint balanceWETH = IERC20(WETH).balanceOf(address(this));
 
-                for (uint i = 0; i < taxSettings[taxType].wallets.length; i++) {
-                    if (taxSettings[taxType].convertToAsset[i] != taxToken) {
-                        uint amt = balanceWETH * taxSettings[taxType].percentDistribution[i] / sumPercentSell;
-                        assert(IERC20(WETH).transfer(taxSettings[taxType].wallets[i], amt));
-                        distributionsWETH[taxSettings[taxType].wallets[i]] += amt;
-                        emit RoyaltiesDistributed(taxSettings[taxType].wallets[i], amt, taxToken);
+                for (uint i = 0; i < taxSettings[_taxType].wallets.length; i++) {
+                    if (taxSettings[_taxType].convertToAsset[i] != taxToken) {
+                        uint amt = balanceWETH * taxSettings[_taxType].percentDistribution[i] / sumPercentSell;
+                        assert(IERC20(WETH).transfer(taxSettings[_taxType].wallets[i], amt));
+                        distributionsWETH[taxSettings[_taxType].wallets[i]] += amt;
+                        emit RoyaltiesDistributed(taxSettings[_taxType].wallets[i], amt, taxToken);
                     }
                 }
             }
         }
-
     }
 
     /// @notice Distributes taxes for all taxTypes.
@@ -220,48 +237,42 @@ contract Treasury {
     /// @return address[]  array of wallets in distribution.
     /// @return address[]  array of assets to be converted to during distribution to it's respective wallet.
     /// @return uint[]     array of distribution, all uints must add up to 100.
-    function viewTaxSettings(uint taxType) external view returns(uint256, address[] memory, address[] memory, uint[] memory) {
+    function viewTaxSettings(uint _taxType) external view returns(uint256, address[] memory, address[] memory, uint[] memory) {
         return (
-            taxSettings[taxType].walletCount,
-            taxSettings[taxType].wallets,
-            taxSettings[taxType].convertToAsset,
-            taxSettings[taxType].percentDistribution
+            taxSettings[_taxType].walletCount,
+            taxSettings[_taxType].wallets,
+            taxSettings[_taxType].convertToAsset,
+            taxSettings[_taxType].percentDistribution
         );
     }
 
     /// @notice Withdraw a non-taxToken from the treasury.
     /// @dev    Reverts if token == taxtoken.
     /// @dev    Only callable by Admin.
-    /// @param  token The token to withdraw from the treasury.
-    function safeWithdraw(address token) external isAdmin {
-        require(token != taxToken, "err cannot withdraw native tokens from this contract");
-        IERC20(token).transfer(msg.sender, IERC20(token).balanceOf(address(this)));
+    /// @param  _token The token to withdraw from the treasury.
+    function safeWithdraw(address _token) external isAdmin {
+        require(_token != taxToken, "Treasury.sol::safeWithdraw(), cannot withdraw native tokens from this contract");
+        IERC20(_token).transfer(msg.sender, IERC20(_token).balanceOf(address(this)));
     }
 
     /// @notice Change the admin for the treasury.
     /// @dev    Only callable by Admin.
     /// @param  _admin New admin address.
     function updateAdmin(address _admin) external isAdmin {
-        require(_admin != address(0), "err _admin == address(0)");
+        require(_admin != address(0), "Treasury.sol::updateAdmin(), _admin == address(0)");
         emit OwnershipTransferred(admin, _admin);
         admin = _admin;
     }
 
     
     /// @notice View function for exchanging fees collected for given taxType.
-    /// @param  path The path by which taxToken is converted into a given asset (i.e. taxToken => DAI => LINK).
-    /// @param  taxType The taxType to be exchanged.
-    function exchangeRateForTaxType(address[] memory path, uint taxType) external view returns(uint256) {
-        /*
-            function getAmountsOut(
-                uint amountIn, 
-                address[] calldata path
-            ) external view returns (uint[] memory amounts);
-        */
+    /// @param  _path The path by which taxToken is converted into a given asset (i.e. taxToken => DAI => LINK).
+    /// @param  _taxType The taxType to be exchanged.
+    function exchangeRateForTaxType(address[] memory _path, uint _taxType) external view returns(uint256) {
         return IUniswapV2Router01(UNIV2_ROUTER).getAmountsOut(
-            taxTokenAccruedForTaxType[taxType], 
-            path
-        )[path.length - 1];
+            taxTokenAccruedForTaxType[_taxType], 
+            _path
+        )[_path.length - 1];
     }
 
 }

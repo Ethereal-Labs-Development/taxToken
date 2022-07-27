@@ -515,5 +515,4 @@ contract TaxToken {
 
         return (fullBalance, industryBalance, difference, lifeTimeIndustryTokens[_wallet]);
     }
-
 }
