@@ -33,6 +33,7 @@ contract Utility is DSTest {
     address constant WETH  = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address constant WBTC  = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
     address constant CDAI  = 0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643;
+    address constant FRAX  = 0x853d955aCEf822Db058eb8505911ED77F175b99e;
 
     IERC20 constant dai  = IERC20(DAI);
     IERC20 constant usdc = IERC20(USDC);
@@ -79,6 +80,7 @@ contract Utility is DSTest {
     event Debug(string, uint256);
     event Debug(string, address);
     event Debug(string, bool);
+    event Debug(string, string);
 
     constructor() public { hevm = Hevm(address(bytes20(uint160(uint256(keccak256("hevm cheat code")))))); }
 

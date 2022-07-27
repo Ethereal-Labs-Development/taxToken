@@ -695,11 +695,12 @@ contract TreasuryTest is Utility {
 
     // NOTE: taxDistribution set in SetUp() -> setTaxDistribution_DAI().
     function test_treasury_DAI_royalties() public {
-        treasury.updateAdmin(address(dev));
-        dev.try_updateStable(address(treasury), USDC);
 
         //treasury.updateStable(DAI);
-        address distributionToken = treasury.stable();
+        address distributionToken = treasury.stable(); // DAI
+
+        assertEq(IERC20(distributionToken).symbol(), "DAI");
+        assertEq(IERC20(distributionToken).decimals(), 18);
 
         // Pre-State Check.
         uint preBal1 = IERC20(distributionToken).balanceOf(address(1));
@@ -725,6 +726,92 @@ contract TreasuryTest is Utility {
         emit LogUint("Stable Received address(1)", postBal1 - preBal1); // 20%
         emit LogUint("Stable Received address(2)", postBal2 - preBal2); // 20%
         emit LogUint("Stable Received address(3)", postBal3 - preBal3); // 60%
+
+        // ├╴LogUint("Stable Received address(1)", 44172136289620355915)
+        // ├╴LogUint("Stable Received address(2)", 44172136289620355915)
+        // └╴LogUint("Stable Received address(3)", 132516408868861067746)
+    }
+
+    // NOTE: taxDistribution set in SetUp() -> setTaxDistribution_DAI().
+    function test_treasury_USDC_royalties() public {
+        treasury.updateAdmin(address(dev));
+        dev.try_updateStable(address(treasury), USDC);
+        
+        //treasury.updateStable(DAI);
+        address distributionToken = treasury.stable(); // USDC
+
+        assertEq(IERC20(distributionToken).symbol(), "USDC");
+        assertEq(IERC20(distributionToken).decimals(), 6);
+
+        // Pre-State Check.
+        uint preBal1 = IERC20(distributionToken).balanceOf(address(1));
+        uint preBal2 = IERC20(distributionToken).balanceOf(address(2));
+        uint preBal3 = IERC20(distributionToken).balanceOf(address(3));
+
+        assertEq(treasury.distributionsStable(address(1)), 0);
+        assertEq(treasury.distributionsStable(address(2)), 0);
+        assertEq(treasury.distributionsStable(address(3)), 0);
+
+        // Distribute Royalties
+        treasury.distributeAllTaxes();
+
+        //Post-State Check.
+        uint postBal1 = IERC20(distributionToken).balanceOf(address(1));
+        uint postBal2 = IERC20(distributionToken).balanceOf(address(2));
+        uint postBal3 = IERC20(distributionToken).balanceOf(address(3));
+
+        assertEq(treasury.distributionsStable(address(1)), postBal1 - preBal1);
+        assertEq(treasury.distributionsStable(address(2)), postBal2 - preBal2);
+        assertEq(treasury.distributionsStable(address(3)), postBal3 - preBal3);
+
+        emit LogUint("Stable Received address(1)", postBal1 - preBal1); // 20%
+        emit LogUint("Stable Received address(2)", postBal2 - preBal2); // 20%
+        emit LogUint("Stable Received address(3)", postBal3 - preBal3); // 60%
+
+        // ├╴LogUint("Stable Received address(1)", 44238246)
+        // ├╴LogUint("Stable Received address(2)", 44238246)
+        // └╴LogUint("Stable Received address(3)", 132714739)
+    }
+
+    // NOTE: taxDistribution set in SetUp() -> setTaxDistribution_DAI().
+    function test_treasury_FRAX_royalties() public {
+        treasury.updateAdmin(address(dev));
+        dev.try_updateStable(address(treasury), FRAX);
+        
+        //treasury.updateStable(DAI);
+        address distributionToken = treasury.stable(); // USDC
+
+        assertEq(IERC20(distributionToken).symbol(), "FRAX");
+        assertEq(IERC20(distributionToken).decimals(), 18);
+
+        // Pre-State Check.
+        uint preBal1 = IERC20(distributionToken).balanceOf(address(1));
+        uint preBal2 = IERC20(distributionToken).balanceOf(address(2));
+        uint preBal3 = IERC20(distributionToken).balanceOf(address(3));
+
+        assertEq(treasury.distributionsStable(address(1)), 0);
+        assertEq(treasury.distributionsStable(address(2)), 0);
+        assertEq(treasury.distributionsStable(address(3)), 0);
+
+        // Distribute Royalties
+        treasury.distributeAllTaxes();
+
+        //Post-State Check.
+        uint postBal1 = IERC20(distributionToken).balanceOf(address(1));
+        uint postBal2 = IERC20(distributionToken).balanceOf(address(2));
+        uint postBal3 = IERC20(distributionToken).balanceOf(address(3));
+
+        assertEq(treasury.distributionsStable(address(1)), postBal1 - preBal1);
+        assertEq(treasury.distributionsStable(address(2)), postBal2 - preBal2);
+        assertEq(treasury.distributionsStable(address(3)), postBal3 - preBal3);
+
+        emit LogUint("Stable Received address(1)", postBal1 - preBal1); // 20%
+        emit LogUint("Stable Received address(2)", postBal2 - preBal2); // 20%
+        emit LogUint("Stable Received address(3)", postBal3 - preBal3); // 60%
+
+        // ├╴LogUint("Stable Received address(1)", 43454257034374145510)
+        // ├╴LogUint("Stable Received address(2)", 43454257034374145510)
+        // └╴LogUint("Stable Received address(3)", 130362771103122436532)
     }
 
 }
