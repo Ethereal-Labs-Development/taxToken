@@ -17,6 +17,8 @@ contract Treasury {
     /// @dev The token that fees are taken from, and what is held in escrow here.
     address public taxToken;
 
+    address public stable;
+
     /// @dev The administrator of accounting and distribution settings.
     address public admin;
     
@@ -38,7 +40,7 @@ contract Treasury {
     mapping(address => uint) public distributionsTaxToken;
 
     /// @dev Tracks amount of WETH distributed to recipients.
-    mapping(address => uint) public distributionsWETH;      
+    mapping(address => uint) public distributionsStable;      
 
     // Structs
 
@@ -64,11 +66,16 @@ contract Treasury {
     /// @notice Initializes the Treasury.
     /// @param  _admin      The administrator of the contract.
     /// @param  _taxToken   The taxToken (ERC-20 asset) which accumulates in this Treasury.
-    constructor(address _admin, address _taxToken) {
+    constructor(address _admin, address _taxToken, address _stable) {
         admin = _admin;
         taxToken = _taxToken;
+        stable = _stable;
     }
 
+
+    event RoyaltiesDistributed(address indexed recipient, uint amount, address asset);
+
+    event StableUpdated(address currentStable, address newStable);
 
 
     // ---------
@@ -174,32 +181,36 @@ contract Treasury {
 
             taxTokenAccruedForTaxType[_taxType] = 0;
 
-            uint sumPercentSell = 0;
+            uint sumPercentToSell = 0;
 
-            for (uint i = 0; i < taxSettings[_taxType].wallets.length; i++) {
-                if (taxSettings[_taxType].convertToAsset[i] == taxToken) {
-                    uint amt = _amountToDistribute * taxSettings[_taxType].percentDistribution[i] / 100;
-                    assert(IERC20(taxToken).transfer(taxSettings[_taxType].wallets[i], amt));
-                    distributionsTaxToken[taxSettings[_taxType].wallets[i]] += amt;
-                    emit RoyaltiesDistributed(taxSettings[_taxType].wallets[i], amt, taxToken);
+            for (uint i = 0; i < taxSettings[taxType].wallets.length; i++) {
+                if (taxSettings[taxType].convertToAsset[i] == taxToken) {
+                    uint amt = amountToDistribute * taxSettings[taxType].percentDistribution[i] / 100;
+
+                    assert(IERC20(taxToken).transfer(taxSettings[taxType].wallets[i], amt));
+
+                    distributionsTaxToken[taxSettings[taxType].wallets[i]] += amt;
+                    emit RoyaltiesDistributed(taxSettings[taxType].wallets[i], amt, taxToken);
                 }
                 else {
-                    sumPercentSell += taxSettings[_taxType].percentDistribution[i];
+                    sumPercentToSell += taxSettings[taxType].percentDistribution[i];
                 }
             }
 
-            if (sumPercentSell > 0) {
+            if (sumPercentToSell > 0) {
 
                 uint amountToSell = _amountToDistribute * sumPercentSell / 100;
 
                 address WETH = IUniswapV2Router01(UNIV2_ROUTER).WETH();
+                //address DAI  = 0x6B175474E89094C44Da98b954EedeAC495271d0F; // change if on testnet
 
                 assert(IERC20(taxToken).approve(address(UNIV2_ROUTER), amountToSell));
 
-                address[] memory path_uni_v2 = new address[](2);
+                address[] memory path_uni_v2 = new address[](3);
 
                 path_uni_v2[0] = taxToken;
                 path_uni_v2[1] = WETH;
+                path_uni_v2[2] = stable;
 
                 IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokens(
                     amountToSell,           
@@ -209,13 +220,16 @@ contract Treasury {
                     block.timestamp + 30000
                 );
 
-                uint balanceWETH = IERC20(WETH).balanceOf(address(this));
+                //uint balanceWETH = IERC20(WETH).balanceOf(address(this));
+                uint balanceStable = IERC20(stable).balanceOf(address(this));
 
-                for (uint i = 0; i < taxSettings[_taxType].wallets.length; i++) {
+                for (uint i = 0; i < taxSettings[taxType].wallets.length; i++) {
                     if (taxSettings[_taxType].convertToAsset[i] != taxToken) {
-                        uint amt = balanceWETH * taxSettings[_taxType].percentDistribution[i] / sumPercentSell;
-                        assert(IERC20(WETH).transfer(taxSettings[_taxType].wallets[i], amt));
-                        distributionsWETH[taxSettings[_taxType].wallets[i]] += amt;
+                        uint amt = balanceStable * taxSettings[_taxType].percentDistribution[i] / sumPercentToSell;
+
+                        assert(IERC20(stable).transfer(taxSettings[_taxType].wallets[i], amt));
+
+                        distributionsStable[taxSettings[_taxType].wallets[i]] += amt;
                         emit RoyaltiesDistributed(taxSettings[_taxType].wallets[i], amt, taxToken);
                     }
                 }
@@ -264,6 +278,14 @@ contract Treasury {
         admin = _admin;
     }
 
+    /// @notice Change the stable value of the treasury distriubution.
+    /// @dev    Only callable by Admin.
+    /// @param  _stable New stablecoin address.
+    function updateStable(address _stable) external isAdmin {
+        require(_stable != stable, "Treasury.sol::updateStable() value already set");
+        emit StableUpdated(stable, _stable);
+        stable = _stable;
+    }
     
     /// @notice View function for exchanging fees collected for given taxType.
     /// @param  _path The path by which taxToken is converted into a given asset (i.e. taxToken => DAI => LINK).

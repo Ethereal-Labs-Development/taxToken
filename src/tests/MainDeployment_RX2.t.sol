@@ -39,7 +39,8 @@ contract MainDeployment_RX2 is Utility {
         // (2) Deploy the Treasury.
         treasury = new Treasury(
             address(this),
-            address(taxToken)
+            address(taxToken),
+            DAI
         );
 
         // (3) Update the TaxToken "treasury" state variable.

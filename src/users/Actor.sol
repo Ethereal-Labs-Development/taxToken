@@ -54,4 +54,9 @@ contract Actor {
         string memory sig = "decreaseAllowance(address,uint256)";
         (ok,) = address(token).call(abi.encodeWithSignature(sig, account, amt));
     }
+
+    function try_updateStable(address treasury, address stablecoin) external returns (bool ok) {
+        string memory sig = "updateStable(address)";
+        (ok,) = address(treasury).call(abi.encodeWithSignature(sig, stablecoin));
+    }
 }

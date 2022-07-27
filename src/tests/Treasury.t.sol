@@ -24,6 +24,7 @@ contract TreasuryTest is Utility {
     // Deploy token, specify input params.
     // setUp() runs before every tests conduct.
     function setUp() public {
+        createActors();
 
         // Token instantiation.
         taxToken = new TaxToken(
@@ -36,7 +37,7 @@ contract TreasuryTest is Utility {
         );
 
         treasury = new Treasury(
-            address(this), address(taxToken)
+            address(this), address(taxToken), DAI
         );
 
         taxToken.setTreasury(address(treasury));
@@ -85,7 +86,8 @@ contract TreasuryTest is Utility {
         sell_generateFees();
         xfer_generateFees();
 
-        setProperTaxDistribution();
+        //setProperTaxDistribution_ADMT();
+        setTaxDistribution_DAI();
     }
 
     // Simulate buy (taxType 1).
@@ -569,8 +571,8 @@ contract TreasuryTest is Utility {
         treasury.distributeTaxes(2);
     }
 
-    // TODO: Add descriptions.
-    function setProperTaxDistribution() public {
+    function setProperTaxDistribution_ADMT() public {
+
         // Update distribution settings (for sells and transfers).
         address[] memory wallets = new address[](5);
         address[] memory convertToAsset = new address[](5);
@@ -636,7 +638,47 @@ contract TreasuryTest is Utility {
 
     }
 
-    // Attempt to distribute taxes for tax type 0.
+    function setTaxDistribution_DAI() public {
+
+        address[] memory wallets = new address[](3);
+        address[] memory convertToAsset = new address[](3);
+        uint[] memory percentDistribution = new uint[](3);
+        
+        wallets[0] = address(1);
+        wallets[1] = address(2);
+        wallets[2] = address(3);
+        convertToAsset[0] = DAI;
+        convertToAsset[1] = DAI;
+        convertToAsset[2] = DAI;
+        percentDistribution[0] = 20;
+        percentDistribution[1] = 20;
+        percentDistribution[2] = 60;
+        
+        treasury.setTaxDistribution(
+            0,
+            3,
+            wallets, 
+            convertToAsset, 
+            percentDistribution
+        );
+
+        treasury.setTaxDistribution(
+            1,
+            3,
+            wallets, 
+            convertToAsset, 
+            percentDistribution
+        );
+        
+        treasury.setTaxDistribution(
+            2,
+            3,
+            wallets, 
+            convertToAsset, 
+            percentDistribution
+        );
+    }
+
     function test_treasury_distributeTaxes_new_0() public {
         treasury.distributeTaxes(0);
     }
@@ -649,6 +691,40 @@ contract TreasuryTest is Utility {
     // Attempt to distribute taxes for tax type 2.
     function test_treasury_distributeTaxes_new_2() public {
         treasury.distributeTaxes(2);
+    }
+
+    // NOTE: taxDistribution set in SetUp() -> setTaxDistribution_DAI().
+    function test_treasury_DAI_royalties() public {
+        treasury.updateAdmin(address(dev));
+        dev.try_updateStable(address(treasury), USDC);
+
+        //treasury.updateStable(DAI);
+        address distributionToken = treasury.stable();
+
+        // Pre-State Check.
+        uint preBal1 = IERC20(distributionToken).balanceOf(address(1));
+        uint preBal2 = IERC20(distributionToken).balanceOf(address(2));
+        uint preBal3 = IERC20(distributionToken).balanceOf(address(3));
+
+        assertEq(treasury.distributionsStable(address(1)), 0);
+        assertEq(treasury.distributionsStable(address(2)), 0);
+        assertEq(treasury.distributionsStable(address(3)), 0);
+
+        // Distribute Royalties
+        treasury.distributeAllTaxes();
+
+        //Post-State Check.
+        uint postBal1 = IERC20(distributionToken).balanceOf(address(1));
+        uint postBal2 = IERC20(distributionToken).balanceOf(address(2));
+        uint postBal3 = IERC20(distributionToken).balanceOf(address(3));
+
+        assertEq(treasury.distributionsStable(address(1)), postBal1 - preBal1);
+        assertEq(treasury.distributionsStable(address(2)), postBal2 - preBal2);
+        assertEq(treasury.distributionsStable(address(3)), postBal3 - preBal3);
+
+        emit LogUint("Stable Received address(1)", postBal1 - preBal1); // 20%
+        emit LogUint("Stable Received address(2)", postBal2 - preBal2); // 20%
+        emit LogUint("Stable Received address(3)", postBal3 - preBal3); // 60%
     }
 
 }

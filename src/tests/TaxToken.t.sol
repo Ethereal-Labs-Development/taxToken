@@ -30,7 +30,7 @@ contract TaxTokenTest is Utility {
         );
 
         // TODO: Instantiate the tax basis rates for Type 0, 1, and 2.
-        treasury = new Treasury(address(this), address(taxToken));
+        treasury = new Treasury(address(this), address(taxToken), DAI);
         taxToken.setTreasury(address(treasury));
         taxToken.adjustBasisPointsTax(0, 1000);   // 1000 = 10.00 %
     }
