@@ -313,22 +313,22 @@ contract TaxTokenTest is Utility {
 
     // Test to see if you can send locked tokens.
     function test_taxToken_industryMint_restrictions() public {
-        taxToken.transferOwnership(address(god));
+        taxToken.transferOwnership(address(dev));
         
         // Regular Mint Joe 10 tokens.
-        assert(god.try_mint(address(taxToken), address(god), 10 ether));
+        assert(dev.try_mint(address(taxToken), address(dev), 10 ether));
 
         // Industry Mint Joe 10 tokens.
-        assert(god.try_industryMint(address(taxToken), address(god), 10 ether));
+        assert(dev.try_industryMint(address(taxToken), address(dev), 10 ether));
 
         // Confirm Balances.
-        assertEq(taxToken.balanceOf(address(god)), 20 ether);
+        assertEq(taxToken.balanceOf(address(dev)), 20 ether);
 
         // Attempt to send 15 tokens.
-        assert(!taxToken.transfer(address(god), 15 ether));
+        assert(!taxToken.transfer(address(dev), 15 ether));
 
         // Confirm Balances didn't change.
-        assertEq(taxToken.balanceOf(address(god)), 20 ether);
+        assertEq(taxToken.balanceOf(address(dev)), 20 ether);
 
     }
 
