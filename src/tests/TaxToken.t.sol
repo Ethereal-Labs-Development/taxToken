@@ -61,7 +61,7 @@ contract TaxTokenTest is Utility {
 
     // Test updateAuthorizedList().
     function test_taxToken_updateAuthorizedList_change() public {
-        //Verify original owner.
+        // Verify original owner.
         assertEq(address(this), taxToken.owner());
 
         // Have unAuthorized joe attempt to mint tokens.
@@ -76,7 +76,7 @@ contract TaxTokenTest is Utility {
         // Remove Joe to authorized users list.
         taxToken.updateAuthorizedList(address(joe), false);
 
-        // Have authorized Joe attempt to mint tokens.
+        // Have unAuthorized Joe attempt to mint tokens.
         assert(!joe.try_industryBurn(address(taxToken), address(1), 100 ether));
 
     }
