@@ -159,7 +159,7 @@ contract TaxToken {
     event OwnershipTransferred(address indexed _currentAdmin, address indexed _newAdmin);
 
     /// @dev Emitted when updating authorized addresses (users or contracts).
-    event UpdatedAuthorizedUsers(address indexed _account, bool _state);
+    event UpdatedAuthorizedWallets(address indexed _account, bool _state);
 
 
     // ---------
@@ -414,7 +414,7 @@ contract TaxToken {
     /// @param  _state (True or False) If true, _account is authorized, if false, _account is not authorized.
     function updateAuthorizedList(address _account, bool _state) external onlyOwner {
         require(_account != address(0), "TaxToken.sol::updateAuthorizedList(), _owner == 0.");
-        emit UpdatedAuthorizedUsers(_account, _state);
+        emit UpdatedAuthorizedWallets(_account, _state);
         authorized[_account] = _state;
     }
 
