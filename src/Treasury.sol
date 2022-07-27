@@ -73,11 +73,6 @@ contract Treasury {
     }
 
 
-    event RoyaltiesDistributed(address indexed recipient, uint amount, address asset);
-
-    event StableUpdated(address currentStable, address newStable);
-
-
     // ---------
     // Modifiers
     // ---------
@@ -103,8 +98,11 @@ contract Treasury {
     /// @dev Emitted when transferOwnership() is completed.
     event OwnershipTransferred(address indexed currentAdmin, address indexed newAdmin);
 
-    /// @dev Emitted when transferOwnership() is completed.
+    /// @dev Emitted when royalties are distributed via distributeTaxes()
     event RoyaltiesDistributed(address indexed recipient, uint amount, address asset);
+
+    /// @dev Emitted when the stable state variable is updated via updateStable()
+    event StableUpdated(address currentStable, address newStable);
 
  
 
@@ -183,23 +181,23 @@ contract Treasury {
 
             uint sumPercentToSell = 0;
 
-            for (uint i = 0; i < taxSettings[taxType].wallets.length; i++) {
-                if (taxSettings[taxType].convertToAsset[i] == taxToken) {
-                    uint amt = amountToDistribute * taxSettings[taxType].percentDistribution[i] / 100;
+            for (uint i = 0; i < taxSettings[_taxType].wallets.length; i++) {
+                if (taxSettings[_taxType].convertToAsset[i] == taxToken) {
+                    uint amt = _amountToDistribute * taxSettings[_taxType].percentDistribution[i] / 100;
 
-                    assert(IERC20(taxToken).transfer(taxSettings[taxType].wallets[i], amt));
+                    assert(IERC20(taxToken).transfer(taxSettings[_taxType].wallets[i], amt));
 
-                    distributionsTaxToken[taxSettings[taxType].wallets[i]] += amt;
-                    emit RoyaltiesDistributed(taxSettings[taxType].wallets[i], amt, taxToken);
+                    distributionsTaxToken[taxSettings[_taxType].wallets[i]] += amt;
+                    emit RoyaltiesDistributed(taxSettings[_taxType].wallets[i], amt, taxToken);
                 }
                 else {
-                    sumPercentToSell += taxSettings[taxType].percentDistribution[i];
+                    sumPercentToSell += taxSettings[_taxType].percentDistribution[i];
                 }
             }
 
             if (sumPercentToSell > 0) {
 
-                uint amountToSell = _amountToDistribute * sumPercentSell / 100;
+                uint amountToSell = _amountToDistribute * sumPercentToSell / 100;
 
                 address WETH = IUniswapV2Router01(UNIV2_ROUTER).WETH();
                 //address DAI  = 0x6B175474E89094C44Da98b954EedeAC495271d0F; // change if on testnet
@@ -223,7 +221,7 @@ contract Treasury {
                 //uint balanceWETH = IERC20(WETH).balanceOf(address(this));
                 uint balanceStable = IERC20(stable).balanceOf(address(this));
 
-                for (uint i = 0; i < taxSettings[taxType].wallets.length; i++) {
+                for (uint i = 0; i < taxSettings[_taxType].wallets.length; i++) {
                     if (taxSettings[_taxType].convertToAsset[i] != taxToken) {
                         uint amt = balanceStable * taxSettings[_taxType].percentDistribution[i] / sumPercentToSell;
 
