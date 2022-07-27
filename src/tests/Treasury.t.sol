@@ -26,6 +26,7 @@ contract TreasuryTest is Utility {
     // Deploy token, specify input params.
     // setUp() runs before every tests conduct.
     function setUp() public {
+        createActors();
 
         // Token instantiation.
         taxToken = new TaxToken(
@@ -38,7 +39,7 @@ contract TreasuryTest is Utility {
         );
 
         treasury = new Treasury(
-            address(this), address(taxToken)
+            address(this), address(taxToken), DAI
         );
 
         taxToken.setTreasury(address(treasury));
@@ -751,30 +752,36 @@ contract TreasuryTest is Utility {
 
     // NOTE: taxDistribution set in SetUp() -> setTaxDistribution_DAI().
     function test_treasury_DAI_royalties() public {
-        // Pre-State Check.
-        uint preBal1 = IERC20(DAI).balanceOf(address(1));
-        uint preBal2 = IERC20(DAI).balanceOf(address(2));
-        uint preBal3 = IERC20(DAI).balanceOf(address(3));
+        treasury.updateAdmin(address(dev));
+        dev.try_updateStable(address(treasury), USDC);
 
-        assertEq(treasury.distributionsDAI(address(1)), 0);
-        assertEq(treasury.distributionsDAI(address(2)), 0);
-        assertEq(treasury.distributionsDAI(address(3)), 0);
+        //treasury.updateStable(DAI);
+        address distributionToken = treasury.stable();
+
+        // Pre-State Check.
+        uint preBal1 = IERC20(distributionToken).balanceOf(address(1));
+        uint preBal2 = IERC20(distributionToken).balanceOf(address(2));
+        uint preBal3 = IERC20(distributionToken).balanceOf(address(3));
+
+        assertEq(treasury.distributionsStable(address(1)), 0);
+        assertEq(treasury.distributionsStable(address(2)), 0);
+        assertEq(treasury.distributionsStable(address(3)), 0);
 
         // Distribute Royalties
         treasury.distributeAllTaxes();
 
         //Post-State Check.
-        uint postBal1 = IERC20(DAI).balanceOf(address(1));
-        uint postBal2 = IERC20(DAI).balanceOf(address(2));
-        uint postBal3 = IERC20(DAI).balanceOf(address(3));
+        uint postBal1 = IERC20(distributionToken).balanceOf(address(1));
+        uint postBal2 = IERC20(distributionToken).balanceOf(address(2));
+        uint postBal3 = IERC20(distributionToken).balanceOf(address(3));
 
-        assertEq(treasury.distributionsDAI(address(1)), postBal1 - preBal1);
-        assertEq(treasury.distributionsDAI(address(2)), postBal2 - preBal2);
-        assertEq(treasury.distributionsDAI(address(3)), postBal3 - preBal3);
+        assertEq(treasury.distributionsStable(address(1)), postBal1 - preBal1);
+        assertEq(treasury.distributionsStable(address(2)), postBal2 - preBal2);
+        assertEq(treasury.distributionsStable(address(3)), postBal3 - preBal3);
 
-        emit LogUint("DAI Received address(1)", postBal1 - preBal1); // 20%
-        emit LogUint("DAI Received address(2)", postBal2 - preBal2); // 20%
-        emit LogUint("DAI Received address(3)", postBal3 - preBal3); // 60%
+        emit LogUint("Stable Received address(1)", postBal1 - preBal1); // 20%
+        emit LogUint("Stable Received address(2)", postBal2 - preBal2); // 20%
+        emit LogUint("Stable Received address(3)", postBal3 - preBal3); // 60%
     }
 
 }

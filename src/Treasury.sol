@@ -17,6 +17,8 @@ contract Treasury {
     address public taxToken;        /// @dev The token that fees are taken from, and what is held in escrow here.
     address public admin;           /// @dev The administrator of accounting and distribution settings.
 
+    address public stable;
+
     address public constant UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
 
     /// @notice Handles the internal accounting for how much taxToken is owed to each taxType.
@@ -29,7 +31,7 @@ contract Treasury {
     mapping(uint => TaxDistribution) public taxSettings;    /// @dev Mapping of taxType to TaxDistribution struct.
 
     mapping(address => uint) public distributionsTaxToken;  /// @dev Tracks amount of taxToken distributed to recipients.
-    mapping(address => uint) public distributionsDAI;       /// @dev Tracks amount of WETH distributed to recipients.
+    mapping(address => uint) public distributionsStable;       /// @dev Tracks amount of WETH distributed to recipients.
  
     /// @notice Manages how TaxToken is distributed for a given taxType.
     ///         Variables:
@@ -52,9 +54,10 @@ contract Treasury {
     /// @notice Initializes the Treasury.
     /// @param  _admin      The administrator of the contract.
     /// @param  _taxToken   The taxToken (ERC-20 asset) which accumulates in this Treasury.
-    constructor(address _admin, address _taxToken) {
+    constructor(address _admin, address _taxToken, address _stable) {
         admin = _admin;
         taxToken = _taxToken;
+        stable = _stable;
     }
 
     // -----
@@ -64,6 +67,8 @@ contract Treasury {
     event OwnershipTransferred(address indexed currentAdmin, address indexed newAdmin);
 
     event RoyaltiesDistributed(address indexed recipient, uint amount, address asset);
+
+    event StableUpdated(address currentStable, address newStable);
 
  
     // ---------
@@ -177,7 +182,7 @@ contract Treasury {
                 uint amountToSell = amountToDistribute * sumPercentToSell / 100;
 
                 address WETH = IUniswapV2Router01(UNIV2_ROUTER).WETH();
-                address DAI  = 0x6B175474E89094C44Da98b954EedeAC495271d0F; // change if on testnet
+                //address DAI  = 0x6B175474E89094C44Da98b954EedeAC495271d0F; // change if on testnet
 
                 assert(IERC20(taxToken).approve(address(UNIV2_ROUTER), amountToSell));
 
@@ -185,7 +190,7 @@ contract Treasury {
 
                 path_uni_v2[0] = taxToken;
                 path_uni_v2[1] = WETH;
-                path_uni_v2[2] = DAI;
+                path_uni_v2[2] = stable;
 
                 IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokens(
                     amountToSell,           
@@ -196,15 +201,15 @@ contract Treasury {
                 );
 
                 //uint balanceWETH = IERC20(WETH).balanceOf(address(this));
-                uint balanceDAI = IERC20(DAI).balanceOf(address(this));
+                uint balanceStable = IERC20(stable).balanceOf(address(this));
 
                 for (uint i = 0; i < taxSettings[taxType].wallets.length; i++) {
                     if (taxSettings[taxType].convertToAsset[i] != taxToken) {
-                        uint amt = balanceDAI * taxSettings[taxType].percentDistribution[i] / sumPercentToSell;
+                        uint amt = balanceStable * taxSettings[taxType].percentDistribution[i] / sumPercentToSell;
 
-                        assert(IERC20(DAI).transfer(taxSettings[taxType].wallets[i], amt));
+                        assert(IERC20(stable).transfer(taxSettings[taxType].wallets[i], amt));
 
-                        distributionsDAI[taxSettings[taxType].wallets[i]] += amt;
+                        distributionsStable[taxSettings[taxType].wallets[i]] += amt;
                         emit RoyaltiesDistributed(taxSettings[taxType].wallets[i], amt, taxToken);
                     }
                 }
@@ -253,6 +258,14 @@ contract Treasury {
         admin = _admin;
     }
 
+    /// @notice Change the stable value of the treasury distriubution.
+    /// @dev    Only callable by Admin.
+    /// @param  _stable New stablecoin address.
+    function updateStable(address _stable) external isAdmin {
+        require(_stable != stable, "Treasury.sol::updateStable() value already set");
+        emit StableUpdated(stable, _stable);
+        stable = _stable;
+    }
     
     /// @notice View function for exchanging fees collected for given taxType.
     /// @param  path The path by which taxToken is converted into a given asset (i.e. taxToken => DAI => LINK).

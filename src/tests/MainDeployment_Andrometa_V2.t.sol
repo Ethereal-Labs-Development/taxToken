@@ -43,7 +43,8 @@ contract MainDeployment_ADMT is Utility {
         // (3) Deploy the Treasury.
         treasury = new Treasury(
             address(this),
-            address(taxToken)
+            address(taxToken),
+            DAI
         );
 
         // (4) Update the TaxToken "treasury" state variable.

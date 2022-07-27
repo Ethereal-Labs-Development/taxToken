@@ -37,7 +37,7 @@ contract TreasuryNullTest is Utility {
         );
 
         treasury = new Treasury(
-            address(this), address(taxToken)
+            address(this), address(taxToken), DAI
         );
 
         taxToken.setTreasury(address(treasury));
