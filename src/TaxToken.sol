@@ -158,7 +158,7 @@ contract TaxToken {
     /// @dev Emitted when transferOwnership() is completed.
     event OwnershipTransferred(address indexed _currentAdmin, address indexed _newAdmin);
 
-    /// @dev Emitted when updating authorized users.
+    /// @dev Emitted when updating authorized addresses (users or contracts).
     event UpdatedAuthorizedUsers(address indexed _account, bool _state);
 
 
