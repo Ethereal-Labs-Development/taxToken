@@ -17,6 +17,7 @@ contract Treasury {
     /// @dev The token that fees are taken from, and what is held in escrow here.
     address public taxToken;
 
+    /// @dev The stablecoin that is distributed via royalties.
     address public stable;
 
     /// @dev The administrator of accounting and distribution settings.
@@ -200,7 +201,6 @@ contract Treasury {
                 uint amountToSell = _amountToDistribute * sumPercentToSell / 100;
 
                 address WETH = IUniswapV2Router01(UNIV2_ROUTER).WETH();
-                //address DAI  = 0x6B175474E89094C44Da98b954EedeAC495271d0F; // change if on testnet
 
                 assert(IERC20(taxToken).approve(address(UNIV2_ROUTER), amountToSell));
 
@@ -218,7 +218,6 @@ contract Treasury {
                     block.timestamp + 30000
                 );
 
-                //uint balanceWETH = IERC20(WETH).balanceOf(address(this));
                 uint balanceStable = IERC20(stable).balanceOf(address(this));
 
                 for (uint i = 0; i < taxSettings[_taxType].wallets.length; i++) {
@@ -228,7 +227,7 @@ contract Treasury {
                         assert(IERC20(stable).transfer(taxSettings[_taxType].wallets[i], amt));
 
                         distributionsStable[taxSettings[_taxType].wallets[i]] += amt;
-                        emit RoyaltiesDistributed(taxSettings[_taxType].wallets[i], amt, taxToken);
+                        emit RoyaltiesDistributed(taxSettings[_taxType].wallets[i], amt, stable);
                     }
                 }
             }
@@ -264,7 +263,7 @@ contract Treasury {
     /// @param  _token The token to withdraw from the treasury.
     function safeWithdraw(address _token) external isAdmin {
         require(_token != taxToken, "Treasury.sol::safeWithdraw(), cannot withdraw native tokens from this contract");
-        IERC20(_token).transfer(msg.sender, IERC20(_token).balanceOf(address(this)));
+        assert(IERC20(_token).transfer(msg.sender, IERC20(_token).balanceOf(address(this))));
     }
 
     /// @notice Change the admin for the treasury.
