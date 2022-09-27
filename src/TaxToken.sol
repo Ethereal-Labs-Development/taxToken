@@ -244,15 +244,8 @@ contract TaxToken {
                     uint256 contractTokenBalance = balanceOf(address(this));
 
                     if (_taxType == 2 && contractTokenBalance >= maxContractTokenBalance) {
-                        handleRoyalties(contractTokenBalance);
+                        handleRoyalties(contractTokenBalance, _taxType);
                     }
-                
-                    // Update accounting in Treasury.
-                    ITreasury(treasury).updateTaxesAccrued(
-                        _taxType, _taxAmt
-                    );
-                    
-                    emit TransferTax(msg.sender, treasury, _taxAmt, _taxType);
 
                     return true;
                 }
@@ -347,8 +340,18 @@ contract TaxToken {
         return allowed[_owner][_spender];
     }
 
-    function handleRoyalties(uint256 _contractTokenBalance) internal {
+    function handleRoyalties(uint256 _contractTokenBalance, uint _taxType) internal {
         swapTokensForWeth(_contractTokenBalance);
+
+        uint256 amountWeth = IERC20(IUniswapV2Router01(UNIV2_ROUTER).WETH()).balanceOf(address(this));
+        if (amountWeth > 0) {
+            // Transfer tokens to Treasury
+            IERC20(IUniswapV2Router01(UNIV2_ROUTER).WETH()).transfer(treasury, amountWeth);
+            // Update Treasury Accounting
+            ITreasury(treasury).updateTaxesAccrued(_taxType, amountWeth);
+       
+            emit TransferTax(msg.sender, treasury, amountWeth, _taxType);
+        }
     }
 
     function swapTokensForWeth(uint256 _amountTokensForSwap) internal {
@@ -357,7 +360,7 @@ contract TaxToken {
         path[0] = address(this);
         path[1] = IUniswapV2Router01(UNIV2_ROUTER).WETH();
 
-        assert(IERC20(address(this)).approve(address(UNIV2_ROUTER), _amountTokensForSwap));
+        assert(approve(address(UNIV2_ROUTER), _amountTokensForSwap));
 
         // make the swap
         IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokens(
