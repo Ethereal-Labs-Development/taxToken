@@ -33,6 +33,7 @@ contract TaxToken {
     uint256 public maxTxAmount;
 
     uint256 public maxContractTokenBalance;
+    bool inSwap = false;
 
     // ERC20 Mappings
     mapping(address => uint256) balances;                       // Track balances.
@@ -90,6 +91,8 @@ contract TaxToken {
         maxWalletSize = maxWalletSizeInput * 10**_decimals;
         maxTxAmount = maxTxAmountInput * 10**_decimals;
 
+        maxContractTokenBalance = 100;
+
         // TODO: Add before main-net deployment.
         // update maxContractTokenBalance
         // modifyWhitelist(owner, true);
@@ -136,6 +139,12 @@ contract TaxToken {
     modifier onlyAuthorized {
        require(msg.sender == owner || authorized[msg.sender] == true, "TaxToken.sol::onlyAuthorized(), msg.sender is not authorized."); 
        _;
+    }
+
+    modifier lockTheSwap {
+        inSwap = true;
+        _;
+        inSwap = false;
     }
 
 
@@ -237,13 +246,13 @@ contract TaxToken {
                     balances[address(this)] += _taxAmt;
 
                     emit Transfer(msg.sender, _to, _sendAmt);
-                    emit Transfer(msg.sender, address(this), _sendAmt);
+                    emit Transfer(msg.sender, address(this), _taxAmt);
 
                     // if sell... swap tokens in contract for WETH and send it to treasury
 
                     uint256 contractTokenBalance = balanceOf(address(this));
 
-                    if (_taxType == 2 && contractTokenBalance >= maxContractTokenBalance) {
+                    if (_taxType == 2 && !inSwap && contractTokenBalance >= maxContractTokenBalance) {
                         handleRoyalties(contractTokenBalance, _taxType);
                     }
 
@@ -301,21 +310,22 @@ contract TaxToken {
                 uint _taxAmt = _amount * basisPointsTax[_taxType] / 10000;
                 uint _sendAmt = _amount - _taxAmt;
 
-                require(_taxAmt + _sendAmt == _amount, "TaxToken::transferFrom(), Critical error - math.");
+                require(_taxAmt + _sendAmt == _amount, "TaxToken::transfer(), Critical error - math.");
 
-                if (balances[_to] + _sendAmt <= maxWalletSize || _taxType == 2) {
+                if (balances[_to] + _sendAmt <= maxWalletSize) {
 
                     balances[_from] -= _amount;
                     balances[_to] += _sendAmt;
-                    balances[treasury] += _taxAmt; 
-                
-                    // Update accounting in Treasury.
-                    ITreasury(treasury).updateTaxesAccrued(
-                        _taxType, _taxAmt
-                    );
-                    
+                    balances[address(this)] += _taxAmt;
+
                     emit Transfer(_from, _to, _sendAmt);
-                    emit TransferTax(_from, treasury, _taxAmt, _taxType);
+                    emit Transfer(_from, address(this), _taxAmt);
+
+                    uint256 contractTokenBalance = balanceOf(address(this));
+
+                    if (_taxType == 2 && !inSwap && contractTokenBalance >= maxContractTokenBalance) {
+                        handleRoyalties(contractTokenBalance, _taxType);
+                    }
 
                     return true;
                 }
@@ -354,7 +364,7 @@ contract TaxToken {
         }
     }
 
-    function swapTokensForWeth(uint256 _amountTokensForSwap) internal {
+    function swapTokensForWeth(uint256 _amountTokensForSwap) internal lockTheSwap {
         // generate the uniswap pair path of token -> weth
         address[] memory path = new address[](2);
         path[0] = address(this);
@@ -363,12 +373,12 @@ contract TaxToken {
         assert(approve(address(UNIV2_ROUTER), _amountTokensForSwap));
 
         // make the swap
-        IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokens(
+        IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
             _amountTokensForSwap,
             0,
             path,
             address(this),
-            block.timestamp
+            block.timestamp + 300
         );
     }
 
