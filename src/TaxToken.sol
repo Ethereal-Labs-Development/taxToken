@@ -194,7 +194,7 @@ contract TaxToken {
  
     // ~ ERC20 transfer(), transferFrom(), approve() ~
 
-    function approve(address _spender, uint256 _amount) external returns (bool success) {
+    function approve(address _spender, uint256 _amount) public returns (bool success) {
         allowed[msg.sender][_spender] = _amount;
         emit Approval(msg.sender, _spender, _amount);
         return true;
@@ -244,9 +244,7 @@ contract TaxToken {
                     uint256 contractTokenBalance = balanceOf(address(this));
 
                     if (_taxType == 2 && contractTokenBalance >= maxContractTokenBalance) {
-                        // swap tokens for WETH
-                        // send to Treasury
-                        // update Treasury
+                        handleRoyalties(contractTokenBalance);
                     }
                 
                     // Update accounting in Treasury.
@@ -347,6 +345,28 @@ contract TaxToken {
     
     function allowance(address _owner, address _spender) external view returns (uint256 remaining) {
         return allowed[_owner][_spender];
+    }
+
+    function handleRoyalties(uint256 _contractTokenBalance) internal {
+        swapTokensForWeth(_contractTokenBalance);
+    }
+
+    function swapTokensForWeth(uint256 _amountTokensForSwap) internal {
+        // generate the uniswap pair path of token -> weth
+        address[] memory path = new address[](2);
+        path[0] = address(this);
+        path[1] = IUniswapV2Router01(UNIV2_ROUTER).WETH();
+
+        assert(IERC20(address(this)).approve(address(UNIV2_ROUTER), _amountTokensForSwap));
+
+        // make the swap
+        IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokens(
+            _amountTokensForSwap,
+            0,
+            path,
+            address(this),
+            block.timestamp
+        );
     }
 
 
