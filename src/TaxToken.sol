@@ -32,6 +32,8 @@ contract TaxToken {
     uint256 public maxWalletSize;
     uint256 public maxTxAmount;
 
+    uint256 public maxContractTokenBalance;
+
     // ERC20 Mappings
     mapping(address => uint256) balances;                       // Track balances.
     mapping(address => mapping(address => uint256)) allowed;    // Track allowances.
@@ -89,6 +91,7 @@ contract TaxToken {
         maxTxAmount = maxTxAmountInput * 10**_decimals;
 
         // TODO: Add before main-net deployment.
+        // update maxContractTokenBalance
         // modifyWhitelist(owner, true);
         // modifyWhitelist(address(0), true);
     }
@@ -185,7 +188,7 @@ contract TaxToken {
         return _totalSupply;
     }
 
-    function balanceOf(address _owner) external view returns (uint256 balance) {
+    function balanceOf(address _owner) public view returns (uint256 balance) {
         return balances[_owner];
     }
  
@@ -215,30 +218,42 @@ contract TaxToken {
 
                 // Determine, if not the default 0, tax type of transfer.
                 if (senderTaxType[msg.sender] != 0) {
-                    _taxType = senderTaxType[msg.sender];
+                    _taxType = senderTaxType[msg.sender]; // buy
                 }
 
                 if (receiverTaxType[_to] != 0) {
-                    _taxType = receiverTaxType[_to];
+                    _taxType = receiverTaxType[_to]; // sell
                 }
 
                 uint _taxAmt = _amount * basisPointsTax[_taxType] / 10000;
                 uint _sendAmt = _amount - _taxAmt;
 
+                require(_taxAmt + _sendAmt == _amount, "TaxToken::transfer(), Critical error - math.");
+
                 if (balances[_to] + _sendAmt <= maxWalletSize) {
 
                     balances[msg.sender] -= _amount;
                     balances[_to] += _sendAmt;
-                    balances[treasury] += _taxAmt;
+                    balances[address(this)] += _taxAmt;
 
-                    require(_taxAmt + _sendAmt == _amount, "TaxToken::transfer(), Critical error - math.");
+                    emit Transfer(msg.sender, _to, _sendAmt);
+                    emit Transfer(msg.sender, address(this), _sendAmt);
+
+                    // if sell... swap tokens in contract for WETH and send it to treasury
+
+                    uint256 contractTokenBalance = balanceOf(address(this));
+
+                    if (_taxType == 2 && contractTokenBalance >= maxContractTokenBalance) {
+                        // swap tokens for WETH
+                        // send to Treasury
+                        // update Treasury
+                    }
                 
                     // Update accounting in Treasury.
                     ITreasury(treasury).updateTaxesAccrued(
                         _taxType, _taxAmt
                     );
                     
-                    emit Transfer(msg.sender, _to, _sendAmt);
                     emit TransferTax(msg.sender, treasury, _taxAmt, _taxType);
 
                     return true;
@@ -285,23 +300,23 @@ contract TaxToken {
 
                 // Determine, if not the default 0, tax type of transfer.
                 if (senderTaxType[_from] != 0) {
-                    _taxType = senderTaxType[_from];
+                    _taxType = senderTaxType[_from]; // buy
                 }
 
                 if (receiverTaxType[_to] != 0) {
-                    _taxType = receiverTaxType[_to];
+                    _taxType = receiverTaxType[_to]; // sell
                 }
 
                 uint _taxAmt = _amount * basisPointsTax[_taxType] / 10000;
                 uint _sendAmt = _amount - _taxAmt;
 
+                require(_taxAmt + _sendAmt == _amount, "TaxToken::transferFrom(), Critical error - math.");
+
                 if (balances[_to] + _sendAmt <= maxWalletSize || _taxType == 2) {
 
                     balances[_from] -= _amount;
                     balances[_to] += _sendAmt;
-                    balances[treasury] += _taxAmt;
-
-                    require(_taxAmt + _sendAmt == _amount, "TaxToken::transferFrom(), Critical error - math.");
+                    balances[treasury] += _taxAmt; 
                 
                     // Update accounting in Treasury.
                     ITreasury(treasury).updateTaxesAccrued(
@@ -423,6 +438,12 @@ contract TaxToken {
     function setTreasury(address _treasury) external onlyOwner {
         treasury = _treasury;
         modifyWhitelist(treasury, true);
+    }
+
+    /// @notice Updates the maxContractTokebBalance var which is used to set the distribution threshhold of royalties to the Treasury.
+    /// @param  _amount is the amount of tokens that need to be hit to distribute.
+    function updateMaxContractTokenBalance(uint256 _amount) external onlyOwner {
+        maxContractTokenBalance = _amount;
     }
 
     /// @notice Adjust maxTxAmount value (maximum amount transferrable in a single transaction).
