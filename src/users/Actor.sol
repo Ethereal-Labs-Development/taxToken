@@ -59,4 +59,14 @@ contract Actor {
         string memory sig = "updateStable(address)";
         (ok,) = address(treasury).call(abi.encodeWithSignature(sig, stablecoin));
     }
+
+    function try_modifyBlacklist(address token, address wallet, bool blacklisted) external returns (bool ok) {
+        string memory sig = "modifyBlacklist(address,bool)";
+        (ok,) = address(token).call(abi.encodeWithSignature(sig, wallet, blacklisted));
+    }
+
+    function try_modifyWhitelist(address token, address wallet, bool whitelisted) external returns (bool ok) {
+        string memory sig = "modifyWhitelist(address,bool)";
+        (ok,) = address(token).call(abi.encodeWithSignature(sig, wallet, whitelisted));
+    }
 }

@@ -144,34 +144,47 @@ contract TaxTokenTest is Utility {
 
     // This tests blacklisting of the receiver.
     function test_taxToken_blacklist_receiver() public {
-        taxToken.transfer(address(32), 1 ether);
-        taxToken.modifyBlacklist(address(32), true);
-        assert(!taxToken.transfer(address(32), 1 ether));
+        taxToken.transferOwnership(address(dev));
+        assert(dev.try_mint(address(taxToken), address(joe), 10 ether));
+
+        assert(joe.try_transferToken(address(taxToken), address(32), 1 ether));
+
+        assert(dev.try_modifyBlacklist(address(taxToken), address(32), true));
+
+        assert(!joe.try_transferToken(address(taxToken), address(32), 1 ether));
     }
 
     // This tests blacklisting of the sender.
     function test_taxToken_blacklist_sender() public {
-        taxToken.transfer(address(32), 1 ether);
-        taxToken.modifyBlacklist(address(this), true);
-        assert(!taxToken.transfer(address(32), 1 ether));
+        taxToken.transferOwnership(address(dev));
+        assert(dev.try_mint(address(taxToken), address(joe), 10 ether));
+
+        assert(joe.try_transferToken(address(taxToken), address(32), 1 ether));
+
+        assert(dev.try_modifyBlacklist(address(taxToken), address(joe), true));
+
+        assert(!joe.try_transferToken(address(taxToken), address(32), 1 ether));
     }
 
     // This tests that a blacklisted wallet can only make transfers to a whitelisted wallet.
     function test_taxToken_blacklist_whitelist() public {
-        // This contract can successfully send assets to address(32).
-        assert(taxToken.transfer(address(32), 1 ether));
+        taxToken.transferOwnership(address(dev));
+        assert(dev.try_mint(address(taxToken), address(joe), 10 ether));
 
-        // Blacklist this contract.
-        taxToken.modifyBlacklist(address(this), true);
+        // Joe can successfully send assets to address(32).
+        assert(joe.try_transferToken(address(taxToken), address(32), 1 ether));
 
-        // This contract can no longer send tokens to address(32).
-        assert(!taxToken.transfer(address(32), 1 ether));
+        // Blacklist joe (sender).
+        assert(dev.try_modifyBlacklist(address(taxToken), address(joe), true));
 
-        // Whitelist address(32).
-        taxToken.modifyWhitelist(address(32), true);
+        // Joe can no longer send tokens to address(32).
+        assert(!joe.try_transferToken(address(taxToken), address(32), 1 ether));
 
-        // This contract can successfully send assets to whitelisted address(32).
-        assert(taxToken.transfer(address(32), 1 ether));
+        // Whitelist address(32) (receiver).
+        assert(dev.try_modifyWhitelist(address(taxToken), address(joe), true));
+
+        // Joe can successfully send assets to whitelisted address(32).
+        assert(joe.try_transferToken(address(taxToken), address(32), 1 ether));
     }
 
     // ~ Whitelist Testing ~

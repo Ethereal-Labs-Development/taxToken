@@ -2,12 +2,13 @@
 pragma solidity ^0.8.6;
 
 import { IERC20, ITreasury, IUniswapV2Factory, IUniswapV2Router01 } from "./interfaces/InterfacesAggregated.sol";
+import { ERC20 } from "./tokenInheritance/Inherit.sol";
 
 /// @dev    The TaxToken is responsible for supporting generic ERC20 functionality including ERC20Pausable functionality.
 ///         The TaxToken will generate taxes on transfer() and transferFrom() calls for non-whitelisted addresses.
 ///         The Admin can specify the tax fee in basis points for buys, sells, and transfers.
 ///         The TaxToken will forward all taxes generated to a Treasury
-contract TaxToken {
+contract TaxToken is ERC20{
  
     // ---------------
     // State Variables
@@ -34,10 +35,6 @@ contract TaxToken {
 
     uint256 public maxContractTokenBalance;
     bool inSwap = false;
-
-    // ERC20 Mappings
-    mapping(address => uint256) balances;                       // Track balances.
-    mapping(address => mapping(address => uint256)) allowed;    // Track allowances.
 
     // Extras Mappings
     mapping(address => bool) public blacklist;                  /// @dev If an address is blacklisted, they cannot perform transfer() or transferFrom().
@@ -71,10 +68,8 @@ contract TaxToken {
         uint8 decimalsInput,
         uint256 maxWalletSizeInput,
         uint256 maxTxAmountInput
-    ) {
+    ) ERC20(nameInput, symbolInput) {
         _paused = false;
-        _name = nameInput;
-        _symbol = symbolInput;
         _decimals = decimalsInput;
         _totalSupply = totalSupplyInput * 10**_decimals;
 
@@ -87,7 +82,8 @@ contract TaxToken {
         receiverTaxType[UNISWAP_V2_PAIR] = 2;
 
         owner = msg.sender;                                         
-        balances[msg.sender] = totalSupplyInput * 10**_decimals;
+        //balances[msg.sender] = totalSupplyInput * 10**_decimals;
+        _mint(owner, totalSupplyInput * 10**_decimals);
         maxWalletSize = maxWalletSizeInput * 10**_decimals;
         maxTxAmount = maxTxAmountInput * 10**_decimals;
 
@@ -158,12 +154,6 @@ contract TaxToken {
     /// @dev Emitted when the pause is lifted by `account`.
     event Unpaused(address _account);
 
-    /// @dev Emitted when approve() is called.
-    event Approval(address indexed _owner, address indexed _spender, uint256 _value);   
- 
-    /// @dev Emitted during transfer().
-    event Transfer(address indexed _from, address indexed _to, uint256 _value);
-
     /// @dev Emitted during transferFrom().
     event TransferTax(address indexed _from, address indexed _to, uint256 _value, uint256 _taxType);
 
@@ -180,187 +170,60 @@ contract TaxToken {
     // ---------
     // Functions
     // ---------
-
-
-    // ~ ERC20 View ~
-    
-    function name() external view returns (string memory) {
-        return _name;
-    }
-
-    function symbol() external view returns (string memory) {
-        return _symbol;
-    }
-
-    function decimals() external view returns (uint8) {
-        return _decimals;
-    }
-
-    function totalSupply() external view returns (uint256) {
-        return _totalSupply;
-    }
-
-    function balanceOf(address _owner) public view returns (uint256 balance) {
-        return balances[_owner];
-    }
  
-    // ~ ERC20 transfer(), transferFrom(), approve() ~
+    // ~ ERC20 _transfer() ~
 
-    function approve(address _spender, uint256 _amount) public returns (bool success) {
-        allowed[msg.sender][_spender] = _amount;
-        emit Approval(msg.sender, _spender, _amount);
-        return true;
-    }
- 
-    function transfer(address _to, uint256 _amount) external whenNotPausedDual(msg.sender, _to) returns (bool success) {  
+    function _transfer(address _from, address _to, uint256 _amount) internal override {
 
         // taxType 0 => Xfer Tax
         // taxType 1 => Buy Tax
         // taxType 2 => Sell Tax
         uint _taxType;
 
-        if (balances[msg.sender] >= _amount) {
+        require(!paused() || whitelist[_from] || whitelist[_to] || whitelist[msg.sender], "TaxToken.sol::_transfer(), Contract is currently paused.");
+        require(balanceOf(_from) >= _amount, "TaxToken::_transfer(), insufficient balance");
+        require(_amount > 0, "TaxToken::_transfer(), amount must be greater than 0");
 
-            // Take a tax from them if neither party is whitelisted.
-            if (!whitelist[_to] && !whitelist[msg.sender]) {
+        // Take a tax from them if neither party is whitelisted.
+        if (!whitelist[_to] && !whitelist[_from]) {
 
-                if ((_amount > maxTxAmount) || (blacklist[msg.sender] || blacklist[_to])) {
-                    return false;
-                }
+            require (maxTxAmount >= _amount, "TaxToken::_transfer(), amount exceeds maxTxAmount");
+            require (!blacklist[msg.sender], "TaxToken::_transfer(), msg.sender is blacklisted");
+            require (!blacklist[_to], "TaxToken::_transfer(), receiver is blacklisted");
 
-                // Determine, if not the default 0, tax type of transfer.
-                if (senderTaxType[msg.sender] != 0) {
-                    _taxType = senderTaxType[msg.sender]; // buy
-                }
-
-                if (receiverTaxType[_to] != 0) {
-                    _taxType = receiverTaxType[_to]; // sell
-                }
-
-                uint _taxAmt = _amount * basisPointsTax[_taxType] / 10000;
-                uint _sendAmt = _amount - _taxAmt;
-
-                require(_taxAmt + _sendAmt == _amount, "TaxToken::transfer(), Critical error - math.");
-
-                if ((balances[_to] + _sendAmt <= maxWalletSize) || (_to == address(this))) {
-
-                    // if sell... swap tokens in contract for WETH and send it to treasury
-
-                    uint256 contractTokenBalance = balanceOf(address(this));
-
-                    if(contractTokenBalance > maxTxAmount)
-                    {
-                        contractTokenBalance = maxTxAmount;
-                    }
-
-                    if (_taxType == 2 && !inSwap && contractTokenBalance >= maxContractTokenBalance) {
-                        handleRoyalties(contractTokenBalance, _taxType);
-                    }
-
-                    balances[msg.sender] -= _amount;
-                    balances[_to] += _sendAmt;
-                    balances[address(this)] += _taxAmt;
-
-                    emit Transfer(msg.sender, _to, _sendAmt);
-                    emit Transfer(msg.sender, address(this), _taxAmt);
-
-                    return true;
-                }
-                else {
-                    return false;
-                }
+            // Determine, if not the default 0, tax type of transfer.
+            if (senderTaxType[_from] != 0) {
+                _taxType = senderTaxType[_from]; // buy
             }
-            // Skip taxation if either party is whitelisted (_from or _to).
-            else {
-                balances[msg.sender] -= _amount;
-                balances[_to] += _amount;
-                emit Transfer(msg.sender, _to, _amount);
-                return true;
+
+            if (receiverTaxType[_to] != 0) {
+                _taxType = receiverTaxType[_to]; // sell
             }
+
+            uint _taxAmt = _amount * basisPointsTax[_taxType] / 10000;
+            uint _sendAmt = _amount - _taxAmt;
+
+            require(_taxAmt + _sendAmt == _amount, "TaxToken::transfer(), Critical error - math.");
+            require(balanceOf(_to) + _sendAmt <= maxWalletSize, "TaxToken::_transfer(), amount exceeds maxWalletAmount");
+
+            uint256 contractTokenBalance = balanceOf(address(this));
+
+            if(contractTokenBalance > maxTxAmount)
+            {
+                contractTokenBalance = maxTxAmount;
+            }
+
+            if (_taxType == 2 && !inSwap && contractTokenBalance >= maxContractTokenBalance) {
+                handleRoyalties(contractTokenBalance, _taxType);
+            }
+
+            super._transfer(_from, _to, _sendAmt);
+            super._transfer(_from, address(this), _taxAmt);
         }
+        // Skip taxation if either party is whitelisted (_from or _to).
         else {
-            return false;
+            super._transfer(_from, _to, _amount);
         }
-    }
- 
-    function transferFrom(address _from, address _to, uint256 _amount) external whenNotPausedTri(_from, _to, msg.sender) returns (bool success) {
-
-        // taxType 0 => Xfer Tax
-        // taxType 1 => Buy Tax
-        // taxType 2 => Sell Tax
-        uint _taxType;
-
-        if (
-            balances[_from] >= _amount && 
-            allowed[_from][msg.sender] >= _amount && 
-            _amount > 0 && balances[_to] + _amount > balances[_to]
-        ) {
-            
-            // Reduce allowance.
-            allowed[_from][msg.sender] -= _amount;
-
-            // Take a tax from them if neither party is whitelisted.
-            if (!whitelist[_to] && !whitelist[_from]) {
-
-                if ((_amount > maxTxAmount) || (blacklist[msg.sender] || blacklist[_to])) {
-                    return false;
-                }
-
-                // Determine, if not the default 0, tax type of transfer.
-                if (senderTaxType[_from] != 0) {
-                    _taxType = senderTaxType[_from]; // buy
-                }
-
-                if (receiverTaxType[_to] != 0) {
-                    _taxType = receiverTaxType[_to]; // sell
-                }
-
-                uint _taxAmt = _amount * basisPointsTax[_taxType] / 10000;
-                uint _sendAmt = _amount - _taxAmt;
-
-                require(_taxAmt + _sendAmt == _amount, "TaxToken::transfer(), Critical error - math.");
-
-                if ((balances[_to] + _sendAmt <= maxWalletSize) || (_to == address(this))) {
-
-                    uint256 contractTokenBalance = balanceOf(address(this));
-
-                    if(contractTokenBalance > maxTxAmount)
-                    {
-                        contractTokenBalance = maxTxAmount;
-                    }
-
-                    if (_taxType == 2 && !inSwap && contractTokenBalance >= maxContractTokenBalance) {
-                        handleRoyalties(contractTokenBalance, _taxType);
-                    }
-
-                    balances[_from] -= _amount;
-                    balances[_to] += _sendAmt;
-                    balances[address(this)] += _taxAmt;
-
-                    emit Transfer(_from, _to, _sendAmt);
-                    emit Transfer(_from, address(this), _taxAmt);
-
-                    return true;
-                }
-                else {
-                    return false;
-                }
-            }
-            // Skip taxation if either party is whitelisted (_from or _to).
-            else {
-                balances[_from] -= _amount;
-                balances[_to] += _amount;
-                emit Transfer(_from, _to, _amount);
-                return true;
-            }
-        }
-        else {
-            return false;
-        }
-    }
-    
-    function allowance(address _owner, address _spender) external view returns (uint256 remaining) {
-        return allowed[_owner][_spender];
     }
 
     function handleRoyalties(uint256 _contractTokenBalance, uint _taxType) internal lockTheSwap {
@@ -383,7 +246,7 @@ contract TaxToken {
         path[0] = address(this);
         path[1] = IUniswapV2Router01(UNIV2_ROUTER).WETH();
 
-        assert(approve(address(UNIV2_ROUTER), _amountTokensForSwap));
+        _approve(address(this), address(UNIV2_ROUTER), _amountTokensForSwap);
 
         // make the swap
         IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
@@ -529,12 +392,7 @@ contract TaxToken {
     /// @param  _wallet the account we're minting tokens to.
     /// @param  _amount the amount of tokens we're minting.
     function mint(address _wallet, uint256 _amount) public onlyAuthorized() {
-        require(_wallet != address(0), "TaxToken.sol::mint(), Cannot mint to zero address.");
-
-        _totalSupply += _amount;
-        balances[_wallet] += _amount;
-
-        emit Transfer(address(0), _wallet, _amount);
+        _mint(_wallet, _amount);
     }
 
     /// @notice This function is used to mint tokens and log their creation to the industry wallet mappings.
@@ -544,8 +402,7 @@ contract TaxToken {
     /// @param  _wallet is the wallet address that will recieve these minted tokens.
     /// @param  _amount is the amount of tokens to be minted into _wallet.
     function industryMint(address _wallet, uint256 _amount) external onlyAuthorized {
-        mint(_wallet, _amount);
-
+        _mint(_wallet, _amount);
         industryTokens[_wallet] += _amount;
         lifeTimeIndustryTokens[_wallet] += _amount;
     }
@@ -555,14 +412,7 @@ contract TaxToken {
     /// @param  _wallet the account we're burning tokens from.
     /// @param  _amount the amount of tokens we're burning.
     function burn(address _wallet, uint256 _amount) public onlyAuthorized() {
-        require(_wallet != address(0), "TaxToken.sol::burn(), Cannot burn to zero address.");
-        uint256 accountBalance = balances[_wallet];
-        require(accountBalance >= _amount, "TaxToken.sol::burn(), Burn amount exceeds balance.");
-
-        balances[_wallet] = accountBalance - _amount;
-        _totalSupply -= _amount;
-        
-        emit Transfer(_wallet, address(0), _amount);
+        _burn(_wallet, _amount);
     }
 
     /// @notice This function will destroy existing tokens and deduct them from total supply.
@@ -571,16 +421,14 @@ contract TaxToken {
     /// @param  _amount the amount of tokens we're burning.
     function industryBurn(address _wallet, uint256 _amount) external onlyAuthorized {
         require(_wallet != address(0), "TaxToken.sol::industryBurn(), Cannot burn to zero address.");
-        require(balances[_wallet] >= _amount, "TaxToken.sol::industryBurn(), Insufficient balance of $PROVE to burn.");
+        require(balanceOf(_wallet) >= _amount, "TaxToken.sol::industryBurn(), Insufficient balance of $PROVE to burn.");
 
         if (industryTokens[_wallet] >= _amount) {
-            burn(_wallet, _amount);
+            _burn(_wallet, _amount);
             industryTokens[_wallet] -= _amount;
-
         } else {
-            burn(_wallet, _amount);
+            _burn(_wallet, _amount);
             industryTokens[_wallet] = 0;
-
         }
     }
 
