@@ -103,7 +103,7 @@ contract TreasuryTest is Utility {
         path_uni_v2[0] = WETH;
         path_uni_v2[1] = address(taxToken);
 
-        IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+        IUniswapV2Router02(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
             tradeAmt,
             0,
             path_uni_v2,
@@ -127,7 +127,7 @@ contract TreasuryTest is Utility {
 
         // Documentation on IUniswapV2Router:
         // https://docs.uniswap.org/protocol/V2/reference/smart-contracts/router-02#swapexacttokensfortokens
-        IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+        IUniswapV2Router02(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
             tradeAmt,           
             0,
             path_uni_v2,
@@ -138,7 +138,7 @@ contract TreasuryTest is Utility {
 
     // Simulate xfer (taxType 0).
     function xfer_generateFees() public {
-        taxToken.transfer(address(0), 1 ether);
+        taxToken.transfer(address(69), 1 ether);
     }
 
     // Initial state check on treasury.

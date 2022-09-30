@@ -119,7 +119,7 @@ contract UniswapLiquidityPoolETHTest is Utility {
         path_uni_v2[0] = address(taxToken);
         path_uni_v2[1] = WETH;
 
-        IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+        IUniswapV2Router02(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
             tradeAmt,
             0,
             path_uni_v2,
@@ -168,7 +168,7 @@ contract UniswapLiquidityPoolETHTest is Utility {
         emit LogArrUint('amounts', amounts);
         emit LogUint('amounts[1]', amounts[1]);
 
-        IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+        IUniswapV2Router02(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
             tradeAmt,
             0,
             path_uni_v2,

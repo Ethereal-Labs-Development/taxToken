@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import { IERC20, ITreasury, IUniswapV2Factory, IUniswapV2Router01 } from "./interfaces/InterfacesAggregated.sol";
+import { IERC20, ITreasury, IUniswapV2Factory, IUniswapV2Router02 } from "./interfaces/InterfacesAggregated.sol";
 import { ERC20 } from "./tokenInheritance/Inherit.sol";
 
 /// @dev    The TaxToken is responsible for supporting generic ERC20 functionality including ERC20Pausable functionality.
@@ -39,13 +39,13 @@ contract TaxToken is ERC20{
     // Extras Mappings
     mapping(address => bool) public blacklist;                  /// @dev If an address is blacklisted, they cannot perform transfer() or transferFrom().
     mapping(address => bool) public whitelist;                  /// @dev Any transfer that involves a whitelisted address, will not incur a tax.
-    mapping(address => uint) public senderTaxType;              /// @dev Identifies tax type for msg.sender of transfer() call.
-    mapping(address => uint) public receiverTaxType;            /// @dev Identifies tax type for _to of transfer() call.
-    mapping(uint => uint) public basisPointsTax;                /// @dev Mapping between taxType and basisPoints (taxed).
+    mapping(address => uint8) public senderTaxType;              /// @dev Identifies tax type for msg.sender of transfer() call.
+    mapping(address => uint8) public receiverTaxType;            /// @dev Identifies tax type for _to of transfer() call.
+    mapping(uint8 => uint) public basisPointsTax;                /// @dev Mapping between taxType and basisPoints (taxed).
     mapping(address => uint) public industryTokens;             /// @dev Mapping of how many locked tokens exist in a wallet (In 18 decimal format).
     mapping(address => uint) public lifeTimeIndustryTokens;     /// @dev Mapping of how many locked tokens have ever been minted (In 18 decimal format).  
     mapping(address => bool) public authorized;                 /// @dev Mapping of which wallets are authorized to call specific functions.
-
+    mapping(uint8 => uint256) public taxesAccrued;
 
     // -----------
     // Constructor
@@ -75,8 +75,8 @@ contract TaxToken is ERC20{
 
         // Create a uniswap pair for this new token.
         address UNISWAP_V2_PAIR = IUniswapV2Factory(
-            IUniswapV2Router01(UNIV2_ROUTER).factory()
-        ).createPair(address(this), IUniswapV2Router01(UNIV2_ROUTER).WETH());
+            IUniswapV2Router02(UNIV2_ROUTER).factory()
+        ).createPair(address(this), IUniswapV2Router02(UNIV2_ROUTER).WETH());
  
         senderTaxType[UNISWAP_V2_PAIR] = 1;
         receiverTaxType[UNISWAP_V2_PAIR] = 2;
@@ -155,7 +155,7 @@ contract TaxToken is ERC20{
     event Unpaused(address _account);
 
     /// @dev Emitted during transferFrom().
-    event TransferTax(address indexed _from, address indexed _to, uint256 _value, uint256 _taxType);
+    event TransferTax(address indexed _treasury, uint256 _value, uint256 _taxType);
 
     /// @dev Emitted when transferOwnership() is completed.
     event OwnershipTransferred(address indexed _currentAdmin, address indexed _newAdmin);
@@ -178,14 +178,14 @@ contract TaxToken is ERC20{
         // taxType 0 => Xfer Tax
         // taxType 1 => Buy Tax
         // taxType 2 => Sell Tax
-        uint _taxType;
+        uint8 _taxType;
 
         require(!paused() || whitelist[_from] || whitelist[_to] || whitelist[msg.sender], "TaxToken.sol::_transfer(), Contract is currently paused.");
         require(balanceOf(_from) >= _amount, "TaxToken::_transfer(), insufficient balance");
         require(_amount > 0, "TaxToken::_transfer(), amount must be greater than 0");
 
         // Take a tax from them if neither party is whitelisted.
-        if (!whitelist[_to] && !whitelist[_from]) {
+        if (!whitelist[_to] && !whitelist[_from] && _from != address(this)) {
 
             require (maxTxAmount >= _amount, "TaxToken::_transfer(), amount exceeds maxTxAmount");
             require (!blacklist[msg.sender], "TaxToken::_transfer(), msg.sender is blacklisted");
@@ -204,20 +204,25 @@ contract TaxToken is ERC20{
             uint _sendAmt = _amount - _taxAmt;
 
             require(_taxAmt + _sendAmt == _amount, "TaxToken::transfer(), Critical error - math.");
-            require(balanceOf(_to) + _sendAmt <= maxWalletSize, "TaxToken::_transfer(), amount exceeds maxWalletAmount");
 
+            if (_taxType != 2) {
+                require(balanceOf(_to) + _sendAmt <= maxWalletSize, "TaxToken::_transfer(), amount exceeds maxWalletAmount");
+            }
+            
             uint256 contractTokenBalance = balanceOf(address(this));
 
-            if(contractTokenBalance > maxTxAmount)
-            {
-                contractTokenBalance = maxTxAmount;
-            }
+            // if(contractTokenBalance > maxTxAmount)
+            // {
+            //     contractTokenBalance = maxTxAmount;
+            // }
 
             if (_taxType == 2 && !inSwap && contractTokenBalance >= maxContractTokenBalance) {
                 handleRoyalties(contractTokenBalance, _taxType);
             }
 
             super._transfer(_from, _to, _sendAmt);
+
+            taxesAccrued[_taxType] += _taxAmt;
             super._transfer(_from, address(this), _taxAmt);
         }
         // Skip taxation if either party is whitelisted (_from or _to).
@@ -227,35 +232,38 @@ contract TaxToken is ERC20{
     }
 
     function handleRoyalties(uint256 _contractTokenBalance, uint _taxType) internal lockTheSwap {
-        swapTokensForWeth(_contractTokenBalance);
+        uint256 amountWeth = swapTokensForWeth(_contractTokenBalance);
 
-        uint256 amountWeth = IERC20(IUniswapV2Router01(UNIV2_ROUTER).WETH()).balanceOf(address(this));
         if (amountWeth > 0) {
-            // Transfer tokens to Treasury
-            IERC20(IUniswapV2Router01(UNIV2_ROUTER).WETH()).transfer(treasury, amountWeth);
             // Update Treasury Accounting
             ITreasury(treasury).updateTaxesAccrued(_taxType, amountWeth);
-       
-            emit TransferTax(msg.sender, treasury, amountWeth, _taxType);
+            emit TransferTax(treasury, amountWeth, _taxType);
         }
     }
 
-    function swapTokensForWeth(uint256 _amountTokensForSwap) internal {
+    function swapTokensForWeth(uint256 _amountTokensForSwap) internal returns (uint256){
         // generate the uniswap pair path of token -> weth
         address[] memory path = new address[](2);
         path[0] = address(this);
-        path[1] = IUniswapV2Router01(UNIV2_ROUTER).WETH();
+        path[1] = IUniswapV2Router02(UNIV2_ROUTER).WETH();
 
         _approve(address(this), address(UNIV2_ROUTER), _amountTokensForSwap);
 
+        uint256[] memory amounts = IUniswapV2Router02(UNIV2_ROUTER).getAmountsOut(
+            _amountTokensForSwap, 
+            path
+        );
+
         // make the swap
-        IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+        IUniswapV2Router02(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
             _amountTokensForSwap,
             0,
             path,
-            address(this),
+            address(treasury),
             block.timestamp + 300
         );
+
+        return amounts[1];
     }
 
 
@@ -287,7 +295,7 @@ contract TaxToken is ERC20{
     /// @dev        _taxType must be lower than 3 because there can only be 3 tax types; buy, sell, & send.
     /// @param      _sender This value is the PAIR address.
     /// @param      _taxType This value must be be 0, 1, or 2. Best to correspond value with the BUY tax type.
-    function updateSenderTaxType(address _sender, uint _taxType) external onlyOwner {
+    function updateSenderTaxType(address _sender, uint8 _taxType) external onlyOwner {
         require(_taxType < 3, "TaxToken::updateSenderTaxType(), _taxType must be less than 3.");
         senderTaxType[_sender] = _taxType;
     }
@@ -296,7 +304,7 @@ contract TaxToken is ERC20{
     /// @dev        _taxType must be lower than 3 because there can only be 3 tax types; buy, sell, & send.
     /// @param      _receiver This value is the PAIR address.
     /// @param      _taxType This value must be be 0, 1, or 2. Best to correspond value with the SELL tax type.
-    function updateReceiverTaxType(address _receiver, uint _taxType) external onlyOwner {
+    function updateReceiverTaxType(address _receiver, uint8 _taxType) external onlyOwner {
         require(_taxType < 3, "TaxToken::updateReceiverTaxType(), _taxType must be less than 3.");
         receiverTaxType[_receiver] = _taxType;
     }
@@ -305,7 +313,7 @@ contract TaxToken is ERC20{
     /// @dev        Must be lower than 2000 which is equivalent to 20%.
     /// @param      _taxType This value is the tax type. Has to be 0, 1, or 2.
     /// @param      _bpt This is the corresponding percentage that is taken for royalties. 1200 = 12%.
-    function adjustBasisPointsTax(uint _taxType, uint _bpt) external onlyOwner {
+    function adjustBasisPointsTax(uint8 _taxType, uint _bpt) external onlyOwner {
         require(_bpt <= 2000, "TaxToken.sol::adjustBasisPointsTax(), _bpt > 2000 (20%).");
         require(!taxesRemoved, "TaxToken.sol::adjustBasisPointsTax(), Taxation has been removed.");
         basisPointsTax[_taxType] = _bpt;

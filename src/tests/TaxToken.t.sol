@@ -360,7 +360,7 @@ contract TaxTokenTest is Utility {
         assertEq(taxToken.balanceOf(address(dev)), 20 ether);
 
         // Attempt to send 15 tokens.
-        assert(!taxToken.transfer(address(dev), 15 ether));
+        assert(!dev.try_transferToken(address(taxToken), address(dev), 15 ether));
 
         // Confirm Balances didn't change.
         assertEq(taxToken.balanceOf(address(dev)), 20 ether);
