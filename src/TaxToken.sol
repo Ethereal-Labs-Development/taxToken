@@ -2,7 +2,7 @@
 pragma solidity ^0.8.6;
 
 import { IERC20, ITreasury, IUniswapV2Factory, IUniswapV2Router02 } from "./interfaces/InterfacesAggregated.sol";
-import { ERC20 } from "./tokenInheritance/Inherit.sol";
+import { ERC20 } from "./interfaces/ERC20.sol";
 
 /// @dev    The TaxToken is responsible for supporting generic ERC20 functionality including ERC20Pausable functionality.
 ///         The TaxToken will generate taxes on transfer() and transferFrom() calls for non-whitelisted addresses.
@@ -164,7 +164,7 @@ contract TaxToken is ERC20{
     event UpdatedAuthorizedWallets(address indexed _account, bool _state);
 
     /// @dev debug statement
-    event Debug(uint32 num);
+    event Debug(uint256 num);
 
 
     // ---------
@@ -222,7 +222,7 @@ contract TaxToken is ERC20{
 
             super._transfer(_from, _to, _sendAmt);
 
-            taxesAccrued[_taxType] += _taxAmt;
+            //taxesAccrued[_taxType] += _taxAmt;
             super._transfer(_from, address(this), _taxAmt);
         }
         // Skip taxation if either party is whitelisted (_from or _to).
@@ -238,6 +238,7 @@ contract TaxToken is ERC20{
             // Update Treasury Accounting
             ITreasury(treasury).updateTaxesAccrued(_taxType, amountWeth);
             emit TransferTax(treasury, amountWeth, _taxType);
+            //emit Debug(IERC20(IUniswapV2Router02(UNIV2_ROUTER).WETH()).balanceOf(treasury));
         }
     }
 
