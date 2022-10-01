@@ -6,7 +6,7 @@ interface IUniswapV2Factory {
 }
 
 interface ITreasury {
-    function updateTaxesAccrued(uint taxType, uint amt) external;
+    function updateTaxesAccrued(uint amt) external;
 }
 
 interface IERC20 {

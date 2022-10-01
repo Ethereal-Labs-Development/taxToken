@@ -14,6 +14,8 @@ contract TaxTokenTest is Utility {
     TaxToken taxToken;
     Treasury treasury;
 
+    address UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+
     // setUp() runs before every single test-case.
     // Each test case uses a new/initial state each time based on actions here.
     function setUp() public {
@@ -33,10 +35,99 @@ contract TaxTokenTest is Utility {
         treasury = new Treasury(address(this), address(taxToken), DAI);
         taxToken.setTreasury(address(treasury));
         taxToken.adjustBasisPointsTax(0, 1000);   // 1000 = 10.00 %
+        taxToken.adjustBasisPointsTax(1, 1000);   // 1000 = 10.00 %
+        taxToken.adjustBasisPointsTax(2, 1000);   // 1000 = 10.00 %
+
     }
 
+
+    // ~ Utility Functions ~
+
+
+    function create_lp() internal {
+        // Convert our ETH to WETH
+        uint ETH_DEPOSIT = 10 ether;
+        uint TOKEN_DEPOSIT = 100 ether;
+
+        IWETH(WETH).deposit{value: ETH_DEPOSIT}();
+
+        IERC20(WETH).approve(
+            address(UNIV2_ROUTER), ETH_DEPOSIT
+        );
+        IERC20(address(taxToken)).approve(
+            address(UNIV2_ROUTER), TOKEN_DEPOSIT
+        );
+
+        taxToken.modifyWhitelist(address(this), true);
+
+        // Instantiate liquidity pool.
+        // TODO: Research params for addLiquidityETH (which one is for TaxToken amount?).
+        IUniswapV2Router02(UNIV2_ROUTER).addLiquidityETH{value: ETH_DEPOSIT}(
+            address(taxToken),
+            TOKEN_DEPOSIT,            // This variable is the TaxToken amount to deposit.
+            10 ether,
+            10 ether,
+            address(this),
+            block.timestamp + 300
+        );
+
+        taxToken.modifyWhitelist(address(this), false);
+    }
+
+    // Simulate buy (taxType 1).
+    function buy_generateFees(uint256 buy_amount_weth) internal {
+
+        IERC20(WETH).approve(address(UNIV2_ROUTER), buy_amount_weth);
+
+        address[] memory path_uni_v2 = new address[](2);
+
+        path_uni_v2[0] = WETH;
+        path_uni_v2[1] = address(taxToken);
+
+        IUniswapV2Router02(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+            buy_amount_weth,
+            0,
+            path_uni_v2,
+            msg.sender,
+            block.timestamp + 300
+        );
+    }
+
+    // Simulate sell (taxType 2).
+    function sell_generateFees() internal {
+        uint tradeAmt = 10 ether;
+
+        IERC20(address(taxToken)).approve(
+            address(UNIV2_ROUTER), tradeAmt
+        );
+
+        address[] memory path_uni_v2 = new address[](2);
+
+        path_uni_v2[0] = address(taxToken);
+        path_uni_v2[1] = WETH;
+
+        // Documentation on IUniswapV2Router:
+        // https://docs.uniswap.org/protocol/V2/reference/smart-contracts/router-02#swapexacttokensfortokens
+        IUniswapV2Router02(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+            tradeAmt,           
+            0,
+            path_uni_v2,
+            msg.sender,
+            block.timestamp + 300
+        );
+    }
+
+    // Simulate xfer (taxType 0).
+    function xfer_generateFees() internal {
+        taxToken.transfer(address(69), 1 ether);
+    }
+
+
+    // ~ Test Functions ~
+
+
     // Test initial state of state variables.
-    function test_taxToken_simple_stateVariables() public {
+    function test_taxToken_init_state() public {
         assertEq(1000 ether, taxToken.totalSupply());
         assertEq('TaxToken', taxToken.name());
         assertEq('TAX', taxToken.symbol());
@@ -497,5 +588,24 @@ contract TaxTokenTest is Utility {
         assertEq(getIndustryBal, 100 ether);
         assertEq(getDiffy, 40 ether);
         assertEq(lifetime, 100 ether);
+    }
+
+    // ~ distributeRoyaltiesToTreasury() Testing ~
+
+    function test_taxToken_distributeRoyaltiesToTreasury() public {
+        create_lp();
+
+        buy_generateFees(1 ether);
+        buy_generateFees(1 ether);
+        buy_generateFees(1 ether);
+        buy_generateFees(1 ether);
+
+        taxToken.transferOwnership(address(dev));
+        dev.try_distributeRoyaltiesToTreasury(address(taxToken));
+
+        buy_generateFees(1 ether);
+        buy_generateFees(1 ether);
+
+        dev.try_distributeRoyaltiesToTreasury(address(taxToken));
     }
 }

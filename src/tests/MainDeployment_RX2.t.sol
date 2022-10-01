@@ -85,7 +85,6 @@ contract MainDeployment_RX2 is Utility {
 
         // (14, 15, 16) Update TaxType 0, 1, 2.
         treasury.setTaxDistribution(
-            0, 
             4, 
             wallets, 
             convertToAsset, 
@@ -93,7 +92,6 @@ contract MainDeployment_RX2 is Utility {
         );
 
         treasury.setTaxDistribution(
-            1, 
             4, 
             wallets, 
             convertToAsset, 
@@ -101,7 +99,6 @@ contract MainDeployment_RX2 is Utility {
         );
 
         treasury.setTaxDistribution(
-            2, 
             4, 
             wallets, 
             convertToAsset, 

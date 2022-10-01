@@ -82,7 +82,6 @@ contract TreasuryNullTest is Utility {
         percentDistribution[1] = 50;
         
         treasury.setTaxDistribution(
-            0, 
             2, 
             wallets, 
             convertToAsset, 
@@ -105,7 +104,6 @@ contract TreasuryNullTest is Utility {
         percentDistribution[1] = 50;
         
         treasury.setTaxDistribution(
-            0, 
             2, 
             wallets, 
             convertToAsset, 
@@ -128,7 +126,6 @@ contract TreasuryNullTest is Utility {
         percentDistribution[2] = 1;
         
         treasury.setTaxDistribution(
-            0, 
             2, 
             wallets, 
             convertToAsset, 
@@ -150,7 +147,6 @@ contract TreasuryNullTest is Utility {
         percentDistribution[1] = 49;
         
         treasury.setTaxDistribution(
-            0, 
             2, 
             wallets, 
             convertToAsset, 
@@ -173,7 +169,6 @@ contract TreasuryNullTest is Utility {
         percentDistribution[1] = 50;
         
         treasury.setTaxDistribution(
-            0, 
             2, 
             wallets, 
             convertToAsset, 
@@ -185,7 +180,7 @@ contract TreasuryNullTest is Utility {
             address[] memory _wallets, 
             address[] memory _convertToAsset, 
             uint[] memory _percentDistribution
-        ) = treasury.viewTaxSettings(0);
+        ) = treasury.viewTaxSettings();
 
         assertEq(_walletCount, 2);
         assertEq(_wallets[0], address(0));
@@ -210,7 +205,6 @@ contract TreasuryNullTest is Utility {
         percentDistribution[2] = 40;
         
         treasury.setTaxDistribution(
-            0, 
             3, 
             wallets, 
             convertToAsset, 
@@ -222,7 +216,7 @@ contract TreasuryNullTest is Utility {
             _wallets, 
             _convertToAsset, 
              _percentDistribution
-        ) = treasury.viewTaxSettings(0);
+        ) = treasury.viewTaxSettings();
 
         assertEq(_walletCount, 3);
         assertEq(_wallets[0], address(5));
@@ -251,14 +245,13 @@ contract TreasuryNullTest is Utility {
         percentDistribution[1] = 50;
         
         treasury.setTaxDistribution(
-            1, 
             2, 
             wallets, 
             convertToAsset, 
             percentDistribution
         );
 
-        assertEq(treasury.distributeTaxes(1), 0);
+        assertEq(treasury.distributeTaxes(), 0);
     }
 
     // Test converting tokens when none exist.
@@ -276,14 +269,13 @@ contract TreasuryNullTest is Utility {
         percentDistribution[1] = 50;
         
         treasury.setTaxDistribution(
-            1, 
             2, 
             wallets, 
             convertToAsset, 
             percentDistribution
         );
 
-        assertEq(treasury.distributeTaxes(1), 0);
+        assertEq(treasury.distributeTaxes(), 0);
     }
 
 }

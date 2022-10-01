@@ -69,4 +69,9 @@ contract Actor {
         string memory sig = "modifyWhitelist(address,bool)";
         (ok,) = address(token).call(abi.encodeWithSignature(sig, wallet, whitelisted));
     }
+
+    function try_distributeRoyaltiesToTreasury(address token) external returns (bool ok) {
+        string memory sig = "distributeRoyaltiesToTreasury()";
+        (ok,) = address(token).call(abi.encodeWithSignature(sig));
+    }
 }

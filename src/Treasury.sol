@@ -121,12 +121,15 @@ contract Treasury {
 
     /// @notice Increases _amt of taxToken allocated to _taxType.
     /// @dev    Only callable by taxToken.
-    /// @param  _taxType The taxType to allocate more taxToken to for distribution.
     /// @param  _amt The amount of taxToken going to taxType.
-    function updateTaxesAccrued(uint _taxType, uint _amt) isTaxToken external {
+    function updateTaxesAccrued(uint _amt) isTaxToken external {
         amountRoyaltiesWeth += _amt;
         emit RoyaltiesReceived(_amt, amountRoyaltiesWeth);
         //taxTokenAccruedForTaxType[_taxType] += _amt;
+    }
+
+    function viewTaxesAccrued() external view returns (uint _amountAccrued) {
+        return amountRoyaltiesWeth;
     }
 
     /// @notice This function modifies the distribution settings for all taxes.
@@ -164,7 +167,7 @@ contract Treasury {
     }
 
     /// @notice Distributes taxes for given taxType.
-    function distributeTaxes() external {
+    function distributeTaxes() external returns(uint256 _amountToDistribute) {
 
         uint256 _amountToDistribute = amountRoyaltiesWeth;
         
@@ -201,6 +204,8 @@ contract Treasury {
             }
             
         }
+
+        return _amountToDistribute;
     }
 
     /// @notice Helper view function for taxSettings.
@@ -250,6 +255,15 @@ contract Treasury {
     function exchangeRateForTaxType(address[] memory _path, uint _taxType) external view returns(uint256) {
         return IUniswapV2Router02(UNIV2_ROUTER).getAmountsOut(
             taxTokenAccruedForTaxType[_taxType], 
+            _path
+        )[_path.length - 1];
+    }
+
+    /// @notice View function for exchanging fees collected for given taxType.
+    /// @param  _path The path by which taxToken is converted into a given asset (i.e. taxToken => DAI => LINK).
+    function exchangeRateForWethToStable(address[] memory _path) external view returns(uint256) {
+        return IUniswapV2Router02(UNIV2_ROUTER).getAmountsOut(
+            amountRoyaltiesWeth, 
             _path
         )[_path.length - 1];
     }

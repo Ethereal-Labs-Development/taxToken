@@ -93,7 +93,6 @@ contract MainDeployment_ADMT is Utility {
 
         // (8) Update TaxType 0.
         treasury.setTaxDistribution(
-            1, 
             4, 
             wallets, 
             convertToAsset, 
@@ -129,7 +128,6 @@ contract MainDeployment_ADMT is Utility {
 
         //(9) Update tax types 0 and 2.
         treasury.setTaxDistribution(
-            0, 
             5, 
             wallets, 
             convertToAsset, 
@@ -137,7 +135,6 @@ contract MainDeployment_ADMT is Utility {
         );
 
         treasury.setTaxDistribution(
-            2, 
             5, 
             wallets, 
             convertToAsset, 

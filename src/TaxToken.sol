@@ -87,7 +87,7 @@ contract TaxToken is ERC20{
         maxWalletSize = maxWalletSizeInput * 10**_decimals;
         maxTxAmount = maxTxAmountInput * 10**_decimals;
 
-        maxContractTokenBalance = 100;
+        maxContractTokenBalance = 1 * 10**_decimals;
 
         // TODO: Add before main-net deployment.
         // update maxContractTokenBalance
@@ -155,7 +155,7 @@ contract TaxToken is ERC20{
     event Unpaused(address _account);
 
     /// @dev Emitted during transferFrom().
-    event TransferTax(address indexed _treasury, uint256 _value, uint256 _taxType);
+    event TransferTax(address indexed _treasury, uint256 _value);
 
     /// @dev Emitted when transferOwnership() is completed.
     event OwnershipTransferred(address indexed _currentAdmin, address indexed _newAdmin);
@@ -211,13 +211,13 @@ contract TaxToken is ERC20{
             
             uint256 contractTokenBalance = balanceOf(address(this));
 
-            // if(contractTokenBalance > maxTxAmount)
-            // {
-            //     contractTokenBalance = maxTxAmount;
-            // }
+            if(contractTokenBalance > maxTxAmount)
+            {
+                contractTokenBalance = maxTxAmount;
+            }
 
             if (_taxType == 2 && !inSwap && contractTokenBalance >= maxContractTokenBalance) {
-                handleRoyalties(contractTokenBalance, _taxType);
+                handleRoyalties(contractTokenBalance);
             }
 
             super._transfer(_from, _to, _sendAmt);
@@ -231,13 +231,13 @@ contract TaxToken is ERC20{
         }
     }
 
-    function handleRoyalties(uint256 _contractTokenBalance, uint _taxType) internal lockTheSwap {
+    function handleRoyalties(uint256 _contractTokenBalance) internal lockTheSwap {
         uint256 amountWeth = swapTokensForWeth(_contractTokenBalance);
 
         if (amountWeth > 0) {
             // Update Treasury Accounting
-            ITreasury(treasury).updateTaxesAccrued(_taxType, amountWeth);
-            emit TransferTax(treasury, amountWeth, _taxType);
+            ITreasury(treasury).updateTaxesAccrued(amountWeth);
+            emit TransferTax(treasury, amountWeth);
             //emit Debug(IERC20(IUniswapV2Router02(UNIV2_ROUTER).WETH()).balanceOf(treasury));
         }
     }
@@ -291,6 +291,7 @@ contract TaxToken is ERC20{
 
     
     // ~ TaxType & Fee Management ~
+    
 
     /// @notice     Used to store the LP Pair to differ type of transaction. Will be used to mark a BUY.
     /// @dev        _taxType must be lower than 3 because there can only be 3 tax types; buy, sell, & send.
@@ -333,6 +334,14 @@ contract TaxToken is ERC20{
 
 
     // ~ Admin ~
+
+
+    function distributeRoyaltiesToTreasury() external onlyOwner {
+        if (!inSwap) {
+            handleRoyalties(balanceOf(address(this)));
+        }
+        // test contractTokenbalance being over max Tx amount
+    }
 
     /// @notice This is used to change the owner's wallet address. Used to give ownership to another wallet.
     /// @param  _owner is the new owner address.

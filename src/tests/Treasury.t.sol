@@ -51,8 +51,6 @@ contract TreasuryTest is Utility {
         taxToken.adjustBasisPointsTax(1, 1200);   // 1200 = 12.00 %
         taxToken.adjustBasisPointsTax(2, 1500);   // 1500 = 15.00 %
 
-        taxToken.modifyWhitelist(address(treasury), true);
-
         
         // Convert our ETH to WETH
         uint ETH_DEPOSIT = 100 ether;
@@ -145,11 +143,8 @@ contract TreasuryTest is Utility {
     // Each taxType (0, 1, and 2) should have some greater than 0 value.
     // The sum of all taxes accrued for each taxType should equal taxToken.balanceOf(treasury).
     function test_treasury_initialState() public {
-        assert(treasury.taxTokenAccruedForTaxType(0) > 0);
-        assert(treasury.taxTokenAccruedForTaxType(1) > 0);
-        assert(treasury.taxTokenAccruedForTaxType(2) > 0);
-        uint sum = treasury.taxTokenAccruedForTaxType(0) + treasury.taxTokenAccruedForTaxType(1) + treasury.taxTokenAccruedForTaxType(2);
-        assertEq(sum, taxToken.balanceOf(address(treasury)));
+        assert(treasury.amountRoyaltiesWeth() > 0);
+        assertEq(treasury.amountRoyaltiesWeth(), IERC20(WETH).balanceOf(address(treasury)));
     }
 
     // Test require statement fail: require(walletCount == wallets.length).
@@ -167,7 +162,6 @@ contract TreasuryTest is Utility {
         percentDistribution[1] = 50;
         
         treasury.setTaxDistribution(
-            0, 
             2, 
             wallets, 
             convertToAsset, 
@@ -190,7 +184,6 @@ contract TreasuryTest is Utility {
         percentDistribution[1] = 50;
         
         treasury.setTaxDistribution(
-            0, 
             2, 
             wallets, 
             convertToAsset, 
@@ -213,7 +206,6 @@ contract TreasuryTest is Utility {
         percentDistribution[2] = 1;
         
         treasury.setTaxDistribution(
-            0, 
             2, 
             wallets, 
             convertToAsset, 
@@ -235,7 +227,6 @@ contract TreasuryTest is Utility {
         percentDistribution[1] = 49;
         
         treasury.setTaxDistribution(
-            0, 
             2, 
             wallets, 
             convertToAsset, 
@@ -258,7 +249,6 @@ contract TreasuryTest is Utility {
         percentDistribution[1] = 50;
         
         treasury.setTaxDistribution(
-            0, 
             2, 
             wallets, 
             convertToAsset, 
@@ -270,7 +260,7 @@ contract TreasuryTest is Utility {
             address[] memory _wallets, 
             address[] memory _convertToAsset, 
             uint[] memory _percentDistribution
-        ) = treasury.viewTaxSettings(0);
+        ) = treasury.viewTaxSettings();
 
         assertEq(_walletCount, 2);
         assertEq(_wallets[0], address(0));
@@ -295,7 +285,6 @@ contract TreasuryTest is Utility {
         percentDistribution[2] = 40;
         
         treasury.setTaxDistribution(
-            0, 
             3, 
             wallets, 
             convertToAsset, 
@@ -307,7 +296,7 @@ contract TreasuryTest is Utility {
             _wallets, 
             _convertToAsset, 
              _percentDistribution
-        ) = treasury.viewTaxSettings(0);
+        ) = treasury.viewTaxSettings();
 
         assertEq(_walletCount, 3);
         assertEq(_wallets[0], address(5));
@@ -336,16 +325,15 @@ contract TreasuryTest is Utility {
         percentDistribution[1] = 50;
 
         treasury.setTaxDistribution(
-            1, 
             2, 
             wallets, 
             convertToAsset, 
             percentDistribution
         );
 
-        uint _preTaxAccrued = treasury.taxTokenAccruedForTaxType(1);
+        uint _preTaxAccrued = treasury.amountRoyaltiesWeth();
 
-        assertEq(treasury.distributeTaxes(1), _preTaxAccrued);
+        assertEq(treasury.distributeTaxes(), _preTaxAccrued);
     }
 
     // TODO: Add descriptions.
@@ -363,60 +351,48 @@ contract TreasuryTest is Utility {
         percentDistribution[1] = 50;
         
         treasury.setTaxDistribution(
-            1, 
             2, 
             wallets, 
             convertToAsset, 
             percentDistribution
         );
 
-        uint _preTaxAccrued = treasury.taxTokenAccruedForTaxType(1);
+        uint _preTaxAccrued = treasury.amountRoyaltiesWeth();
         
-        assertEq(treasury.distributeTaxes(1), _preTaxAccrued);
+        assertEq(treasury.distributeTaxes(), _preTaxAccrued);
     }
 
 
     // This test covers multiple tax generation events (of type 0, 1, 2) and collections.
     function test_treasury_multiple_gens_collections() public {
-        treasury.distributeAllTaxes();
+        treasury.distributeTaxes();
         buy_generateFees();
-        treasury.distributeAllTaxes();
+        treasury.distributeTaxes();
         sell_generateFees();
-        treasury.distributeAllTaxes();
+        treasury.distributeTaxes();
         xfer_generateFees();
-        treasury.distributeAllTaxes();
-        sell_generateFees();
-        buy_generateFees();
-        treasury.distributeAllTaxes();
-        sell_generateFees();
-        xfer_generateFees();
-        treasury.distributeAllTaxes();
-        buy_generateFees();
-        xfer_generateFees();
-        treasury.distributeAllTaxes();
+        treasury.distributeTaxes();
         sell_generateFees();
         buy_generateFees();
+        treasury.distributeTaxes();
+        sell_generateFees();
         xfer_generateFees();
-        treasury.distributeAllTaxes();
+        treasury.distributeTaxes();
+        buy_generateFees();
+        xfer_generateFees();
+        treasury.distributeTaxes();
+        sell_generateFees();
+        buy_generateFees();
+        xfer_generateFees();
+        treasury.distributeTaxes();
     }
     
     // TODO: Add descriptions.
     function test_view_function_taxesAccrued() public {
-        (
-            uint _taxType0,
-            uint _taxType1,
-            uint _taxType2,
-            uint _sum
-        ) = treasury.viewTaxesAccrued();
+        ( uint _amount ) = treasury.viewTaxesAccrued();
 
-        emit LogUint("_taxType0", _taxType0);
-        emit LogUint("_taxType1", _taxType1);
-        emit LogUint("_taxType2", _taxType2);
-        emit LogUint("_sum", _sum);
-        assert(_taxType0 > 0);
-        assert(_taxType1 > 0);
-        assert(_taxType2 > 0);
-        assertEq(_sum, taxToken.balanceOf(address(treasury)));
+        emit LogUint("amount of taxes accrued", _amount);
+        assertEq(_amount, IERC20(WETH).balanceOf(address(treasury)));
     }
 
     // TODO: Add descriptions.
@@ -494,82 +470,75 @@ contract TreasuryTest is Utility {
     }
 
     // Experiment with exchangeRateTotal() view function.
-    function test_treasury_exchangeRateTotal() public {
+    // function test_treasury_exchangeRateTotal() public {
 
-        address[] memory path_uni_v2 = new address[](3);
+    //     address[] memory path_uni_v2 = new address[](3);
 
-        path_uni_v2[0] = address(taxToken);
-        path_uni_v2[1] = WETH;
-        path_uni_v2[2] = DAI;
+    //     path_uni_v2[0] = address(taxToken);
+    //     path_uni_v2[1] = WETH;
+    //     path_uni_v2[2] = DAI;
 
-        uint taxType0 = treasury.exchangeRateForTaxType(path_uni_v2, 0);
-        uint taxType1 = treasury.exchangeRateForTaxType(path_uni_v2, 1);
-        uint taxType2 = treasury.exchangeRateForTaxType(path_uni_v2, 2);
+    //     uint taxType0 = treasury.exchangeRateForTaxType(path_uni_v2, 0);
+    //     uint taxType1 = treasury.exchangeRateForTaxType(path_uni_v2, 1);
+    //     uint taxType2 = treasury.exchangeRateForTaxType(path_uni_v2, 2);
 
-        emit Debug('taxType0', taxType0);
-        emit Debug('taxType1', taxType1);
-        emit Debug('taxType2', taxType2);
+    //     emit Debug('taxType0', taxType0);
+    //     emit Debug('taxType1', taxType1);
+    //     emit Debug('taxType2', taxType2);
 
-        // ├╴Debug("taxType0", 1796310537150394376) (src/Treasury.t.sol:546)
-        // ├╴Debug("taxType1", 212532665568400683822) (src/Treasury.t.sol:547)
-        // ├╴Debug("taxType2", 26940783891853202311) (src/Treasury.t.sol:548)
+    //     // ├╴Debug("taxType0", 1796310537150394376) (src/Treasury.t.sol:546)
+    //     // ├╴Debug("taxType1", 212532665568400683822) (src/Treasury.t.sol:547)
+    //     // ├╴Debug("taxType2", 26940783891853202311) (src/Treasury.t.sol:548)
 
-        buy_generateFees();
-        buy_generateFees();
-        buy_generateFees();
+    //     buy_generateFees();
+    //     buy_generateFees();
+    //     buy_generateFees();
 
-        taxType0 = treasury.exchangeRateForTaxType(path_uni_v2, 0);
-        taxType1 = treasury.exchangeRateForTaxType(path_uni_v2, 1);
-        taxType2 = treasury.exchangeRateForTaxType(path_uni_v2, 2);
+    //     taxType0 = treasury.exchangeRateForTaxType(path_uni_v2, 0);
+    //     taxType1 = treasury.exchangeRateForTaxType(path_uni_v2, 1);
+    //     taxType2 = treasury.exchangeRateForTaxType(path_uni_v2, 2);
 
-        emit Debug('taxType0', taxType0);
-        emit Debug('taxType1', taxType1);
-        emit Debug('taxType2', taxType2);
+    //     emit Debug('taxType0', taxType0);
+    //     emit Debug('taxType1', taxType1);
+    //     emit Debug('taxType2', taxType2);
 
-        // ├╴Debug("taxType0", 1904533759476995397) (src/Treasury.t.sol:556)
-        // ├╴Debug("taxType1", 873293553192437130107) (src/Treasury.t.sol:557)
-        // ├╴Debug("taxType2", 28563774513486153680) (src/Treasury.t.sol:558)
+    //     // ├╴Debug("taxType0", 1904533759476995397) (src/Treasury.t.sol:556)
+    //     // ├╴Debug("taxType1", 873293553192437130107) (src/Treasury.t.sol:557)
+    //     // ├╴Debug("taxType2", 28563774513486153680) (src/Treasury.t.sol:558)
 
-        sell_generateFees();
-        sell_generateFees();
-        sell_generateFees();
+    //     sell_generateFees();
+    //     sell_generateFees();
+    //     sell_generateFees();
 
-        taxType0 = treasury.exchangeRateForTaxType(path_uni_v2, 0);
-        taxType1 = treasury.exchangeRateForTaxType(path_uni_v2, 1);
-        taxType2 = treasury.exchangeRateForTaxType(path_uni_v2, 2);
+    //     taxType0 = treasury.exchangeRateForTaxType(path_uni_v2, 0);
+    //     taxType1 = treasury.exchangeRateForTaxType(path_uni_v2, 1);
+    //     taxType2 = treasury.exchangeRateForTaxType(path_uni_v2, 2);
 
-        emit Debug('taxType0', taxType0);
-        emit Debug('taxType1', taxType1);
-        emit Debug('taxType2', taxType2);
+    //     emit Debug('taxType0', taxType0);
+    //     emit Debug('taxType1', taxType1);
+    //     emit Debug('taxType2', taxType2);
 
-        // ├╴Debug("taxType0", 1894496762882612346) (src/Treasury.t.sol:566)
-        // ├╴Debug("taxType1", 868702596890567721328) (src/Treasury.t.sol:567)
-        // ├╴Debug("taxType2", 113599069356538056284) (src/Treasury.t.sol:568)
+    //     // ├╴Debug("taxType0", 1894496762882612346) (src/Treasury.t.sol:566)
+    //     // ├╴Debug("taxType1", 868702596890567721328) (src/Treasury.t.sol:567)
+    //     // ├╴Debug("taxType2", 113599069356538056284) (src/Treasury.t.sol:568)
 
-        xfer_generateFees();
-        xfer_generateFees();
-        xfer_generateFees();
+    //     xfer_generateFees();
+    //     xfer_generateFees();
+    //     xfer_generateFees();
 
-        taxType0 = treasury.exchangeRateForTaxType(path_uni_v2, 0);
-        taxType1 = treasury.exchangeRateForTaxType(path_uni_v2, 1);
-        taxType2 = treasury.exchangeRateForTaxType(path_uni_v2, 2);
+    //     taxType0 = treasury.exchangeRateForTaxType(path_uni_v2, 0);
+    //     taxType1 = treasury.exchangeRateForTaxType(path_uni_v2, 1);
+    //     taxType2 = treasury.exchangeRateForTaxType(path_uni_v2, 2);
 
-        emit Debug('taxType0', taxType0);
-        emit Debug('taxType1', taxType1);
-        emit Debug('taxType2', taxType2);
+    //     emit Debug('taxType0', taxType0);
+    //     emit Debug('taxType1', taxType1);
+    //     emit Debug('taxType2', taxType2);
 
-        // ├╴Debug("taxType0", 7577747125354401523) (src/Treasury.t.sol:576)
-        // ├╴Debug("taxType1", 868702596890567721328) (src/Treasury.t.sol:577)
-        // └╴Debug("taxType2", 113599069356538056284) (src/Treasury.t.sol:578)
+    //     // ├╴Debug("taxType0", 7577747125354401523) (src/Treasury.t.sol:576)
+    //     // ├╴Debug("taxType1", 868702596890567721328) (src/Treasury.t.sol:577)
+    //     // └╴Debug("taxType2", 113599069356538056284) (src/Treasury.t.sol:578)
 
-    }
-
-    // Verify new distributeTaxes() function.
-    function test_treasury_distributeTaxes_new() public {
-        treasury.distributeTaxes(0);
-        treasury.distributeTaxes(1);
-        treasury.distributeTaxes(2);
-    }
+    // }
 
     function setProperTaxDistribution_ADMT() public {
 
@@ -595,7 +564,6 @@ contract TreasuryTest is Utility {
         percentDistribution[4] = 17;
         
         treasury.setTaxDistribution(
-            0,
             5,
             wallets, 
             convertToAsset, 
@@ -603,7 +571,6 @@ contract TreasuryTest is Utility {
         );
         
         treasury.setTaxDistribution(
-            2,
             5,
             wallets, 
             convertToAsset, 
@@ -629,7 +596,6 @@ contract TreasuryTest is Utility {
         percentDistribution[3] = 20;
         
         treasury.setTaxDistribution(
-            1, 
             4, 
             wallets, 
             convertToAsset, 
@@ -655,23 +621,6 @@ contract TreasuryTest is Utility {
         percentDistribution[2] = 60;
         
         treasury.setTaxDistribution(
-            0,
-            3,
-            wallets, 
-            convertToAsset, 
-            percentDistribution
-        );
-
-        treasury.setTaxDistribution(
-            1,
-            3,
-            wallets, 
-            convertToAsset, 
-            percentDistribution
-        );
-        
-        treasury.setTaxDistribution(
-            2,
             3,
             wallets, 
             convertToAsset, 
@@ -679,18 +628,8 @@ contract TreasuryTest is Utility {
         );
     }
 
-    function test_treasury_distributeTaxes_new_0() public {
-        treasury.distributeTaxes(0);
-    }
-
-    // Attempt to distribute taxes for tax type 1.
-    function test_treasury_distributeTaxes_new_1() public {
-        treasury.distributeTaxes(1);
-    }
-
-    // Attempt to distribute taxes for tax type 2.
-    function test_treasury_distributeTaxes_new_2() public {
-        treasury.distributeTaxes(2);
+    function test_treasury_distributeTaxes() public {
+        treasury.distributeTaxes();
     }
 
     // NOTE: taxDistribution set in SetUp() -> setTaxDistribution_DAI().
@@ -712,7 +651,7 @@ contract TreasuryTest is Utility {
         assertEq(treasury.distributionsStable(address(3)), 0);
 
         // Distribute Royalties
-        treasury.distributeAllTaxes();
+        treasury.distributeTaxes();
 
         //Post-State Check.
         uint postBal1 = IERC20(distributionToken).balanceOf(address(1));
@@ -753,7 +692,7 @@ contract TreasuryTest is Utility {
         assertEq(treasury.distributionsStable(address(3)), 0);
 
         // Distribute Royalties
-        treasury.distributeAllTaxes();
+        treasury.distributeTaxes();
 
         //Post-State Check.
         uint postBal1 = IERC20(distributionToken).balanceOf(address(1));
@@ -794,7 +733,7 @@ contract TreasuryTest is Utility {
         assertEq(treasury.distributionsStable(address(3)), 0);
 
         // Distribute Royalties
-        treasury.distributeAllTaxes();
+        treasury.distributeTaxes();
 
         //Post-State Check.
         uint postBal1 = IERC20(distributionToken).balanceOf(address(1));
@@ -812,6 +751,73 @@ contract TreasuryTest is Utility {
         // ├╴LogUint("Stable Received address(1)", 43454257034374145510)
         // ├╴LogUint("Stable Received address(2)", 43454257034374145510)
         // └╴LogUint("Stable Received address(3)", 130362771103122436532)
+    }
+
+
+    // ~ Tests For Automated Ryalty Distribution on branch sell-on-sell ~
+
+
+    // Experiment with exchangeRateForWethToStable() view function.
+    function test_treasury_exchangeRateForWethToStable() public {
+
+        address[] memory path_uni_v2 = new address[](2);
+
+        path_uni_v2[0] = WETH;
+        path_uni_v2[1] = DAI;
+
+        uint amountWeth0 = treasury.amountRoyaltiesWeth();
+        uint amountStable0 = treasury.exchangeRateForWethToStable(path_uni_v2);
+
+        emit Debug('Weth', amountWeth0);
+        emit Debug('Stable', amountStable0);
+
+        // ├╴Debug("Weth", 120330359447682921)
+        // ├╴Debug("Stable", 158705418105444388209)
+
+        // ETH PRICE = $1,323.56
+
+        buy_generateFees();
+        buy_generateFees();
+        buy_generateFees();
+
+        uint amountWeth1 = treasury.amountRoyaltiesWeth();
+        uint amountStable1 = treasury.exchangeRateForWethToStable(path_uni_v2);
+
+        emit Debug('Weth', amountWeth1);
+        emit Debug('Stable', amountStable1);
+
+        assertEq(amountWeth0, amountWeth1);
+        assertEq(amountStable0, amountStable1);
+
+        // ├╴Debug("Weth", 120330359447682921)
+        // ├╴Debug("Stable", 158705418105444388209)
+
+        sell_generateFees();
+        sell_generateFees();
+        sell_generateFees();
+
+        uint amountWeth2 = treasury.amountRoyaltiesWeth();
+        uint amountStable2 = treasury.exchangeRateForWethToStable(path_uni_v2);
+
+        emit Debug('Weth', amountWeth2);
+        emit Debug('Stable', amountStable2);
+
+        // ├╴Debug("Weth", 536454981790053474)
+        // ├╴Debug("Stable", 707481075308366014932)
+
+        xfer_generateFees();
+        xfer_generateFees();
+        sell_generateFees();
+
+        uint amountWeth3 = treasury.amountRoyaltiesWeth();
+        uint amountStable3 = treasury.exchangeRateForWethToStable(path_uni_v2);
+
+        emit Debug('Weth', amountWeth3);
+        emit Debug('Stable', amountStable3);
+
+        // ├╴Debug("Weth", 554467595413567702)
+        // └╴Debug("Stable", 731233702267277927066)
+
     }
 
 }
