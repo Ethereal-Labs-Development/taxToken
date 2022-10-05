@@ -393,6 +393,10 @@ contract TreasuryTest is Utility {
 
         emit LogUint("amount of taxes accrued", _amount);
         assertEq(_amount, IERC20(WETH).balanceOf(address(treasury)));
+
+        // Error: a == b not satisfied [uint]
+        // Expected: 102299087242321134 <-- IERC20(WETH).balanceOf(address(treasury))
+        // Actual:   120330359447682921 < -- _amount
     }
 
     // TODO: Add descriptions.
