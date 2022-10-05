@@ -42,8 +42,6 @@ contract TaxToken is ERC20{
     mapping(address => uint8) public senderTaxType;              /// @dev Identifies tax type for msg.sender of transfer() call.
     mapping(address => uint8) public receiverTaxType;            /// @dev Identifies tax type for _to of transfer() call.
     mapping(uint8 => uint) public basisPointsTax;                /// @dev Mapping between taxType and basisPoints (taxed).
-    mapping(address => uint) public industryTokens;             /// @dev Mapping of how many locked tokens exist in a wallet (In 18 decimal format).
-    mapping(address => uint) public lifeTimeIndustryTokens;     /// @dev Mapping of how many locked tokens have ever been minted (In 18 decimal format).  
     mapping(address => bool) public authorized;                 /// @dev Mapping of which wallets are authorized to call specific functions.
     mapping(uint8 => uint256) public taxesAccrued;
 
@@ -413,18 +411,6 @@ contract TaxToken is ERC20{
         _mint(_wallet, _amount);
     }
 
-    /// @notice This function is used to mint tokens and log their creation to the industry wallet mappings.
-    /// @dev    Any tokens minted through this process can only be used inside of the NFT marketplace to mint new NFTS (can only be burned).
-    /// @dev    Users may still buy and sell new or prior existing non-minted tokens but these will be soulbound. 
-    /// @dev    Does not truncate so amount needs to include the 18 decimal points.
-    /// @param  _wallet is the wallet address that will recieve these minted tokens.
-    /// @param  _amount is the amount of tokens to be minted into _wallet.
-    function industryMint(address _wallet, uint256 _amount) external onlyAuthorized {
-        _mint(_wallet, _amount);
-        industryTokens[_wallet] += _amount;
-        lifeTimeIndustryTokens[_wallet] += _amount;
-    }
-
     /// @notice This function will destroy existing tokens and deduct them from total supply.
     /// @dev    Does not truncate so amount needs to include the 18 decimal points.
     /// @param  _wallet the account we're burning tokens from.
@@ -433,35 +419,4 @@ contract TaxToken is ERC20{
         _burn(_wallet, _amount);
     }
 
-    /// @notice This function will destroy existing tokens and deduct them from total supply.
-    /// @dev    Does not truncate so amount needs to include the 18 decimal points.    
-    /// @param  _wallet the account we're burning tokens from.
-    /// @param  _amount the amount of tokens we're burning.
-    function industryBurn(address _wallet, uint256 _amount) external onlyAuthorized {
-        require(_wallet != address(0), "TaxToken.sol::industryBurn(), Cannot burn to zero address.");
-        require(balanceOf(_wallet) >= _amount, "TaxToken.sol::industryBurn(), Insufficient balance of $PROVE to burn.");
-
-        if (industryTokens[_wallet] >= _amount) {
-            _burn(_wallet, _amount);
-            industryTokens[_wallet] -= _amount;
-        } else {
-            _burn(_wallet, _amount);
-            industryTokens[_wallet] = 0;
-        }
-    }
-
-    /// @notice This function is a VIEW function that returns the amount of industry tokens,
-    ///         full balance, and normal tokens a wallet has.
-    /// @dev    This function is for the front end to pull industry data for a specific wallet.
-    /// @return numTokens the amount of taxTokens the _wallet holds.
-    /// @return numIndustryTokens the amount of tokens they hold that is industry tokens.
-    /// @return numDifference the amount of tokens they have that are NOT industry tokens.
-    /// @return lifetime the amount of industry tokens that have been minted to _wallet in total.
-    function getIndustryTokens(address _wallet) external view returns (uint numTokens, uint numIndustryTokens, uint numDifference, uint lifetime) {
-        uint fullBalance = IERC20(address(this)).balanceOf(_wallet);
-        uint industryBalance = industryTokens[_wallet];
-        uint difference = fullBalance - industryBalance;
-
-        return (fullBalance, industryBalance, difference, lifeTimeIndustryTokens[_wallet]);
-    }
 }
