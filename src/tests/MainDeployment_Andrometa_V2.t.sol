@@ -93,7 +93,6 @@ contract MainDeployment_ADMT is Utility {
 
         // (8) Update TaxType 0.
         treasury.setTaxDistribution(
-            1, 
             4, 
             wallets, 
             convertToAsset, 
@@ -129,7 +128,6 @@ contract MainDeployment_ADMT is Utility {
 
         //(9) Update tax types 0 and 2.
         treasury.setTaxDistribution(
-            0, 
             5, 
             wallets, 
             convertToAsset, 
@@ -137,7 +135,6 @@ contract MainDeployment_ADMT is Utility {
         );
 
         treasury.setTaxDistribution(
-            2, 
             5, 
             wallets, 
             convertToAsset, 
@@ -223,7 +220,7 @@ contract MainDeployment_ADMT is Utility {
         // Pre-state check.
         assertEq(IERC20(address(taxToken)).balanceOf(address(treasury)), 0);
 
-        IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+        IUniswapV2Router02(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
             tradeAmt,
             0,
             path_uni_v2,
@@ -252,7 +249,7 @@ contract MainDeployment_ADMT is Utility {
         path_uni_v2[0] = address(taxToken);
         path_uni_v2[1] = WETH;
 
-        IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+        IUniswapV2Router02(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
             tradeAmt,
             0,
             path_uni_v2,
@@ -289,7 +286,7 @@ contract MainDeployment_ADMT is Utility {
 
         taxToken.pause(); // pause
 
-        IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+        IUniswapV2Router02(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
             tradeAmt,
             0,
             path_uni_v2,
@@ -318,7 +315,7 @@ contract MainDeployment_ADMT is Utility {
 
         taxToken.pause(); // pause
 
-        IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+        IUniswapV2Router02(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
             tradeAmt,
             0,
             path_uni_v2,
@@ -356,7 +353,7 @@ contract MainDeployment_ADMT is Utility {
 
         taxToken.pause();
 
-        IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+        IUniswapV2Router02(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
             tradeAmt,
             0,
             path_uni_v2,
@@ -385,7 +382,7 @@ contract MainDeployment_ADMT is Utility {
 
         taxToken.pause();
 
-        IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+        IUniswapV2Router02(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
             tradeAmt,
             0,
             path_uni_v2,

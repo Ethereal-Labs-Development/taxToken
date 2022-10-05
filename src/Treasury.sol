@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import { IERC20, IUniswapV2Router01, IWETH } from "./interfaces/InterfacesAggregated.sol";
+import { IERC20, IUniswapV2Router02, IWETH } from "./interfaces/InterfacesAggregated.sol";
 
 
 /// @notice The treasury is responsible for escrow of TaxToken fee's.
@@ -22,8 +22,12 @@ contract Treasury {
 
     /// @dev The administrator of accounting and distribution settings.
     address public admin;
+
+    uint256 public amountRoyaltiesWeth;
     
     address public constant UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+
+    address public WETH;
 
     // Mappings
 
@@ -32,16 +36,15 @@ contract Treasury {
     ///         taxType 0 => Xfer Tax
     ///         taxType 1 => Buy Tax
     ///         taxType 2 => Sell Tax
-    mapping(uint => uint) public taxTokenAccruedForTaxType;
+    mapping(uint => uint) public taxTokenAccruedForTaxType; //
 
-    /// @dev Mapping of taxType to TaxDistribution struct.
-    mapping(uint => TaxDistribution) public taxSettings;
+    mapping(uint => uint) public WethAccruedForTaxType; //
 
-    /// @dev Tracks amount of taxToken distributed to recipients.
-    mapping(address => uint) public distributionsTaxToken;
+    /// @dev Tracks amount of stablecoin distributed to recipients.
+    mapping(address => uint256) public distributionsStable;
 
-    /// @dev Tracks amount of WETH distributed to recipients.
-    mapping(address => uint) public distributionsStable;      
+    /// @dev taxSettings.
+    TaxDistribution public taxSettings;
 
     // Structs
 
@@ -71,6 +74,8 @@ contract Treasury {
         admin = _admin;
         taxToken = _taxToken;
         stable = _stable;
+
+        WETH = IUniswapV2Router02(UNIV2_ROUTER).WETH();
     }
 
 
@@ -105,6 +110,9 @@ contract Treasury {
     /// @dev Emitted when the stable state variable is updated via updateStable()
     event StableUpdated(address currentStable, address newStable);
 
+    /// @dev Emitted when the treasury receives royalties
+    event RoyaltiesReceived(uint256 amountReceived, uint256 newTotal);
+
  
 
     // ---------
@@ -113,35 +121,24 @@ contract Treasury {
 
     /// @notice Increases _amt of taxToken allocated to _taxType.
     /// @dev    Only callable by taxToken.
-    /// @param  _taxType The taxType to allocate more taxToken to for distribution.
     /// @param  _amt The amount of taxToken going to taxType.
-    function updateTaxesAccrued(uint _taxType, uint _amt) isTaxToken external {
-        taxTokenAccruedForTaxType[_taxType] += _amt;
+    function updateTaxesAccrued(uint _amt) isTaxToken external {
+        amountRoyaltiesWeth += _amt;
+        emit RoyaltiesReceived(_amt, amountRoyaltiesWeth);
+        //taxTokenAccruedForTaxType[_taxType] += _amt;
     }
 
-    /// @notice View function for taxes accrued (a.k.a. "claimable") for each tax type, and the sum.
-    /// @return _taxType0 Taxes accrued (claimable) for taxType0.
-    /// @return _taxType1 Taxes accrued (claimable) for taxType1.
-    /// @return _taxType2 Taxes accrued (claimable) for taxType2.
-    /// @return _sum Taxes accrued (claimable) for all tax types.
-    function viewTaxesAccrued() external view returns(uint _taxType0, uint _taxType1, uint _taxType2, uint _sum) {
-        return (
-            taxTokenAccruedForTaxType[0],
-            taxTokenAccruedForTaxType[1],
-            taxTokenAccruedForTaxType[2],
-            taxTokenAccruedForTaxType[0] + taxTokenAccruedForTaxType[1] + taxTokenAccruedForTaxType[2]
-        );
+    function viewTaxesAccrued() external view returns (uint _amountAccrued) {
+        return amountRoyaltiesWeth;
     }
 
-    /// @notice This function modifies the distribution settings for a given taxType.
+    /// @notice This function modifies the distribution settings for all taxes.
     /// @dev    Only callable by Admin.
-    /// @param  _taxType The taxType to update settings for.
     /// @param  _walletCount The number of wallets to distribute across.
     /// @param  _wallets The address of wallets to distribute fees across.
     /// @param  _convertToAsset The asset to convert taxToken to, prior to distribution.
     /// @param  _percentDistribution The percentage (corresponding with wallets) to distribute taxes to of overall amount owed for taxType.
     function setTaxDistribution(
-        uint _taxType,
         uint _walletCount,
         address[] calldata _wallets,
         address[] calldata _convertToAsset,
@@ -161,7 +158,7 @@ contract Treasury {
         require(sumPercentDistribution == 100, "Treasury.sol::setTaxDistribution(), sumPercentDistribution != 100");
 
         // Update taxSettings for taxType.
-        taxSettings[_taxType] = TaxDistribution(
+        taxSettings = TaxDistribution(
             _walletCount,
             _wallets,
             _convertToAsset,
@@ -170,90 +167,55 @@ contract Treasury {
     }
 
     /// @notice Distributes taxes for given taxType.
-    /// @param  _taxType Chosen taxType to distribute.
-    /// @return _amountToDistribute TaxToken amount distributed.
-    function distributeTaxes(uint _taxType) public returns(uint _amountToDistribute) {
-        
-        _amountToDistribute = taxTokenAccruedForTaxType[_taxType];
+    function distributeTaxes() external returns(uint256 _amountToDistribute) {
 
+        uint256 _amountToDistribute = amountRoyaltiesWeth;
+        
         if (_amountToDistribute > 0) {
 
-            taxTokenAccruedForTaxType[_taxType] = 0;
+            amountRoyaltiesWeth = 0;
 
-            uint sumPercentToSell = 0;
+            assert(IERC20(WETH).approve(address(UNIV2_ROUTER), _amountToDistribute));
 
-            for (uint i = 0; i < taxSettings[_taxType].wallets.length; i++) {
-                if (taxSettings[_taxType].convertToAsset[i] == taxToken) {
-                    uint amt = _amountToDistribute * taxSettings[_taxType].percentDistribution[i] / 100;
+            address[] memory path_uni_v2 = new address[](2);
 
-                    assert(IERC20(taxToken).transfer(taxSettings[_taxType].wallets[i], amt));
+            path_uni_v2[0] = WETH;
+            path_uni_v2[1] = stable;
 
-                    distributionsTaxToken[taxSettings[_taxType].wallets[i]] += amt;
-                    emit RoyaltiesDistributed(taxSettings[_taxType].wallets[i], amt, taxToken);
-                }
-                else {
-                    sumPercentToSell += taxSettings[_taxType].percentDistribution[i];
-                }
-            }
+            IUniswapV2Router02(UNIV2_ROUTER).swapExactTokensForTokens(
+                _amountToDistribute,           
+                0,
+                path_uni_v2,
+                address(this),
+                block.timestamp + 30000
+            );
 
-            if (sumPercentToSell > 0) {
+            uint balanceStable = IERC20(stable).balanceOf(address(this));
 
-                uint amountToSell = _amountToDistribute * sumPercentToSell / 100;
+            for (uint i = 0; i < taxSettings.wallets.length; i++) {
+                uint amt = balanceStable * taxSettings.percentDistribution[i] / 100;
 
-                address WETH = IUniswapV2Router01(UNIV2_ROUTER).WETH();
+                assert(IERC20(stable).transfer(taxSettings.wallets[i], amt));
 
-                assert(IERC20(taxToken).approve(address(UNIV2_ROUTER), amountToSell));
-
-                address[] memory path_uni_v2 = new address[](3);
-
-                path_uni_v2[0] = taxToken;
-                path_uni_v2[1] = WETH;
-                path_uni_v2[2] = stable;
-
-                IUniswapV2Router01(UNIV2_ROUTER).swapExactTokensForTokens(
-                    amountToSell,           
-                    0,
-                    path_uni_v2,
-                    address(this),
-                    block.timestamp + 30000
-                );
-
-                uint balanceStable = IERC20(stable).balanceOf(address(this));
-
-                for (uint i = 0; i < taxSettings[_taxType].wallets.length; i++) {
-                    if (taxSettings[_taxType].convertToAsset[i] != taxToken) {
-                        uint amt = balanceStable * taxSettings[_taxType].percentDistribution[i] / sumPercentToSell;
-
-                        assert(IERC20(stable).transfer(taxSettings[_taxType].wallets[i], amt));
-
-                        distributionsStable[taxSettings[_taxType].wallets[i]] += amt;
-                        emit RoyaltiesDistributed(taxSettings[_taxType].wallets[i], amt, stable);
-                    }
-                }
+                distributionsStable[taxSettings.wallets[i]] += amt;
+                emit RoyaltiesDistributed(taxSettings.wallets[i], amt, stable);
             }
         }
-    }
 
-    /// @notice Distributes taxes for all taxTypes.
-    function distributeAllTaxes() external {
-        distributeTaxes(0);
-        distributeTaxes(1);
-        distributeTaxes(2);
+        return _amountToDistribute;
     }
-
 
     /// @notice Helper view function for taxSettings.
-    /// @param  _taxType     tax type of tax settings we want to return 0, 1, or 2.
     /// @return uint256    num of wallets in distribution.
     /// @return address[]  array of wallets in distribution.
     /// @return address[]  array of assets to be converted to during distribution to it's respective wallet.
     /// @return uint[]     array of distribution, all uints must add up to 100.
-    function viewTaxSettings(uint _taxType) external view returns(uint256, address[] memory, address[] memory, uint[] memory) {
+    function viewTaxSettings() external view returns(uint256, address[] memory, address[] memory, uint[] memory) {
         return (
-            taxSettings[_taxType].walletCount,
-            taxSettings[_taxType].wallets,
-            taxSettings[_taxType].convertToAsset,
-            taxSettings[_taxType].percentDistribution
+            taxSettings.walletCount,
+            taxSettings.wallets,
+            taxSettings.convertToAsset,
+            taxSettings.percentDistribution
         );
     }
 
@@ -262,7 +224,7 @@ contract Treasury {
     /// @dev    Only callable by Admin.
     /// @param  _token The token to withdraw from the treasury.
     function safeWithdraw(address _token) external isAdmin {
-        require(_token != taxToken, "Treasury.sol::safeWithdraw(), cannot withdraw native tokens from this contract");
+        if (_token == WETH) { amountRoyaltiesWeth = 0; }
         assert(IERC20(_token).transfer(msg.sender, IERC20(_token).balanceOf(address(this))));
     }
 
@@ -288,10 +250,18 @@ contract Treasury {
     /// @param  _path The path by which taxToken is converted into a given asset (i.e. taxToken => DAI => LINK).
     /// @param  _taxType The taxType to be exchanged.
     function exchangeRateForTaxType(address[] memory _path, uint _taxType) external view returns(uint256) {
-        return IUniswapV2Router01(UNIV2_ROUTER).getAmountsOut(
+        return IUniswapV2Router02(UNIV2_ROUTER).getAmountsOut(
             taxTokenAccruedForTaxType[_taxType], 
             _path
         )[_path.length - 1];
     }
 
+    /// @notice View function for exchanging fees collected for given taxType.
+    /// @param  _path The path by which taxToken is converted into a given asset (i.e. taxToken => DAI => LINK).
+    function exchangeRateForWethToStable(address[] memory _path) external view returns(uint256) {
+        return IUniswapV2Router02(UNIV2_ROUTER).getAmountsOut(
+            amountRoyaltiesWeth, 
+            _path
+        )[_path.length - 1];
+    }
 }
