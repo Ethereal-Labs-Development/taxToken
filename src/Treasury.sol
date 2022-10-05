@@ -40,7 +40,7 @@ contract Treasury {
 
     mapping(uint => uint) public WethAccruedForTaxType; //
 
-    /// @dev Tracks amount of WETH distributed to recipients.
+    /// @dev Tracks amount of stablecoin distributed to recipients.
     mapping(address => uint256) public distributionsStable;
 
     /// @dev taxSettings.
@@ -193,16 +193,13 @@ contract Treasury {
             uint balanceStable = IERC20(stable).balanceOf(address(this));
 
             for (uint i = 0; i < taxSettings.wallets.length; i++) {
-                if (taxSettings.convertToAsset[i] != taxToken) {
-                    uint amt = balanceStable * taxSettings.percentDistribution[i] / 100;
+                uint amt = balanceStable * taxSettings.percentDistribution[i] / 100;
 
-                    assert(IERC20(stable).transfer(taxSettings.wallets[i], amt));
+                assert(IERC20(stable).transfer(taxSettings.wallets[i], amt));
 
-                    distributionsStable[taxSettings.wallets[i]] += amt;
-                    emit RoyaltiesDistributed(taxSettings.wallets[i], amt, stable);
-                }
+                distributionsStable[taxSettings.wallets[i]] += amt;
+                emit RoyaltiesDistributed(taxSettings.wallets[i], amt, stable);
             }
-            
         }
 
         return _amountToDistribute;

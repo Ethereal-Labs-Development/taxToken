@@ -29,22 +29,26 @@ contract MainDeployment_Paradise is Utility {
         // (1) VERIFY ROUTER IS CORRECT.
 
         // NOTE: May have to flatten contract upon deployment.
+        // NOTE: If there is going to be a bulksender airdrop, ensure to whitelist the bulksender
+        //       0x458b14915e651243Acf89C05859a22d5Cff976A6
+
+        // (2) CHECK THE maxContractTokenBalance BEFORE DEPLOYING
 
         // (2) Deploy the TaxToken.
         taxToken = new TaxToken(
             88_888_888,         // totalSupply()
             'Paradise',         // name()
-            'PDC',              // symbol()
+            'MOON',             // symbol()
             18,                 // decimals()
-            888_888,            // maxWalletSize()
-            888_888             // maxWalletTx()
+            888_888_888,        // maxWalletSize()
+            888_888_888         // maxWalletTx()
         );
 
         // (3) Deploy the Treasury.
         treasury = new Treasury(
             address(this),
             address(taxToken),
-            DAI
+            USDC
         );
 
         // (4) Update the TaxToken "treasury" state variable.
@@ -77,94 +81,60 @@ contract MainDeployment_Paradise is Utility {
         wallets[0] = 0xD56acC36Ec1f83d0801493F399b66C2EBBcfba7B; // dev
         wallets[1] = 0x7f6d45dE87cAB7D2D42bF2709B6b1E2AF994B069; // marketing
         wallets[2] = 0x7F6c10EE7f1427907f9de6a7e6fd4E0A17DFf442; // team
-        convertToAsset[0] = WETH;
-        convertToAsset[1] = WETH;
-        convertToAsset[2] = WETH;
+        convertToAsset[0] = USDC;
+        convertToAsset[1] = USDC;
+        convertToAsset[2] = USDC;
         percentDistribution[0] = 10;
         percentDistribution[1] = 45;
         percentDistribution[2] = 45;
 
         // (8) Update TaxType 0.
         treasury.setTaxDistribution(
-            3, 
+            0, 
             wallets, 
             convertToAsset, 
             percentDistribution
         );
 
-        //  Sell/Xfer Tax: 10% Total
-        //  Dev: 1%
-        //  Marketing: 4.5%
-        //  Team: 4.5%
-
-        wallets = new address[](3);
-        convertToAsset = new address[](3);
-        percentDistribution = new uint[](3);
-
-        wallets[0] = 0xD56acC36Ec1f83d0801493F399b66C2EBBcfba7B; // dev
-        wallets[1] = 0x7f6d45dE87cAB7D2D42bF2709B6b1E2AF994B069; // marketing
-        wallets[2] = 0x7F6c10EE7f1427907f9de6a7e6fd4E0A17DFf442; // team
-        convertToAsset[0] = WETH;
-        convertToAsset[1] = WETH;
-        convertToAsset[2] = WETH;
-        percentDistribution[0] = 10;
-        percentDistribution[1] = 45;
-        percentDistribution[2] = 45;
-
-        //(9) Update tax types 0 and 2.
-        treasury.setTaxDistribution(
-            3, 
-            wallets, 
-            convertToAsset, 
-            percentDistribution
-        );
-
-        treasury.setTaxDistribution(
-            3, 
-            wallets, 
-            convertToAsset, 
-            percentDistribution
-        );
-
-        // (10) pause taxToken.
+        // (9) pause taxToken.
         // NOTE: might have to do between approve and addLiquidity.
         taxToken.pause();
         
-        uint ETH_DEPOSIT = 45 ether;
-        uint TOKEN_DEPOSIT = 44_444_444 ether;
+        uint ETH_DEPOSIT = 35 ether; // roughly $45,000
+        uint TOKEN_DEPOSIT = 44_444_444 ether; // calculate amount of tokens for a starting price of $0.01
 
-        // (11) Approve TaxToken for UniswapV2Router.
+        // (10) Approve TaxToken for UniswapV2Router.
         IERC20(address(taxToken)).approve(
             address(UNIV2_ROUTER), TOKEN_DEPOSIT
         );
 
-        // (12) Instantiate liquidity pool.
+        // (11) Instantiate liquidity pool.
         // https://docs.uniswap.org/protocol/V2/reference/smart-contracts/router-02#addliquidityeth
         // NOTE: ETH_DEPOSIT = The amount of ETH to add as liquidity if the token/WETH price is <= amountTokenDesired/msg.value (WETH depreciates).
         IUniswapV2Router01(UNIV2_ROUTER).addLiquidityETH{value: ETH_DEPOSIT}(
             address(taxToken),          // A pool token.
             TOKEN_DEPOSIT,              // The amount of token to add as liquidity if the WETH/token price is <= msg.value/amountTokenDesired (token depreciates).
             44_444_444 ether,           // Bounds the extent to which the WETH/token price can go up before the transaction reverts. Must be <= amountTokenDesired.
-            45 ether,                  // Bounds the extent to which the token/WETH price can go up before the transaction reverts. Must be <= msg.value.
+            45 ether,                   // Bounds the extent to which the token/WETH price can go up before the transaction reverts. Must be <= msg.value.
             address(this),              // Recipient of the liquidity tokens.
             block.timestamp + 300       // Unix timestamp after which the transaction will revert.
         );
 
-        // (14) AIRDROP SNAPSHOT.
-        // TODO: VERIFY BULKSENDER IS WHITELISTED
-        // NOTE: No need to airdrop private sales again, should be included in snapshot
-        // 0x458b14915e651243Acf89C05859a22d5Cff976A6
-        // https://bulksender.app/
+        // (12) Lock LP and remaining tokens if necessary.
 
-        // (15) Reduce MaxWalletAmount.
-        taxToken.updateMaxWalletSize(444_444);  // 1% of the LP
-
-        // (16) Reduce MaxTxAmount.
-        taxToken.updateMaxTxAmount(444_444);    // 1% of the LP
-
-        // (15) Unpause TaxToken.
+        // (13) Unpause TaxToken. -> to go live
         taxToken.unpause();
+    }
 
-        // (16) Lock LP and remaining tokens.
+    // Initial state check.
+    function test_paradise_init_state() public {
+        assertEq(taxToken.totalSupply(), 88_888_888 ether);
+        assertEq(taxToken.name(), 'Paradise');
+        assertEq(taxToken.symbol(), 'MOON');
+        assertEq(taxToken.decimals(), 18);
+        assertEq(taxToken.maxWalletSize(), 888_888_888 ether);
+        assertEq(taxToken.maxTxAmount(), 888_888_888 ether);
+        assertEq(taxToken.balanceOf(address(this)), taxToken.totalSupply() - 44_444_444 ether);
+        assertEq(taxToken.treasury(), address(treasury));
     }
 }

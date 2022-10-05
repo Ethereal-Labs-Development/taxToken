@@ -27,6 +27,7 @@ contract TaxToken is ERC20{
     address public owner;
     address public treasury;
     address public constant UNIV2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+    address public UNISWAP_V2_PAIR;
 
     bool public taxesRemoved;   /// @dev Once true, taxes are permanently set to 0 and CAN NOT be increased in the future.
 
@@ -72,7 +73,7 @@ contract TaxToken is ERC20{
         _totalSupply = totalSupplyInput * 10**_decimals;
 
         // Create a uniswap pair for this new token.
-        address UNISWAP_V2_PAIR = IUniswapV2Factory(
+        UNISWAP_V2_PAIR = IUniswapV2Factory(
             IUniswapV2Router02(UNIV2_ROUTER).factory()
         ).createPair(address(this), IUniswapV2Router02(UNIV2_ROUTER).WETH());
  
@@ -186,7 +187,7 @@ contract TaxToken is ERC20{
         if (!whitelist[_to] && !whitelist[_from] && _from != address(this)) {
 
             require (maxTxAmount >= _amount, "TaxToken::_transfer(), amount exceeds maxTxAmount");
-            require (!blacklist[msg.sender], "TaxToken::_transfer(), msg.sender is blacklisted");
+            require (!blacklist[_from], "TaxToken::_transfer(), sender is blacklisted");
             require (!blacklist[_to], "TaxToken::_transfer(), receiver is blacklisted");
 
             // Determine, if not the default 0, tax type of transfer.
@@ -399,7 +400,13 @@ contract TaxToken is ERC20{
     /// @param  _wallet is the wallet address that will have their blacklist status modified.
     /// @param  _blacklist use True to blacklist a wallet, otherwise use False to remove wallet from blacklist.
     function modifyBlacklist(address _wallet, bool _blacklist) external onlyOwner {
-        require(!whitelist[_wallet], "TaxToken.sol::modifyBlacklist(), Cannot blacklist a whitelisted wallet.");
+        if (_blacklist) {
+            require(!whitelist[_wallet], "TaxToken.sol::modifyBlacklist(), cannot blacklist a whitelisted wallet");
+            require(_wallet != treasury, "TaxToken.sol::modifyBlacklist(), cannot blacklist the treasury");
+            require(_wallet != UNIV2_ROUTER, "TaxToken.sol::modifyBlacklist(), cannot blacklist the Uniswap ROUTER");
+            require(_wallet != UNISWAP_V2_PAIR, "TaxToken.sol::modifyBlacklist(), cannot blacklist the Uniswap PAIR");
+            require(_wallet != address(this), "TaxToken.sol::modifyBlacklist(), cannot blacklist this contract");
+        }
         blacklist[_wallet] = _blacklist;
     }
     
@@ -419,4 +426,14 @@ contract TaxToken is ERC20{
         _burn(_wallet, _amount);
     }
 
+
+    // ~ Read ~
+
+
+    /// @notice This functions returns the number of taxToken are inside the contract.
+    /// NOTE:   These tokens have most likely been accrued from taxes.
+    /// @return uint256 the num of tokens stored in this contract.
+    function viewContractTokenBalance() view public returns (uint256) {
+        return balanceOf(address(this));
+    }
 }
