@@ -185,7 +185,7 @@ contract TaxToken is ERC20{
         require(_amount > 0, "TaxToken::_transfer(), amount must be greater than 0");
 
         // Take a tax from them if neither party is whitelisted.
-        if (!whitelist[_to] && !whitelist[_from] && _from != address(this)) {
+        if (!whitelist[_to] && !whitelist[_from]) {
 
             require (maxTxAmount >= _amount, "TaxToken::_transfer(), amount exceeds maxTxAmount");
             require (!blacklist[msg.sender], "TaxToken::_transfer(), msg.sender is blacklisted");
