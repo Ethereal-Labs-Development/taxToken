@@ -90,7 +90,7 @@ contract MainDeployment_Paradise is Utility {
 
         // (8) Update TaxType 0.
         treasury.setTaxDistribution(
-            0, 
+            3, 
             wallets, 
             convertToAsset, 
             percentDistribution
