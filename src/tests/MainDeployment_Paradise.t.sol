@@ -518,7 +518,8 @@ contract MainDeployment_Paradise is Utility {
         IWETH(WETH).deposit{value: 100 ether}();
         taxToken.modifyWhitelist(address(this), false);
 
-        // Generate Buy ////////////////////////
+
+        /// Generate Buy //////////////////////////////////////////////
             uint tradeAmt = 5 ether;
 
             IERC20(WETH).approve(
@@ -541,7 +542,8 @@ contract MainDeployment_Paradise is Utility {
         emit Debug("Contract Token Balance", taxToken.viewContractTokenBalance());
         emit Debug("Treasury WETH Balance", treasury.amountRoyaltiesWeth());
 
-        // Generate Sell ////////////////////////
+
+        /// Generate Sell //////////////////////////////////////////////
             tradeAmt = 5 ether;
 
             IERC20(address(taxToken)).approve(
@@ -562,7 +564,8 @@ contract MainDeployment_Paradise is Utility {
         emit Debug("Contract Token Balance", taxToken.viewContractTokenBalance());
         emit Debug("Treasury WETH Balance", treasury.amountRoyaltiesWeth());
 
-        // Generate Sell ////////////////////////
+
+        /// Generate Sell /////////////////////////////////////////////////
             tradeAmt = 5 ether;
 
             IERC20(address(taxToken)).approve(
