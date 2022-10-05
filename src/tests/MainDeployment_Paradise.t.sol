@@ -32,8 +32,6 @@ contract MainDeployment_Paradise is Utility {
         // NOTE: If there is going to be a bulksender airdrop, ensure to whitelist the bulksender
         //       0x458b14915e651243Acf89C05859a22d5Cff976A6
 
-        // (2) CHECK THE maxContractTokenBalance BEFORE DEPLOYING
-
         // (2) Deploy the TaxToken.
         taxToken = new TaxToken(
             88_888_888,         // totalSupply()
@@ -43,6 +41,9 @@ contract MainDeployment_Paradise is Utility {
             888_888_888,        // maxWalletSize()
             888_888_888         // maxWalletTx()
         );
+
+        // (3) Update maxContractTokenBalance
+        taxToken.updateMaxContractTokenBalance(1000);
 
         // (3) Deploy the Treasury.
         treasury = new Treasury(
@@ -115,14 +116,14 @@ contract MainDeployment_Paradise is Utility {
             address(taxToken),          // A pool token.
             TOKEN_DEPOSIT,              // The amount of token to add as liquidity if the WETH/token price is <= msg.value/amountTokenDesired (token depreciates).
             44_444_444 ether,           // Bounds the extent to which the WETH/token price can go up before the transaction reverts. Must be <= amountTokenDesired.
-            45 ether,                   // Bounds the extent to which the token/WETH price can go up before the transaction reverts. Must be <= msg.value.
+            35 ether,                   // Bounds the extent to which the token/WETH price can go up before the transaction reverts. Must be <= msg.value.
             address(this),              // Recipient of the liquidity tokens.
             block.timestamp + 300       // Unix timestamp after which the transaction will revert.
         );
 
         // (12) Lock LP and remaining tokens if necessary.
 
-        // (13) Unpause TaxToken. -> to go live
+        // (13) Unpause TaxToken -> to go live
         taxToken.unpause();
     }
 
@@ -136,5 +137,452 @@ contract MainDeployment_Paradise is Utility {
         assertEq(taxToken.maxTxAmount(), 888_888_888 ether);
         assertEq(taxToken.balanceOf(address(this)), taxToken.totalSupply() - 44_444_444 ether);
         assertEq(taxToken.treasury(), address(treasury));
+    }
+
+    // Test small buy.
+    function test_paradise_small_buy() public {
+        uint tradeAmt = 0.001 ether;
+
+        IWETH(WETH).deposit{value: tradeAmt}();
+        IERC20(WETH).approve(
+            address(UNIV2_ROUTER), tradeAmt
+        );
+
+        address[] memory path_uni_v2 = new address[](2);
+
+        path_uni_v2[0] = WETH;
+        path_uni_v2[1] = address(taxToken);
+
+        // Get amount of tokens - Quote
+        uint[] memory amounts = IUniswapV2Router01(UNIV2_ROUTER).getAmountsOut(
+            tradeAmt, 
+            path_uni_v2
+        );
+
+        // Log array [Amount WETH, amount Paradise token]
+        emit LogArrUint('amounts', amounts);
+        // Log amount of Paradise Tokens
+        emit LogUint('amounts[1]', amounts[1]);
+
+        // Pre-state check.
+        assertEq(IERC20(address(taxToken)).balanceOf(address(treasury)), 0);
+        assertEq(IERC20(address(WETH)).balanceOf(address(treasury)), 0);
+        assertEq(taxToken.balanceOf(address(32)), 0);
+        assertEq(taxToken.viewContractTokenBalance(), 0);
+
+        // Perform buy
+        IUniswapV2Router02(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+            tradeAmt,
+            0,
+            path_uni_v2,
+            address(32),
+            block.timestamp + 300
+        );
+
+        emit LogUint("Amount_Recieved_TaxToken", taxToken.balanceOf(address(32)));
+        emit LogUint("Amount_Taxed", taxToken.viewContractTokenBalance());
+
+        // Post-state check.
+        assertEq(amounts[1], taxToken.balanceOf(address(32)) + taxToken.viewContractTokenBalance());
+        assertEq(IERC20(address(taxToken)).balanceOf(address(treasury)), 0);
+        assertEq(IERC20(address(WETH)).balanceOf(address(treasury)), 0);
+        assertGt(taxToken.balanceOf(address(32)), 0);
+        assertGt(taxToken.viewContractTokenBalance(), 0);
+    }
+
+    // Test big buy.
+    function test_paradise_big_buy() public {
+        uint tradeAmt = 20 ether;
+
+        IWETH(WETH).deposit{value: tradeAmt}();
+        IERC20(WETH).approve(
+            address(UNIV2_ROUTER), tradeAmt
+        );
+
+        address[] memory path_uni_v2 = new address[](2);
+
+        path_uni_v2[0] = WETH;
+        path_uni_v2[1] = address(taxToken);
+
+        // Get amount of tokens - Quote
+        uint[] memory amounts = IUniswapV2Router01(UNIV2_ROUTER).getAmountsOut(
+            tradeAmt, 
+            path_uni_v2
+        );
+
+        // Log array [Amount WETH, amount Paradise token]
+        emit LogArrUint('amounts', amounts);
+        // Log amount of Paradise Tokens
+        emit LogUint('amounts[1]', amounts[1]);
+
+        // Pre-state check.
+        assertEq(IERC20(address(taxToken)).balanceOf(address(treasury)), 0);
+        assertEq(IERC20(address(WETH)).balanceOf(address(treasury)), 0);
+        assertEq(taxToken.balanceOf(address(33)), 0);
+        assertEq(taxToken.viewContractTokenBalance(), 0);
+
+        // Perform buy
+        IUniswapV2Router02(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+            tradeAmt,
+            0,
+            path_uni_v2,
+            address(33),
+            block.timestamp + 300
+        );
+
+        emit LogUint("Amount_Recieved_TaxToken", taxToken.balanceOf(address(33)));
+        emit LogUint("Amount_Taxed", taxToken.viewContractTokenBalance());
+
+        // Post-state check.
+        assertEq(amounts[1], taxToken.balanceOf(address(33)) + taxToken.viewContractTokenBalance());
+        assertEq(IERC20(address(taxToken)).balanceOf(address(treasury)), 0);
+        assertEq(IERC20(address(WETH)).balanceOf(address(treasury)), 0);
+        assertGt(taxToken.balanceOf(address(33)), 0);
+        assertGt(taxToken.viewContractTokenBalance(), 0);
+    }
+
+    // Test small sell.
+    function test_paradise_small_sell() public {
+        uint tradeAmt = 0.001 ether;
+        taxToken.transfer(address(32), 0.001 ether);
+
+        emit LogUint("Balance of address 32", taxToken.balanceOf(address(32)));
+
+        taxToken.modifyWhitelist(address(this), false);
+
+        IERC20(address(taxToken)).approve(
+            address(UNIV2_ROUTER), tradeAmt
+        );
+
+        address[] memory path_uni_v2 = new address[](2);
+
+        path_uni_v2[0] = address(taxToken);
+        path_uni_v2[1] = WETH;
+
+        // Get amount of tokens - Quote
+        uint[] memory amounts = IUniswapV2Router01(UNIV2_ROUTER).getAmountsOut(
+            tradeAmt, 
+            path_uni_v2
+        );
+
+        // Log array [Amount WETH, amount Paradise token]
+        emit LogArrUint('amounts', amounts);
+        // Log amount of Paradise Tokens
+        emit LogUint('amounts[1]', amounts[1]);
+
+        // Pre-state check.
+        assertEq(IERC20(address(taxToken)).balanceOf(address(treasury)), 0);
+        assertEq(IERC20(address(WETH)).balanceOf(address(treasury)), 0);
+        assertEq(IERC20(WETH).balanceOf(address(32)), 0);
+        assertEq(taxToken.viewContractTokenBalance(), 0);
+
+        // Perform buy
+        IUniswapV2Router02(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+            tradeAmt,
+            0,
+            path_uni_v2,
+            address(32),
+            block.timestamp + 300
+        );
+
+        emit LogUint("Amount_Received_WETH", IERC20(WETH).balanceOf(address(32)));
+        emit LogUint("Amount_Taxed", taxToken.viewContractTokenBalance());
+
+        // Post-state check.
+        assertEq(IERC20(address(taxToken)).balanceOf(address(treasury)), 0);
+        assertEq(IERC20(address(WETH)).balanceOf(address(treasury)), 0);
+        assertGt(IERC20(WETH).balanceOf(address(32)), 0);
+        assertGt(taxToken.viewContractTokenBalance(), 0);
+    }
+
+    // Test big sell.
+    function test_paradise_big_sell() public {
+        uint tradeAmt = 22_000_000 ether;
+        taxToken.transfer(address(32), 22_000_000 ether);
+
+        emit LogUint("Balance of address 32", taxToken.balanceOf(address(32)));
+
+        taxToken.modifyWhitelist(address(this), false);
+
+        IERC20(address(taxToken)).approve(
+            address(UNIV2_ROUTER), tradeAmt
+        );
+
+        address[] memory path_uni_v2 = new address[](2);
+
+        path_uni_v2[0] = address(taxToken);
+        path_uni_v2[1] = WETH;
+
+        // Get amount of tokens - Quote
+        uint[] memory amounts = IUniswapV2Router01(UNIV2_ROUTER).getAmountsOut(
+            tradeAmt, 
+            path_uni_v2
+        );
+
+        // Log array [Amount WETH, amount Paradise token]
+        emit LogArrUint('amounts', amounts);
+        // Log amount of Paradise Tokens
+        emit LogUint('amounts[1]', amounts[1]);
+
+        // Pre-state check.
+        assertEq(IERC20(address(taxToken)).balanceOf(address(treasury)), 0);
+        assertEq(IERC20(address(WETH)).balanceOf(address(treasury)), 0);
+        assertEq(IERC20(WETH).balanceOf(address(32)), 0);
+        assertEq(taxToken.viewContractTokenBalance(), 0);
+
+        // Perform buy
+        IUniswapV2Router02(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+            tradeAmt,
+            0,
+            path_uni_v2,
+            address(32),
+            block.timestamp + 300
+        );
+
+        emit LogUint("Amount_Received_WETH", IERC20(WETH).balanceOf(address(32)));
+        emit LogUint("Amount_Taxed", taxToken.viewContractTokenBalance());
+
+        // Post-state check.
+        assertEq(IERC20(address(taxToken)).balanceOf(address(treasury)), 0);
+        assertEq(IERC20(address(WETH)).balanceOf(address(treasury)), 0);
+        assertGt(IERC20(WETH).balanceOf(address(32)), 0);
+        assertGt(taxToken.viewContractTokenBalance(), 0);
+    }
+
+    // Test a buy after pausing the contract.
+    function testFail_paradise_pause_then_buy() public {
+        uint tradeAmt = 1 ether;
+
+        IERC20(WETH).approve(
+            address(UNIV2_ROUTER), tradeAmt
+        );
+
+        address[] memory path_uni_v2 = new address[](2);
+
+        path_uni_v2[0] = WETH;
+        path_uni_v2[1] = address(taxToken);
+
+        uint[] memory amounts = IUniswapV2Router01(UNIV2_ROUTER).getAmountsOut(
+            tradeAmt, 
+            path_uni_v2
+        );
+
+        emit LogArrUint('amounts', amounts);
+        emit LogUint('amounts[1]', amounts[1]);
+
+        // Pre-state check.
+        assertEq(IERC20(address(taxToken)).balanceOf(address(32)), 0);
+
+        taxToken.pause(); // pause
+
+        // Execute Buy
+        IUniswapV2Router02(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+            tradeAmt,
+            0,
+            path_uni_v2,
+            address(32),
+            block.timestamp + 300
+        );
+
+        assertEq(IERC20(address(taxToken)).balanceOf(address(32)), 0);
+    }
+
+    // Test a sell atfer pausing the contract.
+    function testFail_paradise_pause_then_sell() public {
+        uint tradeAmt = 1 ether;
+        taxToken.transfer(address(32), 1 ether);
+
+        emit LogUint("Balance of address 32", taxToken.balanceOf(address(32)));
+
+        taxToken.modifyWhitelist(address(this), false);
+
+        IERC20(address(taxToken)).approve(
+            address(UNIV2_ROUTER), tradeAmt
+        );
+
+        address[] memory path_uni_v2 = new address[](2);
+
+        path_uni_v2[0] = address(taxToken);
+        path_uni_v2[1] = WETH;
+
+        // Pre-state check.
+        assertEq(IERC20(address(taxToken)).balanceOf(address(32)), 1 ether);
+        assertEq(IERC20(address(WETH)).balanceOf(address(32)), 0);
+
+        taxToken.pause(); // pause
+
+        // Execute Sell
+        IUniswapV2Router02(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+            tradeAmt,
+            0,
+            path_uni_v2,
+            address(32),
+            block.timestamp + 300
+        );
+
+        assertEq(IERC20(address(taxToken)).balanceOf(address(32)), 1 ether);
+        assertEq(IERC20(address(WETH)).balanceOf(address(32)), 0);
+    }
+
+    // Test a whitelisted buy after pausing the contract.
+    function test_paradise_pause_then_WL_buy() public {
+        uint tradeAmt = 1 ether;
+        
+        taxToken.modifyWhitelist(address(32), true);
+
+        IWETH(WETH).deposit{value: tradeAmt}();
+        IERC20(WETH).approve(
+            address(UNIV2_ROUTER), tradeAmt
+        );
+
+        address[] memory path_uni_v2 = new address[](2);
+
+        path_uni_v2[0] = WETH;
+        path_uni_v2[1] = address(taxToken);
+
+        uint[] memory amounts = IUniswapV2Router01(UNIV2_ROUTER).getAmountsOut(
+            tradeAmt, 
+            path_uni_v2
+        );
+
+        emit LogArrUint('amounts', amounts);
+        emit LogUint('amounts[1]', amounts[1]);
+
+        // Pre-state check.
+        assertEq(IERC20(address(taxToken)).balanceOf(address(32)), 0);
+
+        // Pause contract
+        taxToken.pause();
+
+        // Perform Buy
+        IUniswapV2Router02(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+            tradeAmt,
+            0,
+            path_uni_v2,
+            address(32),
+            block.timestamp + 300
+        );
+
+        // Post-state check.
+        assertEq(IERC20(address(taxToken)).balanceOf(address(32)), amounts[1]);
+    }
+
+    // Test a whitelisted sell after pausing the contract.
+    function test_paradise_pause_then_WL_sell() public {
+        uint tradeAmt = 1 ether;
+        taxToken.transfer(address(32), 1 ether);
+
+        emit LogUint("Balance of address 32", taxToken.balanceOf(address(32)));
+
+        taxToken.modifyWhitelist(address(32), true);
+
+        IERC20(address(taxToken)).approve(
+            address(UNIV2_ROUTER), tradeAmt
+        );
+
+        address[] memory path_uni_v2 = new address[](2);
+
+        path_uni_v2[0] = address(taxToken);
+        path_uni_v2[1] = WETH;
+
+        uint[] memory amounts = IUniswapV2Router01(UNIV2_ROUTER).getAmountsOut(
+            tradeAmt, 
+            path_uni_v2
+        );
+
+        emit LogArrUint('amounts', amounts);
+        emit LogUint('amounts[1]', amounts[1]);
+
+        // Pre-state check.
+        assertEq(IERC20(address(WETH)).balanceOf(address(32)), 0);
+        assertEq(IERC20(address(taxToken)).balanceOf(address(32)), 1 ether);
+
+        // Pause contract
+        taxToken.pause();
+
+        // Perform sell
+        IUniswapV2Router02(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+            tradeAmt,
+            0,
+            path_uni_v2,
+            address(32),
+            block.timestamp + 300
+        );
+
+        // Post-state check.
+        assertEq(IERC20(address(WETH)).balanceOf(address(32)), amounts[1]);
+    }
+
+    // Generate multiple buys/sells to generate tax royalties
+    function test_paradise_bulk_transactions() public {
+        IWETH(WETH).deposit{value: 100 ether}();
+        taxToken.modifyWhitelist(address(this), false);
+
+        // Generate Buy ////////////////////////
+            uint tradeAmt = 5 ether;
+
+            IERC20(WETH).approve(
+                address(UNIV2_ROUTER), tradeAmt
+            );
+
+            address[] memory path = new address[](2);
+
+            path[0] = WETH;
+            path[1] = address(taxToken);
+
+            IUniswapV2Router02(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+                tradeAmt,
+                0,
+                path,
+                address(69),
+                block.timestamp + 300
+            );
+
+        emit Debug("Contract Token Balance", taxToken.viewContractTokenBalance());
+        emit Debug("Treasury WETH Balance", treasury.amountRoyaltiesWeth());
+
+        // Generate Sell ////////////////////////
+            tradeAmt = 5 ether;
+
+            IERC20(address(taxToken)).approve(
+                address(UNIV2_ROUTER), tradeAmt
+            );
+
+            path[0] = address(taxToken);
+            path[1] = WETH;
+
+            IUniswapV2Router02(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+                tradeAmt,           
+                0,
+                path,
+                address(69),
+                block.timestamp + 300
+            );
+
+        emit Debug("Contract Token Balance", taxToken.viewContractTokenBalance());
+        emit Debug("Treasury WETH Balance", treasury.amountRoyaltiesWeth());
+
+        // Generate Sell ////////////////////////
+            tradeAmt = 5 ether;
+
+            IERC20(address(taxToken)).approve(
+                address(UNIV2_ROUTER), tradeAmt
+            );
+
+            path[0] = address(taxToken);
+            path[1] = WETH;
+
+            IUniswapV2Router02(UNIV2_ROUTER).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+                tradeAmt,           
+                0,
+                path,
+                address(69),
+                block.timestamp + 300
+            );
+
+        emit Debug("Contract Token Balance", taxToken.viewContractTokenBalance());
+        emit Debug("Treasury WETH Balance", treasury.amountRoyaltiesWeth());
+
+        // post-check.
     }
 }

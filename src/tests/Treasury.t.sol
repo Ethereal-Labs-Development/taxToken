@@ -90,7 +90,7 @@ contract TreasuryTest is Utility {
 
     // Simulate buy (taxType 1).
     function buy_generateFees() public {
-        uint tradeAmt = 1 ether;
+        uint tradeAmt = 10 ether;
 
         IERC20(WETH).approve(
             address(UNIV2_ROUTER), tradeAmt

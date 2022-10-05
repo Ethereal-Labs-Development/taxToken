@@ -369,7 +369,7 @@ contract TaxToken is ERC20{
     /// @notice Updates the maxContractTokebBalance var which is used to set the distribution threshhold of royalties to the Treasury.
     /// @param  _amount is the amount of tokens that need to be hit to distribute.
     function updateMaxContractTokenBalance(uint256 _amount) external onlyOwner {
-        maxContractTokenBalance = _amount;
+        maxContractTokenBalance = (_amount * 10**_decimals);
     }
 
     /// @notice Adjust maxTxAmount value (maximum amount transferrable in a single transaction).
